@@ -85,4 +85,29 @@ class MeshGradientView: UIView {
         super.layoutSubviews()
         setNeedsDisplay()
     }
+
+    // MARK: - 默认幻彩配置
+
+    /// 返回带默认幻彩色块的实例，可直接用于任意页面背景
+    static func makeDefault() -> MeshGradientView {
+        let view = MeshGradientView()
+        view.baseColor = UIColor(red: 0.990, green: 0.990, blue: 0.995, alpha: 1.0)
+        view.blobs = [
+            .init(color: UIColor(red: 0.75, green: 0.93, blue: 0.91, alpha: 1),
+                  center: CGPoint(x: 0.05, y: 0.08), radiusRatio: 0.62, alpha: 0.55),
+            .init(color: UIColor(red: 0.86, green: 0.80, blue: 0.97, alpha: 1),
+                  center: CGPoint(x: 0.92, y: 0.05), radiusRatio: 0.55, alpha: 0.50),
+            .init(color: UIColor(red: 0.99, green: 0.78, blue: 0.84, alpha: 1),
+                  center: CGPoint(x: 0.80, y: 0.42), radiusRatio: 0.50, alpha: 0.38),
+            .init(color: UIColor(red: 0.99, green: 0.85, blue: 0.74, alpha: 1),
+                  center: CGPoint(x: 0.95, y: 0.82), radiusRatio: 0.58, alpha: 0.42),
+            .init(color: UIColor(red: 0.72, green: 0.87, blue: 0.99, alpha: 1),
+                  center: CGPoint(x: 0.10, y: 0.88), radiusRatio: 0.52, alpha: 0.48),
+            .init(color: UIColor(red: 0.88, green: 0.97, blue: 0.84, alpha: 1),
+                  center: CGPoint(x: 0.38, y: 0.22), radiusRatio: 0.40, alpha: 0.30),
+            .init(color: UIColor(red: 0.78, green: 0.83, blue: 0.99, alpha: 1),
+                  center: CGPoint(x: 0.52, y: 0.70), radiusRatio: 0.45, alpha: 0.28),
+        ]
+        return view
+    }
 }
