@@ -118,6 +118,8 @@ class SettingsViewController: UIViewController {
         let card = UIView()
         card.layer.cornerRadius = cardRadius
         card.clipsToBounds = true
+        card.layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
+        card.layer.borderWidth = 2.0
 
         let gradient = CAGradientLayer()
         gradient.colors = [
