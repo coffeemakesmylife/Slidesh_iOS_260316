@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import SafariServices
 
 class SettingsViewController: UIViewController {
 
@@ -13,6 +14,13 @@ class SettingsViewController: UIViewController {
     private let cardRadius: CGFloat = 30
     private let rowHeight: CGFloat = 66
     private let sideInset: CGFloat = 20
+
+    // 主题值标签的引用，用于切换后同步更新显示
+    private weak var themeValueLabel: UILabel?
+
+    // 隐私 / 条款链接（替换为正式 URL）
+    private let privacyURL = URL(string: "https://example.com/privacy")!
+    private let termsURL   = URL(string: "https://example.com/terms")!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,7 +34,6 @@ class SettingsViewController: UIViewController {
 
     private func setupScrollView() {
         scrollView.showsVerticalScrollIndicator = false
-        // 显式设置，确保 iOS 26 也能正确计算导航栏偏移
         scrollView.contentInsetAdjustmentBehavior = .always
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
@@ -34,8 +41,6 @@ class SettingsViewController: UIViewController {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
 
-        // scrollView 贴满整个 view
-        // contentView 必须绑 contentLayoutGuide 才能驱动 contentSize，实现滚动
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -46,36 +51,50 @@ class SettingsViewController: UIViewController {
             contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
             contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            // 宽度绑 frameLayoutGuide，确保横向不可滚动
             contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
         ])
     }
 
-    // MARK: - 构建4个 Section
+    // MARK: - 构建 Section
 
     private func buildSections() {
-        // Section 1：会员横幅
         let vipCard = makeVIPCard()
 
-        // Section 2：主题 + 切换应用图标
+        // Section 2：主题（上下 chevron 选择）+ 切换应用图标
         let section2 = makeCard(rows: [
-            makeRow(sfSymbol: "moon.circle.fill",  title: "主题",        accessory: makeThemeSwitch()),
-            makeRow(sfSymbol: "square.grid.2x2",   title: "切换应用图标"),
+            makeThemeRow(),
+            makeRow(sfSymbol: "square.grid.2x2", title: "切换应用图标") { [weak self] in
+                self?.changeAppIcon()
+            },
         ])
 
         // Section 3：反馈 + 分享 + 恢复购买
         let section3 = makeCard(rows: [
-            makeRow(sfSymbol: "envelope",                   title: "反馈"),
-            makeRow(sfSymbol: "square.and.arrow.up",        title: "分享"),
-            makeRow(sfSymbol: "arrow.clockwise.circle",     title: "恢复购买"),
+            makeRow(sfSymbol: "envelope", title: "反馈") { [weak self] in
+                self?.push(FeedbackViewController())
+            },
+            makeRow(sfSymbol: "square.and.arrow.up", title: "分享") { [weak self] in
+                self?.shareApp()
+            },
+            makeRow(sfSymbol: "arrow.clockwise.circle", title: "恢复购买") { [weak self] in
+                self?.restorePurchase()
+            },
         ])
 
         // Section 4：隐私政策 + 使用条款 + FAQ + 关于
         let section4 = makeCard(rows: [
-            makeRow(sfSymbol: "hand.raised.fill",           title: "隐私政策"),
-            makeRow(sfSymbol: "doc.text",                   title: "使用条款"),
-            makeRow(sfSymbol: "questionmark.circle.fill",   title: "FAQ"),
-            makeRow(sfSymbol: "info.circle.fill",           title: "关于"),
+            makeRow(sfSymbol: "hand.raised.fill", title: "隐私政策") { [weak self] in
+                self?.openSafari(url: self!.privacyURL)
+            },
+            makeRow(sfSymbol: "doc.text", title: "使用条款") { [weak self] in
+                self?.openSafari(url: self!.termsURL)
+            },
+            makeRow(sfSymbol: "questionmark.circle.fill", title: "FAQ") { [weak self] in
+                self?.push(FAQViewController())
+            },
+            makeRow(sfSymbol: "info.circle.fill", title: "关于") { [weak self] in
+                self?.push(AboutViewController())
+            },
         ])
 
         let stack = UIStackView(arrangedSubviews: [vipCard, section2, section3, section4])
@@ -99,32 +118,28 @@ class SettingsViewController: UIViewController {
         card.layer.cornerRadius = cardRadius
         card.clipsToBounds = true
 
-        // 深海军蓝渐变（参考截图：左上极深藏青 → 右下中蓝）
         let gradient = CAGradientLayer()
         gradient.colors = [
-            UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1).cgColor, // #0A1842 深藏青
-            UIColor(red: 0.180, green: 0.380, blue: 0.720, alpha: 1).cgColor, // #2E61B8 中过渡蓝
-            UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1).cgColor, // #78B5F3 亮天蓝
+            UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1).cgColor,
+            UIColor(red: 0.180, green: 0.380, blue: 0.720, alpha: 1).cgColor,
+            UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1).cgColor,
         ]
         gradient.locations = [0.0, 0.55, 1.0]
         gradient.startPoint = CGPoint(x: 0, y: 0)
         gradient.endPoint   = CGPoint(x: 1, y: 1)
         card.layer.insertSublayer(gradient, at: 0)
 
-        // 标题
         let titleLabel = UILabel()
         titleLabel.text = "解锁 Pro 会员"
         titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
         titleLabel.textColor = .white
 
-        // 功能列表
         let featuresLabel = UILabel()
         featuresLabel.text = "✓ 无限制导出演示文稿\n✓ 解锁全部模板\n✓ 高级格式转换"
         featuresLabel.font = .systemFont(ofSize: 14)
         featuresLabel.textColor = UIColor.white.withAlphaComponent(0.88)
         featuresLabel.numberOfLines = 0
 
-        // 解锁按钮
         let btn = UIButton(type: .system)
         btn.setTitle("立即解锁", for: .normal)
         btn.setTitleColor(.appPrimary, for: .normal)
@@ -133,14 +148,12 @@ class SettingsViewController: UIViewController {
         btn.layer.cornerRadius = 14
         btn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 18, bottom: 6, right: 18)
 
-        // 装饰图标：speak-ai-line，旋转 -25° 增加设计感
-        let chevron = UIImageView(image: UIImage(named: "speak-ai-line")?
-            .withRenderingMode(.alwaysTemplate))
-        chevron.tintColor = UIColor.white.withAlphaComponent(0.12)
-        chevron.contentMode = .scaleAspectFit
-        chevron.transform = CGAffineTransform(rotationAngle: -CGFloat.pi / 7.2) // -25°
+        let deco = UIImageView(image: UIImage(named: "speak-ai-line")?.withRenderingMode(.alwaysTemplate))
+        deco.tintColor = UIColor.white.withAlphaComponent(0.12)
+        deco.contentMode = .scaleAspectFit
+        deco.transform = CGAffineTransform(rotationAngle: -CGFloat.pi / 7.2)
 
-        [titleLabel, featuresLabel, btn, chevron].forEach {
+        [titleLabel, featuresLabel, btn, deco].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             card.addSubview($0)
         }
@@ -148,27 +161,22 @@ class SettingsViewController: UIViewController {
         NSLayoutConstraint.activate([
             titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 22),
             titleLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
-            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: chevron.leadingAnchor, constant: -8),
+            titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: deco.leadingAnchor, constant: -8),
 
             featuresLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 10),
             featuresLabel.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
-            featuresLabel.trailingAnchor.constraint(lessThanOrEqualTo: chevron.leadingAnchor, constant: -8),
+            featuresLabel.trailingAnchor.constraint(lessThanOrEqualTo: deco.leadingAnchor, constant: -8),
 
             btn.topAnchor.constraint(equalTo: featuresLabel.bottomAnchor, constant: 18),
             btn.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
             btn.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -22),
 
-            chevron.centerYAnchor.constraint(equalTo: card.centerYAnchor),
-            chevron.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
-            chevron.widthAnchor.constraint(equalToConstant: 100),
-            chevron.heightAnchor.constraint(equalToConstant: 100),
+            deco.centerYAnchor.constraint(equalTo: card.centerYAnchor),
+            deco.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
+            deco.widthAnchor.constraint(equalToConstant: 100),
+            deco.heightAnchor.constraint(equalToConstant: 100),
         ])
 
-        // 渐变层随卡片尺寸更新
-        card.translatesAutoresizingMaskIntoConstraints = false
-        card.layoutIfNeeded()
-
-        // 用 layoutSubviews 时机更新 gradient frame
         let gradientUpdater = GradientFrameUpdateView(gradientLayer: gradient)
         gradientUpdater.translatesAutoresizingMaskIntoConstraints = false
         card.insertSubview(gradientUpdater, at: 0)
@@ -182,14 +190,68 @@ class SettingsViewController: UIViewController {
         return card
     }
 
-    // MARK: - 通用白色卡片
+    // MARK: - 主题行（带当前值 + 上下 chevron）
+
+    private func makeThemeRow() -> UIView {
+        let row = UIControl()
+        row.addTarget(self, action: #selector(themeRowTapped), for: .touchUpInside)
+        row.addTarget(self, action: #selector(rowHighlight(_:)), for: .touchDown)
+        row.addTarget(self, action: #selector(rowUnhighlight(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+
+        let icon = UIImageView(image: UIImage(systemName: "moon.circle.fill"))
+        icon.tintColor = .appTextSecondary
+        icon.contentMode = .scaleAspectFit
+        icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+
+        let titleLabel = UILabel()
+        titleLabel.text = "主题"
+        titleLabel.font = .systemFont(ofSize: 16)
+        titleLabel.textColor = .appTextPrimary
+
+        // 当前主题值（动态更新）
+        let valueLabel = UILabel()
+        valueLabel.text = currentThemeName()
+        valueLabel.font = .systemFont(ofSize: 14)
+        valueLabel.textColor = .appTextSecondary
+        themeValueLabel = valueLabel
+
+        // 上下箭头 chevron，代替 switch
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.up.chevron.down"))
+        chevron.tintColor = .appTextTertiary
+        chevron.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+        chevron.contentMode = .scaleAspectFit
+
+        [icon, titleLabel, valueLabel, chevron].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            $0.isUserInteractionEnabled = false
+            row.addSubview($0)
+        }
+
+        NSLayoutConstraint.activate([
+            icon.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            icon.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 16),
+            icon.widthAnchor.constraint(equalToConstant: 24),
+            icon.heightAnchor.constraint(equalToConstant: 24),
+
+            titleLabel.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
+
+            chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
+
+            valueLabel.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            valueLabel.trailingAnchor.constraint(equalTo: chevron.leadingAnchor, constant: -6),
+        ])
+
+        return row
+    }
+
+    // MARK: - 通用卡片
 
     private func makeCard(rows: [UIView]) -> UIView {
         let card = UIView()
         card.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
         card.layer.cornerRadius = cardRadius
-
-        // 轻微阴影
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.06
         card.layer.shadowOffset = CGSize(width: 0, height: 2)
@@ -199,15 +261,12 @@ class SettingsViewController: UIViewController {
         for (i, row) in rows.enumerated() {
             row.translatesAutoresizingMaskIntoConstraints = false
             card.addSubview(row)
-
             NSLayoutConstraint.activate([
                 row.leadingAnchor.constraint(equalTo: card.leadingAnchor),
                 row.trailingAnchor.constraint(equalTo: card.trailingAnchor),
                 row.heightAnchor.constraint(equalToConstant: rowHeight),
             ])
-
             if let prev = prev {
-                // 添加分割线
                 let sep = makeSeparator()
                 card.addSubview(sep)
                 NSLayoutConstraint.activate([
@@ -220,49 +279,37 @@ class SettingsViewController: UIViewController {
             } else {
                 row.topAnchor.constraint(equalTo: card.topAnchor).isActive = true
             }
-
             if i == rows.count - 1 {
                 row.bottomAnchor.constraint(equalTo: card.bottomAnchor).isActive = true
             }
-
             prev = row
         }
-
         return card
     }
 
-    // MARK: - 行视图
+    // MARK: - 通用行（带 action 闭包）
 
-    private func makeRow(sfSymbol: String, title: String, accessory: UIView? = nil) -> UIView {
-        let row = UIControl()
-        row.addTarget(self, action: #selector(rowTapped(_:)), for: .touchUpInside)
-
-        // 高亮效果
+    private func makeRow(sfSymbol: String, title: String, action: (() -> Void)? = nil) -> UIView {
+        let row = ActionRow(action: action)
         row.addTarget(self, action: #selector(rowHighlight(_:)), for: .touchDown)
         row.addTarget(self, action: #selector(rowUnhighlight(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
 
-        // 图标
         let icon = UIImageView(image: UIImage(systemName: sfSymbol))
         icon.tintColor = .appTextSecondary
         icon.contentMode = .scaleAspectFit
         icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
 
-        // 标题
         let label = UILabel()
         label.text = title
         label.font = .systemFont(ofSize: 16)
         label.textColor = .appTextPrimary
 
-        // 右侧 accessory（默认为 chevron）
-        let rightView: UIView = accessory ?? {
-            let img = UIImageView(image: UIImage(systemName: "chevron.right"))
-            img.tintColor = .appTextTertiary
-            img.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 13, weight: .medium)
-            img.contentMode = .scaleAspectFit
-            return img
-        }()
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.right"))
+        chevron.tintColor = .appTextTertiary
+        chevron.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 13, weight: .medium)
+        chevron.contentMode = .scaleAspectFit
 
-        [icon, label, rightView].forEach {
+        [icon, label, chevron].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
             $0.isUserInteractionEnabled = false
             row.addSubview($0)
@@ -276,10 +323,10 @@ class SettingsViewController: UIViewController {
 
             label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
             label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: rightView.leadingAnchor, constant: -8),
+            label.trailingAnchor.constraint(lessThanOrEqualTo: chevron.leadingAnchor, constant: -8),
 
-            rightView.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-            rightView.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
+            chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
         ])
 
         return row
@@ -294,22 +341,74 @@ class SettingsViewController: UIViewController {
         return line
     }
 
-    // MARK: - 主题切换开关
+    // MARK: - 主题
 
-    private func makeThemeSwitch() -> UIView {
-        let sw = UISwitch()
-        sw.onTintColor = .appPrimary
-        // 根据当前 window 样式初始化状态
-        sw.isOn = (view.window?.overrideUserInterfaceStyle == .dark)
-        sw.addTarget(self, action: #selector(themeSwitchChanged(_:)), for: .valueChanged)
-        return sw
+    private func currentThemeName() -> String {
+        switch view.window?.overrideUserInterfaceStyle ?? .unspecified {
+        case .dark:  return "深色"
+        case .light: return "浅色"
+        default:     return "跟随系统"
+        }
     }
 
-    // MARK: - 交互事件
-
-    @objc private func rowTapped(_ sender: UIControl) {
-        // 各行点击后续接业务逻辑
+    @objc private func themeRowTapped() {
+        let alert = UIAlertController(title: "选择主题", message: nil, preferredStyle: .actionSheet)
+        let options: [(String, UIUserInterfaceStyle)] = [
+            ("跟随系统", .unspecified),
+            ("浅色主题", .light),
+            ("深色主题", .dark),
+        ]
+        for (title, style) in options {
+            let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
+                guard let self, let window = self.view.window else { return }
+                UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve) {
+                    window.overrideUserInterfaceStyle = style
+                }
+                self.themeValueLabel?.text = self.currentThemeName()
+            }
+            alert.addAction(action)
+        }
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        present(alert, animated: true)
     }
+
+    // MARK: - 其他行动作
+
+    private func push(_ vc: UIViewController) {
+        navigationController?.pushViewController(vc, animated: true)
+    }
+
+    private func openSafari(url: URL) {
+        let safari = SFSafariViewController(url: url)
+        present(safari, animated: true)
+    }
+
+    private func shareApp() {
+        let text = "推荐你使用 Slidesh，一键生成精美演示文稿！"
+        let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        present(vc, animated: true)
+    }
+
+    private func restorePurchase() {
+        let alert = UIAlertController(title: "恢复购买", message: "正在恢复您的购买记录…", preferredStyle: .alert)
+        present(alert, animated: true)
+        // 模拟异步恢复
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            alert.dismiss(animated: true) {
+                let result = UIAlertController(title: "恢复完成", message: "未找到可恢复的购买记录。", preferredStyle: .alert)
+                result.addAction(UIAlertAction(title: "确定", style: .default))
+                self?.present(result, animated: true)
+            }
+        }
+    }
+
+    private func changeAppIcon() {
+        let alert = UIAlertController(title: "切换应用图标", message: "该功能即将推出", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        present(alert, animated: true)
+    }
+
+    // MARK: - 高亮
 
     @objc private func rowHighlight(_ sender: UIControl) {
         UIView.animate(withDuration: 0.1) {
@@ -322,16 +421,22 @@ class SettingsViewController: UIViewController {
             sender.backgroundColor = .clear
         }
     }
-
-    @objc private func themeSwitchChanged(_ sender: UISwitch) {
-        guard let window = view.window else { return }
-        UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve) {
-            window.overrideUserInterfaceStyle = sender.isOn ? .dark : .light
-        }
-    }
 }
 
-// MARK: - 辅助：跟随 Auto Layout 更新渐变 frame 的透明 View
+// MARK: - ActionRow：持有点击闭包的 UIControl 子类
+
+private class ActionRow: UIControl {
+    private let action: (() -> Void)?
+    init(action: (() -> Void)?) {
+        self.action = action
+        super.init(frame: .zero)
+        addTarget(self, action: #selector(fired), for: .touchUpInside)
+    }
+    required init?(coder: NSCoder) { fatalError() }
+    @objc private func fired() { action?() }
+}
+
+// MARK: - 渐变 frame 更新 View
 
 private class GradientFrameUpdateView: UIView {
     private let gradientLayer: CAGradientLayer
