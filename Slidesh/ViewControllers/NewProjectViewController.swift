@@ -11,7 +11,7 @@ class NewProjectViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.title = "新建"
-        view.backgroundColor = .appBackgroundPrimary
+        addMeshGradientBackground()
 
         // 关闭按钮
         navigationItem.leftBarButtonItem = UIBarButtonItem(

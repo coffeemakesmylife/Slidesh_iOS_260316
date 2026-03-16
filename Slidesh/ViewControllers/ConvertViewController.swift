@@ -11,6 +11,6 @@ class ConvertViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.title = "格式转换"
-        view.backgroundColor = .appBackgroundPrimary
+        addMeshGradientBackground()
     }
 }
