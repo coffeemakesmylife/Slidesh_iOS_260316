@@ -10,7 +10,7 @@ class MyWorksViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "我的作品"
+        navigationItem.title = "我的作品"
         view.backgroundColor = .appBackgroundPrimary
     }
 }

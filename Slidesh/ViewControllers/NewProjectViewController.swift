@@ -10,7 +10,7 @@ class NewProjectViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "新建"
+        navigationItem.title = "新建"
         view.backgroundColor = .appBackgroundPrimary
 
         // 关闭按钮

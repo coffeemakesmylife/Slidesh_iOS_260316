@@ -10,7 +10,7 @@ class ConvertViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "格式转换"
+        navigationItem.title = "格式转换"
         view.backgroundColor = .appBackgroundPrimary
     }
 }
