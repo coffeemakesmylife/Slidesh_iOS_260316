@@ -28,6 +28,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window?.rootViewController = CustomTabBarController()
         window?.makeKeyAndVisible()
 
+        // 恢复上次保存的主题（必须在 makeKeyAndVisible 之后）
+        if let w = window {
+            ThemeManager.shared.applyOnLaunch(to: w)
+        }
+
         return true
     }
 

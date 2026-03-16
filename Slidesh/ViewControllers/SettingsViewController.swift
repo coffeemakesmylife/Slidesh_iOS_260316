@@ -257,17 +257,15 @@ class SettingsViewController: UIViewController {
             ("浅色主题",  "sun.max",                .light),
             ("深色主题",  "moon.fill",               .dark),
         ]
+        let current = ThemeManager.shared.currentStyle
         let actions = options.map { title, symbol, style in
             UIAction(
                 title: title,
                 image: UIImage(systemName: symbol),
-                state: (view.window?.overrideUserInterfaceStyle ?? .unspecified) == style ? .on : .off
+                state: current == style ? .on : .off
             ) { [weak self] _ in
-                guard let self, let window = self.view.window else { return }
-                UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve) {
-                    window.overrideUserInterfaceStyle = style
-                }
-                self.themeValueLabel?.text = self.currentThemeName()
+                ThemeManager.shared.apply(style)
+                self?.themeValueLabel?.text = ThemeManager.shared.currentStyleName
             }
         }
         return UIMenu(title: "", children: actions)
@@ -386,11 +384,7 @@ class SettingsViewController: UIViewController {
     // MARK: - 主题
 
     private func currentThemeName() -> String {
-        switch view.window?.overrideUserInterfaceStyle ?? .unspecified {
-        case .dark:  return "深色"
-        case .light: return "浅色"
-        default:     return "跟随系统"
-        }
+        ThemeManager.shared.currentStyleName
     }
 
     // MARK: - 其他行动作

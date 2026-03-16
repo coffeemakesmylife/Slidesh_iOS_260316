@@ -53,6 +53,8 @@ class CustomNavigationController: UINavigationController {
     override func pushViewController(_ viewController: UIViewController, animated: Bool) {
         // 非根视图 push 时隐藏底部 TabBar
         viewController.hidesBottomBarWhenPushed = children.count >= 1
+        // 隐藏返回按钮文字（仅显示箭头）
+        viewController.navigationItem.backButtonDisplayMode = .minimal
         super.pushViewController(viewController, animated: animated)
     }
 }
