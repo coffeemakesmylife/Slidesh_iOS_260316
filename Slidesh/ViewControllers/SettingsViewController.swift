@@ -15,8 +15,9 @@ class SettingsViewController: UIViewController {
     private let rowHeight: CGFloat = 66
     private let sideInset: CGFloat = 20
 
-    // 主题值标签的引用，用于切换后同步更新显示
+    // 主题行的引用，用于切换后重建 menu state
     private weak var themeValueLabel: UILabel?
+    private weak var themeButton: UIButton?
 
     // 隐私 / 条款链接（替换为正式 URL）
     private let privacyURL = URL(string: "https://example.com/privacy")!
@@ -217,6 +218,7 @@ class SettingsViewController: UIViewController {
         valueLabel.textColor = .appTextSecondary
         valueLabel.isUserInteractionEnabled = false
         themeValueLabel = valueLabel
+        themeButton = row
 
         let chevron = UIImageView(image: UIImage(systemName: "chevron.up.chevron.down"))
         chevron.tintColor = .appTextTertiary
@@ -266,6 +268,8 @@ class SettingsViewController: UIViewController {
             ) { [weak self] _ in
                 ThemeManager.shared.apply(style)
                 self?.themeValueLabel?.text = ThemeManager.shared.currentStyleName
+                // 重建 menu，下次弹出时 state 正确
+                self?.themeButton?.menu = self?.makeThemeMenu()
             }
         }
         return UIMenu(title: "", children: actions)

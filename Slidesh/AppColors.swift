@@ -183,9 +183,13 @@ extension UIColor {
 
     // MARK: - TabBar 颜色
 
-    // TabBar 选中颜色
+    // TabBar 选中颜色（深色模式下用浅蓝，与宝石色背景搭配）
     static var appTabBarSelected: UIColor {
-        return appPrimary
+        return UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)  // #FFFFFF 浅蓝
+                : UIColor(red: 0.024, green: 0.251, blue: 0.678, alpha: 1.0)  // #0640AD 主色
+        }
     }
 
     // TabBar 未选中颜色

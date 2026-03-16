@@ -20,8 +20,8 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
         return view
     }()
 
-    // 中间渐变图标
-    private var centerIconView: UIImageView?
+    // 中间圆角矩形按钮容器
+    private var centerIconView: UIView?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -83,28 +83,27 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
         }
     }
 
-    // MARK: - 中间渐变图标
+    // MARK: - 中间圆角矩形渐变按钮
 
     private func setupGradientCenterIcon() {
         centerIconView?.removeFromSuperview()
 
-        // 使用 SF Symbol "plus" 作为中间图标
-        let config = UIImage.SymbolConfiguration(weight: .semibold)
-        guard let iconImage = UIImage(systemName: "plus", withConfiguration: config) else { return }
+        let buttonW: CGFloat = 54
+        let buttonH: CGFloat = 36
+        let cornerRadius: CGFloat = 12
 
-        // 动态获取其他 TabBar 图标的位置和尺寸
-        var iconSize: CGFloat = 26
-        var iconY: CGFloat = 14
         let tabWidth = tabBar.bounds.width / 5
         let centerX = tabWidth * 2.5
 
+        // 对齐其他图标的垂直中心
+        var iconCenterY: CGFloat = tabBar.bounds.height * 0.38
         for subview in tabBar.subviews {
             let className = String(describing: type(of: subview))
             if className.contains("TabBarButton") {
                 for itemSubview in subview.subviews {
                     if let imgView = itemSubview as? UIImageView, imgView.image != nil {
-                        iconSize = max(itemSubview.frame.width, itemSubview.frame.height)
-                        iconY = subview.frame.minY + itemSubview.frame.minY
+                        let itemMidY = subview.frame.minY + itemSubview.frame.midY
+                        iconCenterY = itemMidY
                         break
                     }
                 }
@@ -112,67 +111,48 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
             }
         }
 
-        // 将图标渲染为主色系渐变
-        let gradientImage = createGradientImage(from: iconImage, size: CGSize(width: iconSize, height: iconSize))
+        // 圆角矩形容器
+        let container = UIView(frame: CGRect(
+            x: centerX - buttonW / 2,
+            y: iconCenterY - buttonH / 2,
+            width: buttonW,
+            height: buttonH
+        ))
+        container.layer.cornerRadius = cornerRadius
+        container.clipsToBounds = true
+        container.isUserInteractionEnabled = true
 
-        let imageView = UIImageView(image: gradientImage)
-        imageView.contentMode = .scaleAspectFit
-        imageView.isUserInteractionEnabled = true
+        // VIP 卡片同款渐变（深蓝 → 中蓝 → 浅蓝）
+        let gradientLayer = CAGradientLayer()
+        gradientLayer.colors = [
+            UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1).cgColor,
+            UIColor(red: 0.180, green: 0.380, blue: 0.720, alpha: 1).cgColor,
+            UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1).cgColor,
+        ]
+        gradientLayer.locations = [0.0, 0.55, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
+        gradientLayer.frame      = CGRect(origin: .zero, size: CGSize(width: buttonW, height: buttonH))
+        container.layer.insertSublayer(gradientLayer, at: 0)
+
+        // 白色加号图标居中
+        let symbolConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
+        let plusImage = UIImage(systemName: "plus", withConfiguration: symbolConfig)
+        let plusView = UIImageView(image: plusImage)
+        plusView.tintColor = .white
+        plusView.contentMode = .scaleAspectFit
+        plusView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(plusView)
+        NSLayoutConstraint.activate([
+            plusView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            plusView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+        ])
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(centerIconTapped))
-        imageView.addGestureRecognizer(tap)
+        container.addGestureRecognizer(tap)
 
-        imageView.frame = CGRect(
-            x: centerX - iconSize / 2,
-            y: iconY,
-            width: iconSize,
-            height: iconSize
-        )
-
-        tabBar.addSubview(imageView)
-        centerIconView = imageView
-    }
-
-    // 将图标渲染为主色系渐变（亮蓝 → 深宝蓝 → 蓝紫）
-    private func createGradientImage(from image: UIImage, size: CGSize) -> UIImage? {
-        UIGraphicsBeginImageContextWithOptions(size, false, 0)
-        guard let context = UIGraphicsGetCurrentContext() else { return nil }
-
-        let colors = [
-            UIColor(red: 0.18, green: 0.60, blue: 1.00, alpha: 1.0).cgColor,  // #2E99FF 亮蓝
-            UIColor(red: 0.024, green: 0.251, blue: 0.678, alpha: 1.0).cgColor, // #0640AD 主色
-            UIColor(red: 0.22, green: 0.10, blue: 0.82, alpha: 1.0).cgColor   // #381AD1 蓝紫
-        ]
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let locations: [CGFloat] = [0.0, 0.5, 1.0]
-
-        guard let gradient = CGGradient(
-            colorsSpace: colorSpace,
-            colors: colors as CFArray,
-            locations: locations
-        ) else {
-            UIGraphicsEndImageContext()
-            return nil
-        }
-
-        // 翻转坐标系并以图标形状为蒙版
-        context.translateBy(x: 0, y: size.height)
-        context.scaleBy(x: 1.0, y: -1.0)
-
-        if let cgImage = image.cgImage {
-            context.clip(to: CGRect(origin: .zero, size: size), mask: cgImage)
-        }
-
-        context.drawLinearGradient(
-            gradient,
-            start: CGPoint(x: 0, y: 0),
-            end: CGPoint(x: size.width, y: size.height),
-            options: []
-        )
-
-        let gradientImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return gradientImage
+        tabBar.addSubview(container)
+        centerIconView = container
     }
 
     // 中间按钮点击：弹出新建页面
