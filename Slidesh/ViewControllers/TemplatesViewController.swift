@@ -24,15 +24,16 @@ class TemplatesViewController: UIViewController {
     }
 
     private func setupGradientBackground() {
-        // 从上到下：暖白 → 薰衣草蓝 → 天空蓝 → 亮天蓝 → 浅青 → 近白
+        // 从上到下：极淡暖白 → 淡薰衣草 → 淡天蓝 → 淡青蓝 → 近白
+        // 整体大幅减淡，避免与上层组件撞色
         gradientLayer.colors = [
-            UIColor(red: 0.996, green: 0.992, blue: 0.965, alpha: 1.0).cgColor, // #FEFDF6 顶部暖白
-            UIColor(red: 0.847, green: 0.863, blue: 0.980, alpha: 1.0).cgColor, // #D8DCFA 薰衣草蓝
-            UIColor(red: 0.667, green: 0.800, blue: 0.973, alpha: 1.0).cgColor, // #AACCF8 天空蓝
-            UIColor(red: 0.561, green: 0.831, blue: 0.961, alpha: 1.0).cgColor, // #8FD4F5 亮天蓝
-            UIColor(red: 0.659, green: 0.894, blue: 0.973, alpha: 1.0).cgColor, // #A8E4F8 浅青
-            UIColor(red: 0.816, green: 0.941, blue: 0.980, alpha: 1.0).cgColor, // #D0F0FA 淡青
-            UIColor(red: 0.949, green: 0.984, blue: 1.000, alpha: 1.0).cgColor  // #F2FBFF 底部近白
+            UIColor(red: 0.998, green: 0.997, blue: 0.990, alpha: 1.0).cgColor, // #FEFEFE 顶部近白（微暖）
+            UIColor(red: 0.941, green: 0.945, blue: 0.992, alpha: 1.0).cgColor, // #F0F1FD 极淡薰衣草
+            UIColor(red: 0.882, green: 0.922, blue: 0.980, alpha: 1.0).cgColor, // #E1EBF9 淡天蓝
+            UIColor(red: 0.839, green: 0.918, blue: 0.969, alpha: 1.0).cgColor, // #D6EAF7 天蓝
+            UIColor(red: 0.859, green: 0.937, blue: 0.976, alpha: 1.0).cgColor, // #DBEFF9 淡青蓝
+            UIColor(red: 0.918, green: 0.965, blue: 0.988, alpha: 1.0).cgColor, // #EAF6FC 极淡青
+            UIColor(red: 0.976, green: 0.992, blue: 1.000, alpha: 1.0).cgColor  // #F9FCFF 底部近白
         ]
         // 各色标位置，让中段天空蓝区域更宽
         gradientLayer.locations = [0.0, 0.15, 0.32, 0.50, 0.68, 0.84, 1.0]

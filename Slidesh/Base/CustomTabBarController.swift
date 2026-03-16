@@ -10,10 +10,11 @@ import UIKit
 // 自定义 TabBar 控制器：5个 Tab，中间 Tab 为特殊渐变按钮，点击弹出新建页面
 class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
 
-    // 毛玻璃效果背景
-    private let blurEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+    // 极轻毛玻璃效果，避免遮盖背景渐变色
+    private let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialLight)
     private lazy var blurEffectView: UIVisualEffectView = {
         let view = UIVisualEffectView(effect: blurEffect)
+        view.alpha = 0.55
         view.frame = tabBar.bounds
         view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         return view
@@ -195,9 +196,10 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
     // MARK: - TabBar 外观
 
     private func setupTabBar() {
-        // 去除默认背景，改为毛玻璃
+        // 透明背景 + 极轻毛玻璃，保留底部内容渐变穿透感
         tabBar.backgroundImage = UIImage()
         tabBar.shadowImage = UIImage()
+        tabBar.backgroundColor = .clear
         tabBar.insertSubview(blurEffectView, at: 0)
 
         let appearance = UITabBarAppearance()
