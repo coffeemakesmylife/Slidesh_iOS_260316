@@ -102,9 +102,9 @@ class SettingsViewController: UIViewController {
         // 深海军蓝渐变（参考截图：左上极深藏青 → 右下中蓝）
         let gradient = CAGradientLayer()
         gradient.colors = [
-            UIColor(red: 0.039, green: 0.094, blue: 0.220, alpha: 1).cgColor, // #0A1838 极深藏青
-            UIColor(red: 0.059, green: 0.161, blue: 0.384, alpha: 1).cgColor, // #0F2962 深海蓝
-            UIColor(red: 0.098, green: 0.255, blue: 0.561, alpha: 1).cgColor, // #19418F 中蓝
+            UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1).cgColor, // #0A1842 深藏青
+            UIColor(red: 0.180, green: 0.380, blue: 0.720, alpha: 1).cgColor, // #2E61B8 中过渡蓝
+            UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1).cgColor, // #78B5F3 亮天蓝
         ]
         gradient.locations = [0.0, 0.55, 1.0]
         gradient.startPoint = CGPoint(x: 0, y: 0)
