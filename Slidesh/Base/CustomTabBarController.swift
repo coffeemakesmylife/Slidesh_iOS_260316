@@ -45,19 +45,19 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
         let templatesVC = TemplatesViewController()
         templatesVC.tabBarItem = UITabBarItem(
             title: "",
-            image: UIImage(systemName: "square.grid.2x2"),
-            selectedImage: UIImage(systemName: "square.grid.2x2.fill")
+            image: UIImage(named: "shapes-line")?.withRenderingMode(.alwaysTemplate),
+            selectedImage: UIImage(named: "shapes-fill")?.withRenderingMode(.alwaysTemplate)
         )
 
         // Tab 2: 格式转换
         let convertVC = ConvertViewController()
         convertVC.tabBarItem = UITabBarItem(
             title: "",
-            image: UIImage(systemName: "arrow.left.arrow.right"),
-            selectedImage: UIImage(systemName: "arrow.left.arrow.right.circle.fill")
+            image: UIImage(named: "swap-2-line")?.withRenderingMode(.alwaysTemplate),
+            selectedImage: UIImage(named: "swap-2-fill")?.withRenderingMode(.alwaysTemplate)
         )
 
-        // Tab 3: 新建（透明占位，实际显示渐变 + 按钮）
+        // Tab 3: 新建（透明占位，实际显示渐变圆角矩形按钮）
         let placeholderVC = UIViewController()
         placeholderVC.tabBarItem = UITabBarItem(title: "", image: UIImage(), selectedImage: UIImage())
 
@@ -65,16 +65,16 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
         let myWorksVC = MyWorksViewController()
         myWorksVC.tabBarItem = UITabBarItem(
             title: "",
-            image: UIImage(systemName: "folder"),
-            selectedImage: UIImage(systemName: "folder.fill")
+            image: UIImage(named: "lightbulb-ai-line")?.withRenderingMode(.alwaysTemplate),
+            selectedImage: UIImage(named: "lightbulb-ai-fill")?.withRenderingMode(.alwaysTemplate)
         )
 
         // Tab 5: 设置
         let settingsVC = SettingsViewController()
         settingsVC.tabBarItem = UITabBarItem(
             title: "",
-            image: UIImage(systemName: "gearshape"),
-            selectedImage: UIImage(systemName: "gearshape.fill")
+            image: UIImage(named: "settings-line")?.withRenderingMode(.alwaysTemplate),
+            selectedImage: UIImage(named: "settings-fill")?.withRenderingMode(.alwaysTemplate)
         )
 
         // 每个 VC 包装进自定义导航控制器
