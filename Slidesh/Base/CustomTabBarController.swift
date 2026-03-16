@@ -90,7 +90,7 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
 
         let buttonW: CGFloat = 54
         let buttonH: CGFloat = 36
-        let cornerRadius: CGFloat = 12
+        let cornerRadius: CGFloat = 15
 
         let tabWidth = tabBar.bounds.width / 5
         let centerX = tabWidth * 2.5
@@ -111,7 +111,7 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
             }
         }
 
-        // 圆角矩形容器
+        // 外层：负责边框（clipsToBounds=false 才能显示 border）
         let container = UIView(frame: CGRect(
             x: centerX - buttonW / 2,
             y: iconCenterY - buttonH / 2,
@@ -119,10 +119,18 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
             height: buttonH
         ))
         container.layer.cornerRadius = cornerRadius
-        container.clipsToBounds = true
+        container.layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
+        container.layer.borderWidth = 1.5
         container.isUserInteractionEnabled = true
 
-        // VIP 卡片同款渐变（深蓝 → 中蓝 → 浅蓝）
+        // 内层：裁切渐变，避免超出圆角
+        let inner = UIView(frame: container.bounds)
+        inner.layer.cornerRadius = cornerRadius
+        inner.clipsToBounds = true
+        inner.isUserInteractionEnabled = false
+        container.addSubview(inner)
+
+        // VIP 卡片同款渐变（深蓝 → 中蓝 → 浅蓝），加在 inner 上
         let gradientLayer = CAGradientLayer()
         gradientLayer.colors = [
             UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1).cgColor,
@@ -133,19 +141,19 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
         gradientLayer.frame      = CGRect(origin: .zero, size: CGSize(width: buttonW, height: buttonH))
-        container.layer.insertSublayer(gradientLayer, at: 0)
+        inner.layer.insertSublayer(gradientLayer, at: 0)
 
-        // 白色加号图标居中
+        // 白色加号图标居中，加在 inner 上
         let symbolConfig = UIImage.SymbolConfiguration(pointSize: 16, weight: .semibold)
         let plusImage = UIImage(systemName: "plus", withConfiguration: symbolConfig)
         let plusView = UIImageView(image: plusImage)
         plusView.tintColor = .white
         plusView.contentMode = .scaleAspectFit
         plusView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(plusView)
+        inner.addSubview(plusView)
         NSLayoutConstraint.activate([
-            plusView.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            plusView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            plusView.centerXAnchor.constraint(equalTo: inner.centerXAnchor),
+            plusView.centerYAnchor.constraint(equalTo: inner.centerYAnchor),
         ])
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(centerIconTapped))
