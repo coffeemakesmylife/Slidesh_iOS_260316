@@ -99,12 +99,14 @@ class SettingsViewController: UIViewController {
         card.layer.cornerRadius = cardRadius
         card.clipsToBounds = true
 
-        // 蓝紫渐变背景
+        // 深海军蓝渐变（参考截图：左上极深藏青 → 右下中蓝）
         let gradient = CAGradientLayer()
         gradient.colors = [
-            UIColor(red: 0.18, green: 0.25, blue: 0.82, alpha: 1).cgColor,  // #2E40D1 深紫蓝
-            UIColor(red: 0.10, green: 0.40, blue: 0.90, alpha: 1).cgColor,  // #1A66E6 蓝
+            UIColor(red: 0.039, green: 0.094, blue: 0.220, alpha: 1).cgColor, // #0A1838 极深藏青
+            UIColor(red: 0.059, green: 0.161, blue: 0.384, alpha: 1).cgColor, // #0F2962 深海蓝
+            UIColor(red: 0.098, green: 0.255, blue: 0.561, alpha: 1).cgColor, // #19418F 中蓝
         ]
+        gradient.locations = [0.0, 0.55, 1.0]
         gradient.startPoint = CGPoint(x: 0, y: 0)
         gradient.endPoint   = CGPoint(x: 1, y: 1)
         card.layer.insertSublayer(gradient, at: 0)
