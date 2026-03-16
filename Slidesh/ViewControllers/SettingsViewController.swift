@@ -10,9 +10,9 @@ class SettingsViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
-    private let cardRadius: CGFloat = 26
-    private let rowHeight: CGFloat = 64
-    private let sideInset: CGFloat = 16
+    private let cardRadius: CGFloat = 30
+    private let rowHeight: CGFloat = 66
+    private let sideInset: CGFloat = 20
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,6 +26,8 @@ class SettingsViewController: UIViewController {
 
     private func setupScrollView() {
         scrollView.showsVerticalScrollIndicator = false
+        // 显式设置，确保 iOS 26 也能正确计算导航栏偏移
+        scrollView.contentInsetAdjustmentBehavior = .always
         view.addSubview(scrollView)
         scrollView.addSubview(contentView)
 
@@ -35,7 +37,7 @@ class SettingsViewController: UIViewController {
         // scrollView 贴满整个 view
         // contentView 必须绑 contentLayoutGuide 才能驱动 contentSize，实现滚动
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -181,7 +183,7 @@ class SettingsViewController: UIViewController {
 
     private func makeCard(rows: [UIView]) -> UIView {
         let card = UIView()
-        card.backgroundColor = .appCardBackground.withAlphaComponent(0.95)
+        card.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
         card.layer.cornerRadius = cardRadius
 
         // 轻微阴影

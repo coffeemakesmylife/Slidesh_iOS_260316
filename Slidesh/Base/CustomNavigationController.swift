@@ -34,6 +34,20 @@ class CustomNavigationController: UINavigationController {
             .foregroundColor: UIColor.appTextPrimary
         ]
         navigationBar.titleTextAttributes = titleAttributes
+
+        // 滚动后：毛玻璃背景（内容划到导航栏下方时）
+        let blurAppearance = UINavigationBarAppearance()
+        blurAppearance.configureWithDefaultBackground()
+        blurAppearance.titleTextAttributes = titleAttributes
+
+        // 顶部：完全透明（内容在安全区起始位置时）
+        let transparentAppearance = UINavigationBarAppearance()
+        transparentAppearance.configureWithTransparentBackground()
+        transparentAppearance.titleTextAttributes = titleAttributes
+
+        navigationBar.standardAppearance   = blurAppearance
+        navigationBar.compactAppearance    = blurAppearance
+        navigationBar.scrollEdgeAppearance = transparentAppearance
     }
 
     override func pushViewController(_ viewController: UIViewController, animated: Bool) {
