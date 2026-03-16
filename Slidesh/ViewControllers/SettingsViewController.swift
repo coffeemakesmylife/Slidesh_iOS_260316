@@ -10,11 +10,8 @@ class SettingsViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentView = UIView()
 
-    // 卡片圆角，参考截图大圆角风格
-    private let cardRadius: CGFloat = 20
-    // 行高
-    private let rowHeight: CGFloat = 54
-    // 卡片横向间距
+    private let cardRadius: CGFloat = 26
+    private let rowHeight: CGFloat = 64
     private let sideInset: CGFloat = 16
 
     override func viewDidLoad() {
@@ -35,17 +32,20 @@ class SettingsViewController: UIViewController {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentView.translatesAutoresizingMaskIntoConstraints = false
 
+        // scrollView 贴满整个 view
+        // contentView 必须绑 contentLayoutGuide 才能驱动 contentSize，实现滚动
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            // 宽度绑 frameLayoutGuide，确保横向不可滚动
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
         ])
     }
 
@@ -181,7 +181,7 @@ class SettingsViewController: UIViewController {
 
     private func makeCard(rows: [UIView]) -> UIView {
         let card = UIView()
-        card.backgroundColor = .appCardBackground
+        card.backgroundColor = .appCardBackground.withAlphaComponent(0.95)
         card.layer.cornerRadius = cardRadius
 
         // 轻微阴影
