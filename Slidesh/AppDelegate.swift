@@ -23,6 +23,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 从 Keychain 获取或生成用户唯一标识
         userId = generateOrRetrieveUserId()
 
+        // 设置根视图控制器
+        self.window = UIWindow(frame: UIScreen.main.bounds)
+        window?.rootViewController = CustomTabBarController()
+        window?.makeKeyAndVisible()
+
         return true
     }
 
