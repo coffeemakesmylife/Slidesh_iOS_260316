@@ -133,11 +133,12 @@ class SettingsViewController: UIViewController {
         btn.layer.cornerRadius = 14
         btn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 18, bottom: 6, right: 18)
 
-        // 装饰箭头（模拟截图右侧大箭头）
-        let chevron = UIImageView(image: UIImage(systemName: "chevron.right")?
-            .withConfiguration(UIImage.SymbolConfiguration(pointSize: 80, weight: .thin)))
+        // 装饰图标：speak-ai-line，旋转 -25° 增加设计感
+        let chevron = UIImageView(image: UIImage(named: "speak-ai-line")?
+            .withRenderingMode(.alwaysTemplate))
         chevron.tintColor = UIColor.white.withAlphaComponent(0.12)
         chevron.contentMode = .scaleAspectFit
+        chevron.transform = CGAffineTransform(rotationAngle: -CGFloat.pi / 7.2) // -25°
 
         [titleLabel, featuresLabel, btn, chevron].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
@@ -158,7 +159,7 @@ class SettingsViewController: UIViewController {
             btn.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -22),
 
             chevron.centerYAnchor.constraint(equalTo: card.centerYAnchor),
-            chevron.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: 10),
+            chevron.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -10),
             chevron.widthAnchor.constraint(equalToConstant: 100),
             chevron.heightAnchor.constraint(equalToConstant: 100),
         ])
