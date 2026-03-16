@@ -35,7 +35,7 @@ class SettingsViewController: UIViewController {
         // scrollView 贴满整个 view
         // contentView 必须绑 contentLayoutGuide 才能驱动 contentSize，实现滚动
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
