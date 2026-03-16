@@ -120,7 +120,7 @@ class AboutViewController: UIViewController {
 
     private func makeInfoCard(rows: [(String, String, () -> Void)]) -> UIView {
         let card = UIView()
-        card.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        card.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
         card.layer.cornerRadius = 22
         card.layer.shadowColor = UIColor.black.cgColor
         card.layer.shadowOpacity = 0.05

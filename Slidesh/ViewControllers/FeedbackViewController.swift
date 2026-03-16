@@ -33,7 +33,7 @@ class FeedbackViewController: UIViewController {
 
     private func setupUI() {
         let card = UIView()
-        card.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        card.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
         card.layer.cornerRadius = 26
         card.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(card)

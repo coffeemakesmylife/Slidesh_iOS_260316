@@ -117,9 +117,13 @@ extension UIColor {
 
     // MARK: - 卡片颜色
 
-    // 卡片背景色
+    // 卡片背景色（深色下使用蓝灰调，与深海蓝背景自然融合）
     static var appCardBackground: UIColor {
-        return appBackgroundTertiary
+        return UIColor { traitCollection in
+            traitCollection.userInterfaceStyle == .dark
+                ? UIColor(red: 0.09, green: 0.14, blue: 0.22, alpha: 1.0)   // #172438 深蓝灰，贴近 #08101E
+                : UIColor(red: 1.0,  green: 1.0,  blue: 1.0,  alpha: 1.0)   // #FFFFFF 纯白
+        }
     }
 
     // 卡片边框颜色

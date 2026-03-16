@@ -78,7 +78,7 @@ private class FAQCell: UIView {
 
     init(question: String, answer: String, index: Int) {
         super.init(frame: .zero)
-        backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        backgroundColor = .appCardBackground.withAlphaComponent(0.65)
         layer.cornerRadius = 18
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOpacity = 0.05

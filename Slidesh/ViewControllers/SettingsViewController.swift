@@ -285,7 +285,7 @@ class SettingsViewController: UIViewController {
 
         // 内层：裁切圆角，点击高亮不会超出边界
         let inner = UIView()
-        inner.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        inner.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
         inner.layer.cornerRadius = cardRadius
         inner.clipsToBounds = true
         inner.translatesAutoresizingMaskIntoConstraints = false

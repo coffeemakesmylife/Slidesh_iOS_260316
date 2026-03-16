@@ -152,22 +152,29 @@ class MeshGradientView: UIView {
               center: CGPoint(x: 0.52, y: 0.70), radiusRatio: 0.45, alpha: 0.28),
     ]
 
-    // MARK: - 深色色块（更深沉、偏冷蓝紫调）
+    // MARK: - 深色色块（宝石色调，活泼鲜明）
 
     private static let darkBlobs: [Blob] = [
-        .init(color: UIColor(red: 0.10, green: 0.30, blue: 0.60, alpha: 1),
-              center: CGPoint(x: 0.05, y: 0.08), radiusRatio: 0.62, alpha: 0.35),
-        .init(color: UIColor(red: 0.20, green: 0.10, blue: 0.50, alpha: 1),
-              center: CGPoint(x: 0.92, y: 0.05), radiusRatio: 0.55, alpha: 0.30),
-        .init(color: UIColor(red: 0.40, green: 0.10, blue: 0.35, alpha: 1),
-              center: CGPoint(x: 0.80, y: 0.42), radiusRatio: 0.50, alpha: 0.25),
-        .init(color: UIColor(red: 0.30, green: 0.15, blue: 0.10, alpha: 1),
-              center: CGPoint(x: 0.95, y: 0.82), radiusRatio: 0.58, alpha: 0.28),
-        .init(color: UIColor(red: 0.05, green: 0.25, blue: 0.50, alpha: 1),
-              center: CGPoint(x: 0.10, y: 0.88), radiusRatio: 0.52, alpha: 0.32),
-        .init(color: UIColor(red: 0.10, green: 0.35, blue: 0.25, alpha: 1),
-              center: CGPoint(x: 0.38, y: 0.22), radiusRatio: 0.40, alpha: 0.20),
-        .init(color: UIColor(red: 0.15, green: 0.15, blue: 0.45, alpha: 1),
-              center: CGPoint(x: 0.52, y: 0.70), radiusRatio: 0.45, alpha: 0.22),
+        // 钴蓝 - 左上角主光源
+        .init(color: UIColor(red: 0.05, green: 0.35, blue: 0.90, alpha: 1),
+              center: CGPoint(x: 0.05, y: 0.08), radiusRatio: 0.62, alpha: 0.42),
+        // 紫罗兰 - 右上角
+        .init(color: UIColor(red: 0.38, green: 0.10, blue: 0.88, alpha: 1),
+              center: CGPoint(x: 0.92, y: 0.05), radiusRatio: 0.55, alpha: 0.38),
+        // 洋红 - 右侧中部
+        .init(color: UIColor(red: 0.75, green: 0.08, blue: 0.58, alpha: 1),
+              center: CGPoint(x: 0.85, y: 0.45), radiusRatio: 0.50, alpha: 0.32),
+        // 琥珀橙 - 右下角
+        .init(color: UIColor(red: 0.88, green: 0.42, blue: 0.05, alpha: 1),
+              center: CGPoint(x: 0.95, y: 0.82), radiusRatio: 0.55, alpha: 0.30),
+        // 青绿 - 左下角
+        .init(color: UIColor(red: 0.02, green: 0.68, blue: 0.72, alpha: 1),
+              center: CGPoint(x: 0.08, y: 0.88), radiusRatio: 0.52, alpha: 0.35),
+        // 翠绿 - 中上偏左
+        .init(color: UIColor(red: 0.05, green: 0.72, blue: 0.42, alpha: 1),
+              center: CGPoint(x: 0.35, y: 0.18), radiusRatio: 0.40, alpha: 0.25),
+        // 靛蓝 - 中心偏下
+        .init(color: UIColor(red: 0.22, green: 0.18, blue: 0.85, alpha: 1),
+              center: CGPoint(x: 0.52, y: 0.68), radiusRatio: 0.45, alpha: 0.28),
     ]
 }
