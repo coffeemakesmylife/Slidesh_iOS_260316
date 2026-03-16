@@ -190,40 +190,42 @@ class SettingsViewController: UIViewController {
         return card
     }
 
-    // MARK: - 主题行（带当前值 + 上下 chevron）
+    // MARK: - 主题行（UIMenu 弹出，上下 chevron 指示）
 
     private func makeThemeRow() -> UIView {
-        let row = UIControl()
-        row.addTarget(self, action: #selector(themeRowTapped), for: .touchUpInside)
+        // 用 UIButton 挂 UIMenu，showsMenuAsPrimaryAction 让单次点击即触发
+        let row = UIButton(type: .system)
+        row.showsMenuAsPrimaryAction = true
         row.addTarget(self, action: #selector(rowHighlight(_:)), for: .touchDown)
-        row.addTarget(self, action: #selector(rowUnhighlight(_:)), for: [.touchUpInside, .touchUpOutside, .touchCancel])
+        row.addTarget(self, action: #selector(rowUnhighlight(_:)), for: [.menuActionTriggered, .touchUpOutside, .touchCancel])
 
         let icon = UIImageView(image: UIImage(systemName: "moon.circle.fill"))
         icon.tintColor = .appTextSecondary
         icon.contentMode = .scaleAspectFit
         icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        icon.isUserInteractionEnabled = false
 
         let titleLabel = UILabel()
         titleLabel.text = "主题"
         titleLabel.font = .systemFont(ofSize: 16)
         titleLabel.textColor = .appTextPrimary
+        titleLabel.isUserInteractionEnabled = false
 
-        // 当前主题值（动态更新）
         let valueLabel = UILabel()
         valueLabel.text = currentThemeName()
         valueLabel.font = .systemFont(ofSize: 14)
         valueLabel.textColor = .appTextSecondary
+        valueLabel.isUserInteractionEnabled = false
         themeValueLabel = valueLabel
 
-        // 上下箭头 chevron，代替 switch
         let chevron = UIImageView(image: UIImage(systemName: "chevron.up.chevron.down"))
         chevron.tintColor = .appTextTertiary
         chevron.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
         chevron.contentMode = .scaleAspectFit
+        chevron.isUserInteractionEnabled = false
 
         [icon, titleLabel, valueLabel, chevron].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
-            $0.isUserInteractionEnabled = false
             row.addSubview($0)
         }
 
@@ -243,48 +245,88 @@ class SettingsViewController: UIViewController {
             valueLabel.trailingAnchor.constraint(equalTo: chevron.leadingAnchor, constant: -6),
         ])
 
+        // 构建 UIMenu
+        row.menu = makeThemeMenu()
+
         return row
     }
 
+    private func makeThemeMenu() -> UIMenu {
+        let options: [(String, String, UIUserInterfaceStyle)] = [
+            ("跟随系统", "circle.lefthalf.filled", .unspecified),
+            ("浅色主题",  "sun.max",                .light),
+            ("深色主题",  "moon.fill",               .dark),
+        ]
+        let actions = options.map { title, symbol, style in
+            UIAction(
+                title: title,
+                image: UIImage(systemName: symbol),
+                state: (view.window?.overrideUserInterfaceStyle ?? .unspecified) == style ? .on : .off
+            ) { [weak self] _ in
+                guard let self, let window = self.view.window else { return }
+                UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve) {
+                    window.overrideUserInterfaceStyle = style
+                }
+                self.themeValueLabel?.text = self.currentThemeName()
+            }
+        }
+        return UIMenu(title: "", children: actions)
+    }
+
     // MARK: - 通用卡片
+    // 外层负责 shadow，内层 clipsToBounds 确保点击高亮不溢出圆角
 
     private func makeCard(rows: [UIView]) -> UIView {
-        let card = UIView()
-        card.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
-        card.layer.cornerRadius = cardRadius
-        card.layer.shadowColor = UIColor.black.cgColor
-        card.layer.shadowOpacity = 0.06
-        card.layer.shadowOffset = CGSize(width: 0, height: 2)
-        card.layer.shadowRadius = 8
+        // 外层：仅承载阴影，不裁切
+        let outer = UIView()
+        outer.layer.cornerRadius = cardRadius
+        outer.layer.shadowColor = UIColor.black.cgColor
+        outer.layer.shadowOpacity = 0.06
+        outer.layer.shadowOffset = CGSize(width: 0, height: 2)
+        outer.layer.shadowRadius = 8
+
+        // 内层：裁切圆角，点击高亮不会超出边界
+        let inner = UIView()
+        inner.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        inner.layer.cornerRadius = cardRadius
+        inner.clipsToBounds = true
+        inner.translatesAutoresizingMaskIntoConstraints = false
+        outer.addSubview(inner)
+        NSLayoutConstraint.activate([
+            inner.topAnchor.constraint(equalTo: outer.topAnchor),
+            inner.leadingAnchor.constraint(equalTo: outer.leadingAnchor),
+            inner.trailingAnchor.constraint(equalTo: outer.trailingAnchor),
+            inner.bottomAnchor.constraint(equalTo: outer.bottomAnchor),
+        ])
 
         var prev: UIView? = nil
         for (i, row) in rows.enumerated() {
             row.translatesAutoresizingMaskIntoConstraints = false
-            card.addSubview(row)
+            inner.addSubview(row)
             NSLayoutConstraint.activate([
-                row.leadingAnchor.constraint(equalTo: card.leadingAnchor),
-                row.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+                row.leadingAnchor.constraint(equalTo: inner.leadingAnchor),
+                row.trailingAnchor.constraint(equalTo: inner.trailingAnchor),
                 row.heightAnchor.constraint(equalToConstant: rowHeight),
             ])
             if let prev = prev {
                 let sep = makeSeparator()
-                card.addSubview(sep)
+                inner.addSubview(sep)
                 NSLayoutConstraint.activate([
                     sep.topAnchor.constraint(equalTo: prev.bottomAnchor),
-                    sep.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 52),
-                    sep.trailingAnchor.constraint(equalTo: card.trailingAnchor),
+                    sep.leadingAnchor.constraint(equalTo: inner.leadingAnchor, constant: 52),
+                    sep.trailingAnchor.constraint(equalTo: inner.trailingAnchor),
                     sep.heightAnchor.constraint(equalToConstant: 0.5),
                     row.topAnchor.constraint(equalTo: sep.bottomAnchor),
                 ])
             } else {
-                row.topAnchor.constraint(equalTo: card.topAnchor).isActive = true
+                row.topAnchor.constraint(equalTo: inner.topAnchor).isActive = true
             }
             if i == rows.count - 1 {
-                row.bottomAnchor.constraint(equalTo: card.bottomAnchor).isActive = true
+                row.bottomAnchor.constraint(equalTo: inner.bottomAnchor).isActive = true
             }
             prev = row
         }
-        return card
+        return outer
     }
 
     // MARK: - 通用行（带 action 闭包）
@@ -351,27 +393,6 @@ class SettingsViewController: UIViewController {
         }
     }
 
-    @objc private func themeRowTapped() {
-        let alert = UIAlertController(title: "选择主题", message: nil, preferredStyle: .actionSheet)
-        let options: [(String, UIUserInterfaceStyle)] = [
-            ("跟随系统", .unspecified),
-            ("浅色主题", .light),
-            ("深色主题", .dark),
-        ]
-        for (title, style) in options {
-            let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
-                guard let self, let window = self.view.window else { return }
-                UIView.transition(with: window, duration: 0.3, options: .transitionCrossDissolve) {
-                    window.overrideUserInterfaceStyle = style
-                }
-                self.themeValueLabel?.text = self.currentThemeName()
-            }
-            alert.addAction(action)
-        }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        present(alert, animated: true)
-    }
-
     // MARK: - 其他行动作
 
     private func push(_ vc: UIViewController) {
@@ -386,6 +407,12 @@ class SettingsViewController: UIViewController {
     private func shareApp() {
         let text = "推荐你使用 Slidesh，一键生成精美演示文稿！"
         let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        // iPad 需要指定 sourceView，iPhone 自动从底部弹出
+        if let popover = vc.popoverPresentationController {
+            popover.sourceView = view
+            popover.sourceRect = CGRect(x: view.bounds.midX, y: view.bounds.maxY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
         present(vc, animated: true)
     }
 
