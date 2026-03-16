@@ -6,8 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		96999932670AD347A13922A6 /* Pods_Slidesh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EB37232F2004844D4EBFA8C /* Pods_Slidesh.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		0EB37232F2004844D4EBFA8C /* Pods_Slidesh.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Slidesh.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9F07A2D92F66921000EE7561 /* Slidesh.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slidesh.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A4EEA3A15DF0E01B753CC061 /* Pods-Slidesh.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Slidesh.debug.xcconfig"; path = "Target Support Files/Pods-Slidesh/Pods-Slidesh.debug.xcconfig"; sourceTree = "<group>"; };
+		B837CE57F1CABB3293F735B4 /* Pods-Slidesh.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Slidesh.release.xcconfig"; path = "Target Support Files/Pods-Slidesh/Pods-Slidesh.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -36,17 +43,29 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				96999932670AD347A13922A6 /* Pods_Slidesh.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		61467BD4D3337E4D831622FB /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				A4EEA3A15DF0E01B753CC061 /* Pods-Slidesh.debug.xcconfig */,
+				B837CE57F1CABB3293F735B4 /* Pods-Slidesh.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		9F07A2D02F66921000EE7561 = {
 			isa = PBXGroup;
 			children = (
 				9F07A2DB2F66921000EE7561 /* Slidesh */,
 				9F07A2DA2F66921000EE7561 /* Products */,
+				61467BD4D3337E4D831622FB /* Pods */,
+				B9D9356F01819D10FB01B880 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,6 +77,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		B9D9356F01819D10FB01B880 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0EB37232F2004844D4EBFA8C /* Pods_Slidesh.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -65,9 +92,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9F07A2EC2F66921200EE7561 /* Build configuration list for PBXNativeTarget "Slidesh" */;
 			buildPhases = (
+				B401EEA924E54B59F0FEECBF /* [CP] Check Pods Manifest.lock */,
 				9F07A2D52F66921000EE7561 /* Sources */,
 				9F07A2D62F66921000EE7561 /* Frameworks */,
 				9F07A2D72F66921000EE7561 /* Resources */,
+				DED85DA1AC26827C2AC8CCCB /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -77,8 +106,6 @@
 				9F07A2DB2F66921000EE7561 /* Slidesh */,
 			);
 			name = Slidesh;
-			packageProductDependencies = (
-			);
 			productName = Slidesh;
 			productReference = 9F07A2D92F66921000EE7561 /* Slidesh.app */;
 			productType = "com.apple.product-type.application";
@@ -127,6 +154,52 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		B401EEA924E54B59F0FEECBF /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Slidesh-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		DED85DA1AC26827C2AC8CCCB /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Slidesh/Pods-Slidesh-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Slidesh/Pods-Slidesh-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Slidesh/Pods-Slidesh-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		9F07A2D52F66921000EE7561 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -140,6 +213,7 @@
 /* Begin XCBuildConfiguration section */
 		9F07A2ED2F66921200EE7561 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A4EEA3A15DF0E01B753CC061 /* Pods-Slidesh.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -160,17 +234,20 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.bublelele..Slidesh;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
 		9F07A2EE2F66921200EE7561 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = B837CE57F1CABB3293F735B4 /* Pods-Slidesh.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -191,12 +268,14 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.bublelele..Slidesh;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};

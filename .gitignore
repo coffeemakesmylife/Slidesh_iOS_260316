@@ -1,0 +1,42 @@
+# Xcode 用户数据
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+# Xcode 自动生成的 workspace（CocoaPods 会重新生成）
+*.xcworkspace/
+
+# CocoaPods
+Pods/
+# Podfile.lock 建议保留以锁定依赖版本，如不需要可取消注释
+# Podfile.lock
+
+# 编译产物
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+*.DS_Store
+
+# Crashlytics
+crashlytics-build.properties
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# 敏感配置（如有）
+*.p12
+*.mobileprovision
+Secrets.swift
+Config.xcconfig
