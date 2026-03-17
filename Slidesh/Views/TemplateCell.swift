@@ -34,8 +34,10 @@ class TemplateCell: UICollectionViewCell {
     // 网格模式：预览图高度 ≈ 自身宽度 × 0.62
     private lazy var gridHeightConstraint = previewImageView.heightAnchor.constraint(
         equalTo: previewImageView.widthAnchor, multiplier: 0.62)
-    // 列表模式：预览图固定宽度 90pt
-    private lazy var listWidthConstraint = previewImageView.widthAnchor.constraint(equalToConstant: 90)
+    // 列表模式：预览图固定宽度 90pt，高度 4:3（height = width × 0.75）
+    private lazy var listWidthConstraint  = previewImageView.widthAnchor.constraint(equalToConstant: 90)
+    private lazy var listHeightConstraint = previewImageView.heightAnchor.constraint(
+        equalTo: previewImageView.widthAnchor, multiplier: 0.75)
 
     // MARK: - Init
 
@@ -58,7 +60,7 @@ class TemplateCell: UICollectionViewCell {
 
         previewImageView.translatesAutoresizingMaskIntoConstraints = false
 
-        nameLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        nameLabel.font = .systemFont(ofSize: 14, weight: .medium)
         nameLabel.textColor = .appTextPrimary
         nameLabel.numberOfLines = 2
 
@@ -132,6 +134,7 @@ class TemplateCell: UICollectionViewCell {
     func applyMode(_ mode: LayoutMode) {
         if mode == .grid {
             listWidthConstraint.isActive  = false
+            listHeightConstraint.isActive = false
             outerStack.axis      = .vertical
             outerStack.spacing   = 8
             outerStack.alignment = .fill
@@ -140,8 +143,9 @@ class TemplateCell: UICollectionViewCell {
             gridHeightConstraint.isActive = false
             outerStack.axis      = .horizontal
             outerStack.spacing   = 12
-            outerStack.alignment = .fill
+            outerStack.alignment = .center  // 垂直居中，图片不拉伸
             listWidthConstraint.isActive  = true
+            listHeightConstraint.isActive = true  // 4:3 比例
         }
         descLabel.isHidden  = (mode == .grid)
         usageLabel.isHidden = (mode == .grid)

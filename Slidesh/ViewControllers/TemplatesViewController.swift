@@ -31,15 +31,8 @@ class TemplatesViewController: UIViewController {
     private let categoryView    = CategorySelectorView()
     private let filterBar       = FilterAndToggleBar()
     private var collectionView: UICollectionView!
-    private let layoutMode: LayoutMode = .grid  // 当前布局
     private var currentLayoutMode: LayoutMode = .grid
-
-    // 加载指示器（底部加载更多时显示）
-    private let loadingIndicator: UIActivityIndicatorView = {
-        let iv = UIActivityIndicatorView(style: .medium)
-        iv.hidesWhenStopped = true
-        return iv
-    }()
+    private weak var footerView: TemplatesFooterView?
 
     // MARK: - 生命周期
 
@@ -84,6 +77,9 @@ class TemplatesViewController: UIViewController {
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeGridLayout())
         collectionView.backgroundColor = .clear
         collectionView.register(TemplateCell.self, forCellWithReuseIdentifier: TemplateCell.reuseID)
+        collectionView.register(TemplatesFooterView.self,
+                                forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
+                                withReuseIdentifier: TemplatesFooterView.reuseID)
         collectionView.dataSource = self
         collectionView.delegate   = self
         collectionView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 100, right: 0)
@@ -154,7 +150,6 @@ class TemplatesViewController: UIViewController {
         }
 
         isLoading = true
-        loadingIndicator.startAnimating()
 
         PPTAPIService.shared.fetchTemplates(
             category:   selectedCategory.isEmpty ? nil : selectedCategory,
@@ -164,24 +159,38 @@ class TemplatesViewController: UIViewController {
         ) { [weak self] result in
             guard let self else { return }
             self.isLoading = false
-            self.loadingIndicator.stopAnimating()
 
             switch result {
             case .success(let newTemplates):
-                if reset {
-                    self.templates = newTemplates
-                } else {
-                    self.templates.append(contentsOf: newTemplates)
-                }
                 self.hasMore = newTemplates.count >= 20
                 self.currentPage += 1
-                self.collectionView.reloadData()
+
+                if reset {
+                    self.templates = newTemplates
+                    self.collectionView.reloadData()
+                } else {
+                    // 用 insertItems 追加，避免 reloadData 引起的位移抖动
+                    let startIndex = self.templates.count
+                    self.templates.append(contentsOf: newTemplates)
+                    let indexPaths = (startIndex..<self.templates.count).map {
+                        IndexPath(item: $0, section: 0)
+                    }
+                    self.collectionView.performBatchUpdates({
+                        self.collectionView.insertItems(at: indexPaths)
+                    }, completion: { _ in
+                        self.reloadFooter()
+                    })
+                }
 
             case .failure(let error):
                 print("❌ 模板加载失败: \(error.localizedDescription)")
-                self.collectionView.reloadData()
             }
         }
+    }
+
+    // 刷新底部 footer（不影响 cell 位置）
+    private func reloadFooter() {
+        footerView?.configure(showEnd: !hasMore && !templates.isEmpty)
     }
 
     // MARK: - 布局切换
@@ -213,6 +222,7 @@ class TemplatesViewController: UIViewController {
         let section   = NSCollectionLayoutSection(group: group)
         section.interGroupSpacing = 12
         section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10)
+        section.boundarySupplementaryItems = [makeFooterItem()]
 
         return UICollectionViewCompositionalLayout(section: section)
     }
@@ -229,8 +239,19 @@ class TemplatesViewController: UIViewController {
         let section   = NSCollectionLayoutSection(group: group)
         section.interGroupSpacing = 10
         section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+        section.boundarySupplementaryItems = [makeFooterItem()]
 
         return UICollectionViewCompositionalLayout(section: section)
+    }
+
+    private func makeFooterItem() -> NSCollectionLayoutBoundarySupplementaryItem {
+        let size = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                          heightDimension: .absolute(48))
+        return NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: size,
+            elementKind: UICollectionView.elementKindSectionFooter,
+            alignment: .bottom
+        )
     }
 
     // MARK: - 筛选弹窗
@@ -279,6 +300,18 @@ extension TemplatesViewController: UICollectionViewDataSource {
         cell.configure(with: templates[indexPath.item], mode: currentLayoutMode)
         return cell
     }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        viewForSupplementaryElementOfKind kind: String,
+                        at indexPath: IndexPath) -> UICollectionReusableView {
+        let footer = collectionView.dequeueReusableSupplementaryView(
+            ofKind: kind,
+            withReuseIdentifier: TemplatesFooterView.reuseID,
+            for: indexPath) as! TemplatesFooterView
+        footerView = footer
+        footer.configure(showEnd: !hasMore && !templates.isEmpty)
+        return footer
+    }
 }
 
 // MARK: - UICollectionViewDelegate
@@ -293,11 +326,42 @@ extension TemplatesViewController: UICollectionViewDelegate {
 
     // 接近底部时加载下一页
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let offsetY     = scrollView.contentOffset.y
-        let contentH    = scrollView.contentSize.height
-        let frameH      = scrollView.frame.height
+        let offsetY  = scrollView.contentOffset.y
+        let contentH = scrollView.contentSize.height
+        let frameH   = scrollView.frame.height
         if offsetY > contentH - frameH - 200 {
             loadTemplates(reset: false)
         }
+    }
+}
+
+// MARK: - Footer 视图
+
+private class TemplatesFooterView: UICollectionReusableView {
+
+    static let reuseID = "TemplatesFooter"
+
+    private let label: UILabel = {
+        let l = UILabel()
+        l.textAlignment = .center
+        l.font = .systemFont(ofSize: 13)
+        l.textColor = .appTextTertiary
+        l.translatesAutoresizingMaskIntoConstraints = false
+        return l
+    }()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: centerYAnchor),
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func configure(showEnd: Bool) {
+        label.text = showEnd ? "— 到底了 —" : nil
     }
 }
