@@ -95,14 +95,15 @@ private class CategoryChipButton: UIControl {
     }
 
     private func setup() {
-        layer.cornerRadius = 16
+        layer.cornerRadius = 15
+        layer.borderWidth  = 2
         clipsToBounds = true
 
-        // 品牌渐变层（选中时显示）
-        gradientLayer.colors   = [UIColor.appGradientStart.cgColor,
-                                   UIColor.appGradientMid.cgColor,
-                                   UIColor.appGradientEnd.cgColor]
-        gradientLayer.locations = [0.0, 0.55, 1.0]
+        // 品牌渐变层（仅选中时显示）
+        gradientLayer.colors     = [UIColor.appGradientStart.cgColor,
+                                    UIColor.appGradientMid.cgColor,
+                                    UIColor.appGradientEnd.cgColor]
+        gradientLayer.locations  = [0.0, 0.55, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
         gradientLayer.isHidden   = true
@@ -128,9 +129,18 @@ private class CategoryChipButton: UIControl {
     }
 
     private func updateStyle(selected: Bool) {
-        gradientLayer.isHidden = !selected
-        backgroundColor  = selected ? .clear : .appPrimarySubtle
-        label.textColor  = selected ? .white : .appPrimary
+        if selected {
+            gradientLayer.isHidden = false
+            backgroundColor        = .clear
+            layer.borderColor      = UIColor.clear.cgColor
+            label.textColor        = .white
+        } else {
+            // 透明背景 + 可见边框：深浅色都有足够对比度
+            gradientLayer.isHidden = true
+            backgroundColor        = .clear
+            layer.borderColor      = UIColor.appCardBorder.cgColor
+            label.textColor        = .appTextPrimary
+        }
     }
 
     override func layoutSubviews() {
