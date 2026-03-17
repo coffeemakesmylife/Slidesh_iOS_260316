@@ -33,6 +33,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             ThemeManager.shared.applyOnLaunch(to: w)
         }
 
+        // 清理旧版本遗留的缓存文件
+        TemplateCache.shared.cleanupOrphanedFiles()
+
         return true
     }
 
