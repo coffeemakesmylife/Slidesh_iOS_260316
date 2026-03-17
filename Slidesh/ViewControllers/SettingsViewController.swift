@@ -136,7 +136,7 @@ class SettingsViewController: UIViewController {
         titleLabel.textColor = .white
 
         let featuresLabel = UILabel()
-        featuresLabel.text = "✓ 无限制导出演示文稿\n✓ 解锁全部模板\n✓ 高级格式转换"
+        featuresLabel.text = "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 解锁全部模板"
         featuresLabel.font = .systemFont(ofSize: 14)
         featuresLabel.textColor = UIColor.white.withAlphaComponent(0.88)
         featuresLabel.numberOfLines = 0
