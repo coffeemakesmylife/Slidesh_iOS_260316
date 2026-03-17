@@ -6,28 +6,7 @@
 //
 
 import UIKit
-
-// 渐变预览视图——在自身 layoutSubviews 中更新 gradientLayer.frame，
-// 确保 bounds 已由 Auto Layout 确定，修复首次显示渐变不可见的问题
-private class GradientPreviewView: UIView {
-    let gradientLayer = CAGradientLayer()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
-        layer.addSublayer(gradientLayer)
-        layer.cornerRadius = 12
-        clipsToBounds = true
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        gradientLayer.frame = bounds
-    }
-}
+import Kingfisher
 
 class TemplateCell: UICollectionViewCell {
 
@@ -35,7 +14,16 @@ class TemplateCell: UICollectionViewCell {
 
     // MARK: - 子视图
 
-    private let previewView = GradientPreviewView()
+    private let previewImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        iv.layer.cornerRadius = 12
+        // 图片加载前显示的占位背景色
+        iv.backgroundColor = .appChipUnselectedBackground
+        return iv
+    }()
+
     private let nameLabel   = UILabel()
     private let descLabel   = UILabel()
     private let usageLabel  = UILabel()
@@ -44,10 +32,10 @@ class TemplateCell: UICollectionViewCell {
     private let outerStack  = UIStackView()
 
     // 网格模式：预览图高度 ≈ 自身宽度 × 0.62
-    private lazy var gridHeightConstraint = previewView.heightAnchor.constraint(
-        equalTo: previewView.widthAnchor, multiplier: 0.62)
+    private lazy var gridHeightConstraint = previewImageView.heightAnchor.constraint(
+        equalTo: previewImageView.widthAnchor, multiplier: 0.62)
     // 列表模式：预览图固定宽度 90pt
-    private lazy var listWidthConstraint = previewView.widthAnchor.constraint(equalToConstant: 90)
+    private lazy var listWidthConstraint = previewImageView.widthAnchor.constraint(equalToConstant: 90)
 
     // MARK: - Init
 
@@ -67,6 +55,8 @@ class TemplateCell: UICollectionViewCell {
         contentView.layer.cornerRadius = 16
         contentView.clipsToBounds = true
         contentView.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
+
+        previewImageView.translatesAutoresizingMaskIntoConstraints = false
 
         nameLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         nameLabel.textColor = .appTextPrimary
@@ -89,7 +79,7 @@ class TemplateCell: UICollectionViewCell {
         outerStack.axis = .vertical
         outerStack.spacing = 8
         outerStack.alignment = .fill
-        outerStack.addArrangedSubview(previewView)
+        outerStack.addArrangedSubview(previewImageView)
         outerStack.addArrangedSubview(infoStack)
         outerStack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(outerStack)
@@ -110,17 +100,29 @@ class TemplateCell: UICollectionViewCell {
 
     // MARK: - 公开接口
 
-    func configure(with model: TemplateModel, mode: LayoutMode) {
-        nameLabel.text  = model.name
-        descLabel.text  = model.description
-        usageLabel.text = "已使用 \(model.usageCount.formatted()) 次"
-        previewView.gradientLayer.colors = model.gradientColors.map { $0.cgColor }
+    func configure(with model: PPTTemplate, mode: LayoutMode) {
+        nameLabel.text = model.subject
+        descLabel.text = "\(model.num) 页"
+        usageLabel.text = model.category.isEmpty ? nil : model.category
+
+        // Kingfisher 加载封面图，加载中显示占位色
+        previewImageView.kf.cancelDownloadTask()
+        previewImageView.image = nil
+        if let url = model.coverImageURL {
+            previewImageView.kf.setImage(
+                with: url,
+                options: [.transition(.fade(0.2)), .cacheOriginalImage]
+            )
+        }
+
         // 每次都强制应用模式，避免 reuse 后状态残留
         applyMode(mode)
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
+        previewImageView.kf.cancelDownloadTask()
+        previewImageView.image = nil
         applyMode(.grid)
     }
 

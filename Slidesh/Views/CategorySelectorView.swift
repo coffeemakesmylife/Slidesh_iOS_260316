@@ -9,12 +9,16 @@ import UIKit
 
 class CategorySelectorView: UIView {
 
-    var onCategorySelected: ((TemplateCategory) -> Void)?
-    private(set) var selectedCategory: TemplateCategory = .all
+    // 回调返回选中项的 API value（空字符串 = 全部）
+    var onCategorySelected: ((String) -> Void)?
+
+    private(set) var selectedValue: String = ""
 
     private let scrollView = UIScrollView()
     private let stackView  = UIStackView()
     private var chips: [CategoryChipButton] = []
+    // 当前选项数组（name, value）
+    private var options: [(name: String, value: String)] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -50,26 +54,41 @@ class CategorySelectorView: UIView {
             stackView.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
         ])
 
-        for (index, category) in TemplateCategory.allCases.enumerated() {
-            let chip = CategoryChipButton(title: category.rawValue, tag: index)
+        // 初始默认 "全部场景"
+        configure(with: [("全部场景", "")])
+    }
+
+    /// 用 API 返回的分类选项重建 chips
+    func configure(with options: [(name: String, value: String)]) {
+        self.options = options
+        // 清空旧 chips
+        chips.forEach { $0.removeFromSuperview() }
+        chips.removeAll()
+
+        for (index, option) in options.enumerated() {
+            let chip = CategoryChipButton(title: option.name, tag: index)
             chip.addTarget(self, action: #selector(chipTapped(_:)), for: .touchUpInside)
             stackView.addArrangedSubview(chip)
             chips.append(chip)
         }
 
+        // 如果原先选中的 value 不在新选项中，重置为第一项
+        if !options.contains(where: { $0.value == selectedValue }) {
+            selectedValue = options.first?.value ?? ""
+        }
         updateChipStates()
     }
 
     @objc private func chipTapped(_ sender: CategoryChipButton) {
-        let category = TemplateCategory.allCases[sender.tag]
-        selectedCategory = category
+        guard sender.tag < options.count else { return }
+        selectedValue = options[sender.tag].value
         updateChipStates()
-        onCategorySelected?(category)
+        onCategorySelected?(selectedValue)
     }
 
     private func updateChipStates() {
         for (index, chip) in chips.enumerated() {
-            chip.setSelected(TemplateCategory.allCases[index] == selectedCategory)
+            chip.setSelected(options[index].value == selectedValue)
         }
     }
 }
@@ -98,7 +117,6 @@ private class CategoryChipButton: UIControl {
         layer.cornerRadius = 15
         clipsToBounds = true
 
-        // 品牌渐变层（仅选中时显示）
         gradientLayer.colors     = [UIColor.appGradientStart.cgColor,
                                     UIColor.appGradientMid.cgColor,
                                     UIColor.appGradientEnd.cgColor]
@@ -146,10 +164,9 @@ private class CategoryChipButton: UIControl {
         gradientLayer.frame = bounds
     }
 
-    // 宽度由 label 内容驱动，Auto Layout 自动推导
     override var intrinsicContentSize: CGSize {
-        let w = label.intrinsicContentSize.width + 28  // 左右各 14pt padding
-        let h = label.intrinsicContentSize.height + 14 // 上下各 7pt padding
+        let w = label.intrinsicContentSize.width + 28
+        let h = label.intrinsicContentSize.height + 14
         return CGSize(width: w, height: h)
     }
 }
