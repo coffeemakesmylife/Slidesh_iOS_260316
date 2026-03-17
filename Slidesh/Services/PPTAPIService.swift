@@ -13,14 +13,14 @@ class PPTAPIService {
     private init() {}
 
     private let appId   = "6744651694"
-    private let baseURL = "https://co.aippt.cn"
+    private let baseURL = "http://43.156.217.34:8080"
 
     // RSA 公钥——用于解密服务端用私钥签名的响应数据
     private let publicKey = """
------BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC80suK11DAidjBJIzvi9g9n8ACxvDoBqKj1t5PZiMkEJA7EsuHCeZVWktXn3dTYM7WSUPjmqBx5L7nfC0QdTU+5Ih988+GS3xgDm2gkVYRmONfvH7WWUVfoWGflPNCdmUffW7E6qRX3DVb9Tr2CvubpLouVXaSsnE3GwMWrtV+pQIDAQAB
------END PUBLIC KEY-----
-"""
+    -----BEGIN PUBLIC KEY-----
+    MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCZjwQxE/33I+E+WWPNbvcrq/yPHVFGXOonC8evV2OkCs7rDCCXCW2pwoy5MF5cfDVXqoLzkP4L3X8kXgsEribUztfpp3I34BSushpfrHLghbTKr6WGWTl+jOmNQgHNertkdDd1pLshneVcV7JGBWsP2yZ4uwmYSqBQgK8idk58PwIDAQAB
+    -----END PUBLIC KEY-----
+    """
 
     // MARK: - 公开接口
 
