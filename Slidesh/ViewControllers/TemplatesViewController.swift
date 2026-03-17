@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import SkeletonView
 
 class TemplatesViewController: UIViewController {
 
@@ -15,10 +16,11 @@ class TemplatesViewController: UIViewController {
 
     // MARK: - 分页 & 数据
 
-    private var templates:   [PPTTemplate] = []
-    private var currentPage  = 1
-    private var isLoading    = false
-    private var hasMore      = true
+    private var templates:     [PPTTemplate] = []
+    private var currentPage    = 1
+    private var isLoading      = false
+    private var hasMore        = true
+    private var loadGeneration = 0   // 防止旧请求的回调覆盖当前状态
 
     // MARK: - 筛选选项（API 加载后更新）
 
@@ -28,11 +30,21 @@ class TemplatesViewController: UIViewController {
 
     // MARK: - 子视图
 
-    private let categoryView    = CategorySelectorView()
-    private let filterBar       = FilterAndToggleBar()
-    private var collectionView: UICollectionView!
+    private let categoryView       = CategorySelectorView()
+    private let filterBar          = FilterAndToggleBar()
+    private var collectionView:    UICollectionView!
     private var currentLayoutMode: LayoutMode = .grid
-    private weak var footerView: TemplatesFooterView?
+    private weak var footerView:   TemplatesFooterView?
+
+    // MARK: - 缓存 Key
+
+    private func currentCacheKey() -> String {
+        TemplateCache.templatesKey(
+            category: selectedCategory,
+            style:    selectedStyle,
+            color:    selectedColor,
+            page:     1)
+    }
 
     // MARK: - 生命周期
 
@@ -75,7 +87,8 @@ class TemplatesViewController: UIViewController {
 
     private func setupCollectionView() {
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeGridLayout())
-        collectionView.backgroundColor = .clear
+        collectionView.backgroundColor  = .clear
+        collectionView.isSkeletonable   = true   // SkeletonView 必须
         collectionView.register(TemplateCell.self, forCellWithReuseIdentifier: TemplateCell.reuseID)
         collectionView.register(TemplatesFooterView.self,
                                 forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter,
@@ -100,95 +113,189 @@ class TemplatesViewController: UIViewController {
             self?.selectedCategory = value
             self?.loadTemplates(reset: true)
         }
-
-        filterBar.onStyleFilter = { [weak self] in
-            self?.showStylePicker()
-        }
-
-        filterBar.onColorFilter = { [weak self] in
-            self?.showColorPicker()
-        }
-
-        filterBar.onLayoutToggle = { [weak self] mode in
-            self?.switchLayout(to: mode)
-        }
+        filterBar.onStyleFilter = { [weak self] in self?.showStylePicker() }
+        filterBar.onColorFilter = { [weak self] in self?.showColorPicker() }
+        filterBar.onLayoutToggle = { [weak self] mode in self?.switchLayout(to: mode) }
     }
 
-    // MARK: - API：筛选选项
+    // MARK: - API：筛选选项（带缓存）
 
     private func loadFilterOptions() {
-        PPTAPIService.shared.fetchOptions { [weak self] result in
-            guard let self, case .success(let options) = result else {
-                if case .failure(let e) = result { print("❌ fetchOptions 失败：\(e)") }
-                return
-            }
-
-            // 按 type 分组，type 值匹配 API 文档字段名
-            let categories = options.filter { $0.type.lowercased() == "category" }
-            let styles     = options.filter { $0.type.lowercased() == "style" }
-            let colors     = options.filter { $0.type.lowercased() == "themecolor" }
-
-            self.categoryOptions = [("全部场景", "")] + categories.map { ($0.name, $0.value) }
-            self.styleOptions    = [("全部风格", "")] + styles.map    { ($0.name, $0.value) }
-            self.colorOptions    = [("全部颜色", "")] + colors.map    { ($0.name, $0.value) }
-
-            // 用 API 分类重建 chip 列表
-            self.categoryView.configure(with: self.categoryOptions)
+        let key = TemplateCache.optionsKey()
+        switch TemplateCache.shared.fetchOptions(key: key) {
+        case .fresh(let data):
+            if let options = data as? [PPTOption] { applyFilterOptions(options) }
+            if TemplateCache.shared.isAging(key: key) { fetchAndCacheOptions(key: key) }
+        case .stale(let data):
+            if let options = data as? [PPTOption] { applyFilterOptions(options) }
+            fetchAndCacheOptions(key: key)
+        case .miss:
+            fetchAndCacheOptions(key: key)
         }
     }
 
-    // MARK: - API：分页查询模板
+    private func applyFilterOptions(_ options: [PPTOption]) {
+        let categories = options.filter { $0.type.lowercased() == "category" }
+        let styles     = options.filter { $0.type.lowercased() == "style" }
+        let colors     = options.filter { $0.type.lowercased() == "themecolor" }
+        categoryOptions = [("全部场景", "")] + categories.map { ($0.name, $0.value) }
+        styleOptions    = [("全部风格", "")] + styles.map    { ($0.name, $0.value) }
+        colorOptions    = [("全部颜色", "")] + colors.map    { ($0.name, $0.value) }
+        categoryView.configure(with: categoryOptions)
+    }
+
+    private func fetchAndCacheOptions(key: String) {
+        PPTAPIService.shared.fetchOptions { [weak self] result in
+            guard let self, case .success(let options) = result else { return }
+            TemplateCache.shared.storeOptions(key: key, options: options)
+            self.applyFilterOptions(options)
+        }
+    }
+
+    // MARK: - API：分页查询模板（带缓存 + 骨架屏）
 
     private func loadTemplates(reset: Bool) {
-        guard !isLoading, (reset || hasMore) else { return }
-
         if reset {
+            loadGeneration += 1
+            isLoading   = false
             currentPage = 1
             templates   = []
             hasMore     = true
-            collectionView.reloadData()
         }
+        guard !isLoading, (reset || hasMore) else { return }
 
-        isLoading = true
+        if reset {
+            showSkeleton()
+            let key        = currentCacheKey()
+            let generation = loadGeneration
 
-        PPTAPIService.shared.fetchTemplates(
-            category:   selectedCategory.isEmpty ? nil : selectedCategory,
-            style:      selectedStyle.isEmpty    ? nil : selectedStyle,
-            themeColor: selectedColor.isEmpty    ? nil : selectedColor,
-            page:       currentPage
-        ) { [weak self] result in
-            guard let self else { return }
-            self.isLoading = false
+            switch TemplateCache.shared.fetchTemplates(key: key) {
+            case .fresh(let data):
+                guard let cached = data as? [PPTTemplate] else { break }
+                hideSkeleton()
+                templates   = cached
+                hasMore     = cached.count >= 20
+                currentPage = 2
+                collectionView.reloadData()
+                if TemplateCache.shared.isAging(key: key) {
+                    scheduleBackgroundRefresh(for: key)
+                }
+                return
 
-            switch result {
-            case .success(let newTemplates):
-                self.hasMore = newTemplates.count >= 20
-                self.currentPage += 1
+            case .stale(let data):
+                guard let cached = data as? [PPTTemplate] else { break }
+                hideSkeleton()
+                templates   = cached
+                hasMore     = cached.count >= 20
+                currentPage = 2
+                collectionView.reloadData()
+                scheduleBackgroundRefresh(for: key)   // 前台静默刷新（无骨架）
+                return
 
-                if reset {
-                    self.templates = newTemplates
+            case .miss:
+                break
+            }
+
+            // 缓存未命中：保留骨架屏，发起网络请求
+            isLoading = true
+            PPTAPIService.shared.fetchTemplates(
+                category:   selectedCategory.isEmpty ? nil : selectedCategory,
+                style:      selectedStyle.isEmpty    ? nil : selectedStyle,
+                themeColor: selectedColor.isEmpty    ? nil : selectedColor,
+                page:       1
+            ) { [weak self] result in
+                guard let self, self.loadGeneration == generation else { return }
+                self.isLoading = false
+                self.hideSkeleton()
+                switch result {
+                case .success(let newTemplates):
+                    self.templates   = newTemplates
+                    self.hasMore     = newTemplates.count >= 20
+                    self.currentPage = 2
+                    TemplateCache.shared.storeTemplates(key: key, templates: newTemplates)
                     self.collectionView.reloadData()
-                } else {
-                    // 用 insertItems 追加，避免 reloadData 引起的位移抖动
-                    let startIndex = self.templates.count
+                case .failure(let error):
+                    print("❌ 模板加载失败: \(error.localizedDescription)")
+                    self.collectionView.reloadData()
+                }
+            }
+
+        } else {
+            // 翻页：不使用缓存，直接请求网络
+            isLoading = true
+            let generation = loadGeneration
+
+            PPTAPIService.shared.fetchTemplates(
+                category:   selectedCategory.isEmpty ? nil : selectedCategory,
+                style:      selectedStyle.isEmpty    ? nil : selectedStyle,
+                themeColor: selectedColor.isEmpty    ? nil : selectedColor,
+                page:       currentPage
+            ) { [weak self] result in
+                guard let self, self.loadGeneration == generation else { return }
+                self.isLoading = false
+                switch result {
+                case .success(let newTemplates):
+                    self.hasMore     = newTemplates.count >= 20
+                    self.currentPage += 1
+                    let startIndex   = self.templates.count
                     self.templates.append(contentsOf: newTemplates)
                     let indexPaths = (startIndex..<self.templates.count).map {
                         IndexPath(item: $0, section: 0)
                     }
                     self.collectionView.performBatchUpdates({
                         self.collectionView.insertItems(at: indexPaths)
-                    }, completion: { _ in
-                        self.reloadFooter()
-                    })
+                    }, completion: { _ in self.reloadFooter() })
+                case .failure(let error):
+                    print("❌ 翻页加载失败: \(error.localizedDescription)")
                 }
-
-            case .failure(let error):
-                print("❌ 模板加载失败: \(error.localizedDescription)")
             }
         }
     }
 
-    // 刷新底部 footer（不影响 cell 位置）
+    // MARK: - 后台/前台静默刷新（有缓存时调用，不显示骨架屏）
+
+    private func scheduleBackgroundRefresh(for key: String) {
+        let category = selectedCategory
+        let style    = selectedStyle
+        let color    = selectedColor
+        // 在后台线程发起刷新（spec 2.2），PPTAPIService 回调已 dispatch 到主线程
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self else { return }
+            PPTAPIService.shared.fetchTemplates(
+                category:   category.isEmpty ? nil : category,
+                style:      style.isEmpty    ? nil : style,
+                themeColor: color.isEmpty    ? nil : color,
+                page:       1
+            ) { [weak self] result in
+                // PPTAPIService 已在主线程回调
+                guard let self, case .success(let fresh) = result else { return }
+                TemplateCache.shared.storeTemplates(key: key, templates: fresh)
+                guard self.currentCacheKey() == key else { return }
+                self.templates   = fresh
+                self.hasMore     = fresh.count >= 20
+                self.currentPage = 2
+                self.collectionView.reloadData()
+            }
+        }
+    }
+
+    // MARK: - 骨架屏控制
+
+    private func showSkeleton() {
+        collectionView.showSkeleton(usingColor: .systemGray5,
+                                    transition: .crossDissolve(0.25))
+    }
+
+    private func hideSkeleton() {
+        guard collectionView.sk.isSkeletonActive else { return }
+        // reloadDataAfter: false — 调用方在 hideSkeleton 后显式 reloadData，
+        // 确保 self.templates 已赋值再触发数据源回调
+        collectionView.hideSkeleton(reloadDataAfter: false,
+                                    transition: .crossDissolve(0.25))
+    }
+
+    // MARK: - Footer 刷新
+
     private func reloadFooter() {
         footerView?.configure(showEnd: !hasMore && !templates.isEmpty)
     }
@@ -197,8 +304,6 @@ class TemplatesViewController: UIViewController {
 
     private func switchLayout(to mode: LayoutMode) {
         currentLayoutMode = mode
-        // 在布局切换前更新所有可见 cell 内部状态，
-        // 因为 setCollectionViewLayout(animated:true) + reloadData() 对可见 cell 不可靠
         for case let cell as TemplateCell in collectionView.visibleCells {
             cell.applyMode(mode)
         }
@@ -213,17 +318,13 @@ class TemplatesViewController: UIViewController {
                                                heightDimension: .fractionalHeight(1.0))
         let item      = NSCollectionLayoutItem(layoutSize: itemSize)
         item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 6)
-
-        // estimated 让 cell 根据内容（预览图比例 + 标题文字）自适应高度
         let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                                heightDimension: .estimated(160))
         let group     = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
-
         let section   = NSCollectionLayoutSection(group: group)
-        section.interGroupSpacing = 12
-        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10)
+        section.interGroupSpacing    = 12
+        section.contentInsets        = NSDirectionalEdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10)
         section.boundarySupplementaryItems = [makeFooterItem()]
-
         return UICollectionViewCompositionalLayout(section: section)
     }
 
@@ -231,16 +332,13 @@ class TemplatesViewController: UIViewController {
         let itemSize  = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                                heightDimension: .absolute(110))
         let item      = NSCollectionLayoutItem(layoutSize: itemSize)
-
         let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                                heightDimension: .absolute(110))
         let group     = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
-
         let section   = NSCollectionLayoutSection(group: group)
-        section.interGroupSpacing = 10
-        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
+        section.interGroupSpacing    = 10
+        section.contentInsets        = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
         section.boundarySupplementaryItems = [makeFooterItem()]
-
         return UICollectionViewCompositionalLayout(section: section)
     }
 
@@ -250,8 +348,7 @@ class TemplatesViewController: UIViewController {
         return NSCollectionLayoutBoundarySupplementaryItem(
             layoutSize: size,
             elementKind: UICollectionView.elementKindSectionFooter,
-            alignment: .bottom
-        )
+            alignment: .bottom)
     }
 
     // MARK: - 筛选弹窗
@@ -285,9 +382,21 @@ class TemplatesViewController: UIViewController {
     }
 }
 
-// MARK: - UICollectionViewDataSource
+// MARK: - SkeletonCollectionViewDataSource + UICollectionViewDataSource
 
-extension TemplatesViewController: UICollectionViewDataSource {
+extension TemplatesViewController: SkeletonCollectionViewDataSource {
+
+    // SkeletonView 在骨架屏期间调用此方法（不调用标准 numberOfItemsInSection）
+    func collectionSkeletonView(_ skeletonView: UICollectionView,
+                                numberOfCellsInSection section: Int) -> Int {
+        currentLayoutMode == .grid ? 6 : 5
+    }
+
+    func collectionSkeletonView(_ skeletonView: UICollectionView,
+                                cellIdentifierForItemAt indexPath: IndexPath) -> ReusableCellIdentifier {
+        TemplateCell.reuseID
+    }
+
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
         templates.count
@@ -317,6 +426,7 @@ extension TemplatesViewController: UICollectionViewDataSource {
 // MARK: - UICollectionViewDelegate
 
 extension TemplatesViewController: UICollectionViewDelegate {
+
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
         let template = templates[indexPath.item]
@@ -324,7 +434,6 @@ extension TemplatesViewController: UICollectionViewDelegate {
         // TODO: 跳转模板详情页
     }
 
-    // 接近底部时加载下一页
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let offsetY  = scrollView.contentOffset.y
         let contentH = scrollView.contentSize.height
@@ -344,8 +453,8 @@ private class TemplatesFooterView: UICollectionReusableView {
     private let label: UILabel = {
         let l = UILabel()
         l.textAlignment = .center
-        l.font = .systemFont(ofSize: 13)
-        l.textColor = .appTextTertiary
+        l.font          = .systemFont(ofSize: 13)
+        l.textColor     = .appTextTertiary
         l.translatesAutoresizingMaskIntoConstraints = false
         return l
     }()
