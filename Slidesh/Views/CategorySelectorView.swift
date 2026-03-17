@@ -2,7 +2,7 @@
 //  CategorySelectorView.swift
 //  Slidesh
 //
-//  横向滚动分类选择器，选中时背景变为主色
+//  横向滚动分类选择器，选中时使用品牌渐变背景，宽度随文案自适应
 //
 
 import UIKit
@@ -14,7 +14,7 @@ class CategorySelectorView: UIView {
 
     private let scrollView = UIScrollView()
     private let stackView  = UIStackView()
-    private var buttons: [UIButton] = []
+    private var chips: [CategoryChipButton] = []
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -37,8 +37,8 @@ class CategorySelectorView: UIView {
             scrollView.trailingAnchor.constraint(equalTo: trailingAnchor),
         ])
 
-        stackView.axis = .horizontal
-        stackView.spacing = 8
+        stackView.axis      = .horizontal
+        stackView.spacing   = 8
         stackView.alignment = .center
         stackView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(stackView)
@@ -50,43 +50,98 @@ class CategorySelectorView: UIView {
             stackView.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor),
         ])
 
-        TemplateCategory.allCases.forEach { category in
-            let btn = makeButton(title: category.rawValue)
-            btn.tag = TemplateCategory.allCases.firstIndex(of: category) ?? 0
-            btn.addTarget(self, action: #selector(categoryTapped(_:)), for: .touchUpInside)
-            stackView.addArrangedSubview(btn)
-            buttons.append(btn)
+        for (index, category) in TemplateCategory.allCases.enumerated() {
+            let chip = CategoryChipButton(title: category.rawValue, tag: index)
+            chip.addTarget(self, action: #selector(chipTapped(_:)), for: .touchUpInside)
+            stackView.addArrangedSubview(chip)
+            chips.append(chip)
         }
 
-        updateButtonStates()
+        updateChipStates()
     }
 
-    private func makeButton(title: String) -> UIButton {
-        var config = UIButton.Configuration.filled()
-        config.title = title
-        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { attrs in
-            var a = attrs
-            a.font = .systemFont(ofSize: 14, weight: .medium)
-            return a
-        }
-        config.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 14)
-        config.cornerStyle = .capsule
-        let btn = UIButton(configuration: config)
-        return btn
-    }
-
-    @objc private func categoryTapped(_ sender: UIButton) {
+    @objc private func chipTapped(_ sender: CategoryChipButton) {
         let category = TemplateCategory.allCases[sender.tag]
         selectedCategory = category
-        updateButtonStates()
+        updateChipStates()
         onCategorySelected?(category)
     }
 
-    private func updateButtonStates() {
-        for (index, btn) in buttons.enumerated() {
-            let isSelected = TemplateCategory.allCases[index] == selectedCategory
-            btn.configuration?.baseBackgroundColor = isSelected ? .appPrimary : .appPrimarySubtle
-            btn.configuration?.baseForegroundColor = isSelected ? .white : .appPrimary
+    private func updateChipStates() {
+        for (index, chip) in chips.enumerated() {
+            chip.setSelected(TemplateCategory.allCases[index] == selectedCategory)
         }
+    }
+}
+
+// MARK: - CategoryChipButton
+
+// 宽度随文案内容自适应，选中时显示品牌渐变背景
+private class CategoryChipButton: UIControl {
+
+    private let label         = UILabel()
+    private let gradientLayer = CAGradientLayer()
+
+    init(title: String, tag: Int) {
+        super.init(frame: .zero)
+        self.tag = tag
+        label.text = title
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        layer.cornerRadius = 16
+        clipsToBounds = true
+
+        // 品牌渐变层（选中时显示）
+        gradientLayer.colors   = [UIColor.appGradientStart.cgColor,
+                                   UIColor.appGradientMid.cgColor,
+                                   UIColor.appGradientEnd.cgColor]
+        gradientLayer.locations = [0.0, 0.55, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
+        gradientLayer.isHidden   = true
+        layer.insertSublayer(gradientLayer, at: 0)
+
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.isUserInteractionEnabled = false
+        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: topAnchor, constant: 7),
+            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -7),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+        ])
+
+        updateStyle(selected: false)
+    }
+
+    func setSelected(_ selected: Bool) {
+        updateStyle(selected: selected)
+    }
+
+    private func updateStyle(selected: Bool) {
+        gradientLayer.isHidden = !selected
+        backgroundColor  = selected ? .clear : .appPrimarySubtle
+        label.textColor  = selected ? .white : .appPrimary
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientLayer.frame = bounds
+    }
+
+    // 宽度由 label 内容驱动，Auto Layout 自动推导
+    override var intrinsicContentSize: CGSize {
+        let w = label.intrinsicContentSize.width + 28  // 左右各 14pt padding
+        let h = label.intrinsicContentSize.height + 14 // 上下各 7pt padding
+        return CGSize(width: w, height: h)
     }
 }

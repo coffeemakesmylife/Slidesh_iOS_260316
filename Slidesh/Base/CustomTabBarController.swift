@@ -130,13 +130,11 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
         inner.isUserInteractionEnabled = false
         container.addSubview(inner)
 
-        // VIP 卡片同款渐变（深蓝 → 中蓝 → 浅蓝），加在 inner 上
+        // 品牌渐变（与 VIP 卡片、分类选中同款），加在 inner 上
         let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [
-            UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1).cgColor,
-            UIColor(red: 0.180, green: 0.380, blue: 0.720, alpha: 1).cgColor,
-            UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1).cgColor,
-        ]
+        gradientLayer.colors = [UIColor.appGradientStart.cgColor,
+                                UIColor.appGradientMid.cgColor,
+                                UIColor.appGradientEnd.cgColor]
         gradientLayer.locations = [0.0, 0.55, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint   = CGPoint(x: 1, y: 1)

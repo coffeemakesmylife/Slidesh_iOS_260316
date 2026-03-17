@@ -122,11 +122,9 @@ class SettingsViewController: UIViewController {
         card.layer.borderWidth = 2.0
 
         let gradient = CAGradientLayer()
-        gradient.colors = [
-            UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1).cgColor,
-            UIColor(red: 0.180, green: 0.380, blue: 0.720, alpha: 1).cgColor,
-            UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1).cgColor,
-        ]
+        gradient.colors = [UIColor.appGradientStart.cgColor,
+                           UIColor.appGradientMid.cgColor,
+                           UIColor.appGradientEnd.cgColor]
         gradient.locations = [0.0, 0.55, 1.0]
         gradient.startPoint = CGPoint(x: 0, y: 0)
         gradient.endPoint   = CGPoint(x: 1, y: 1)

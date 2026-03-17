@@ -14,6 +14,12 @@ import UIKit
 // 使用方式: view.backgroundColor = .appBackgroundPrimary
 extension UIColor {
 
+    // MARK: - 品牌渐变色（VIP 卡片 / TabBar 中间按钮 / 分类选中同款）
+
+    static let appGradientStart = UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1.0) // 深海蓝
+    static let appGradientMid   = UIColor(red: 0.180, green: 0.380, blue: 0.720, alpha: 1.0) // 中蓝
+    static let appGradientEnd   = UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1.0) // 浅蓝 #78B5F3
+
     // MARK: - 主题色
 
     // 品牌主色 #0640AD 深宝蓝（按钮背景等）
