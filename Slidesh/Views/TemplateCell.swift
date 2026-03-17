@@ -7,6 +7,7 @@
 
 import UIKit
 import Kingfisher
+import SkeletonView
 
 class TemplateCell: UICollectionViewCell {
 
@@ -53,6 +54,16 @@ class TemplateCell: UICollectionViewCell {
     // MARK: - 视图配置
 
     private func setupViews() {
+        // SkeletonView：从 cell 到叶子视图全链路开启
+        isSkeletonable            = true
+        contentView.isSkeletonable = true
+        outerStack.isSkeletonable  = true
+        infoStack.isSkeletonable   = true
+        previewImageView.isSkeletonable = true
+        nameLabel.isSkeletonable   = true
+        descLabel.isSkeletonable   = true
+        usageLabel.isSkeletonable  = true
+
         contentView.layer.cornerRadius = 16
         contentView.clipsToBounds = true
         contentView.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
