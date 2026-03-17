@@ -101,7 +101,7 @@ class FilterChipButton: UIControl {
 
     private func setup() {
         layer.cornerRadius = 14
-        layer.borderWidth = 1
+        layer.borderWidth = 2.5
 
         titleLabel.font = .systemFont(ofSize: 13, weight: .medium)
 

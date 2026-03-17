@@ -14,6 +14,26 @@ import UIKit
 // 使用方式: view.backgroundColor = .appBackgroundPrimary
 extension UIColor {
 
+    // MARK: - 分类/筛选 Chip 未选中状态颜色
+
+    // 浅色：#D0E6FE 品牌蓝极浅；深色：渐变终点色 15% 透明度
+    static var appChipUnselectedBackground: UIColor {
+        UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 0.15)
+                : UIColor(red: 0.816, green: 0.902, blue: 0.996, alpha: 1.0)
+        }
+    }
+
+    // 浅色：主色；深色：渐变终点色 #78B5F3
+    static var appChipUnselectedText: UIColor {
+        UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1.0)
+                : appPrimary
+        }
+    }
+
     // MARK: - 品牌渐变色（VIP 卡片 / TabBar 中间按钮 / 分类选中同款）
 
     static let appGradientStart = UIColor(red: 0.039, green: 0.094, blue: 0.260, alpha: 1.0) // 深海蓝

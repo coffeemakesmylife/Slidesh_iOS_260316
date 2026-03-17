@@ -127,18 +127,6 @@ private class CategoryChipButton: UIControl {
         updateStyle(selected: selected)
     }
 
-    // 未选中状态专属颜色：浅色 #D0E6FE 背景/主色文字，深色渐变端点色低饱和背景/同色文字
-    private static let unselectedBackground = UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 0.15)  // #78B5F3 × 15%
-            : UIColor(red: 0.816, green: 0.902, blue: 0.996, alpha: 1.0)   // #D0E6FE 浅蓝
-    }
-    private static let unselectedText = UIColor { trait in
-        trait.userInterfaceStyle == .dark
-            ? UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1.0)   // #78B5F3 appGradientEnd
-            : UIColor.appPrimary
-    }
-
     private func updateStyle(selected: Bool) {
         if selected {
             gradientLayer.isHidden = false
@@ -147,9 +135,9 @@ private class CategoryChipButton: UIControl {
             label.textColor        = .white
         } else {
             gradientLayer.isHidden = true
-            backgroundColor        = Self.unselectedBackground
+            backgroundColor        = .appChipUnselectedBackground
             layer.borderColor      = UIColor.clear.cgColor
-            label.textColor        = Self.unselectedText
+            label.textColor        = .appChipUnselectedText
         }
     }
 

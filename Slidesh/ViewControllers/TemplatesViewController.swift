@@ -155,41 +155,29 @@ class TemplatesViewController: UIViewController {
     // MARK: - 筛选弹窗
 
     private func showStylePicker() {
-        let alert = UIAlertController(title: "选择风格", message: nil, preferredStyle: .actionSheet)
-        TemplateStyle.allCases.forEach { style in
-            let action = UIAlertAction(title: style.rawValue, style: .default) { [weak self] _ in
-                self?.selectedStyle = style
-                let isActive = style != .all
-                self?.filterBar.setStyleTitle(style.rawValue, active: isActive)
-                self?.applyFilters()
-            }
-            alert.addAction(action)
+        let options = TemplateStyle.allCases.map { $0.rawValue }
+        let current = TemplateStyle.allCases.firstIndex(of: selectedStyle) ?? 0
+        let picker  = FilterPickerViewController(title: "风格", options: options, selectedIndex: current)
+        picker.onSelect = { [weak self] index in
+            let style = TemplateStyle.allCases[index]
+            self?.selectedStyle = style
+            self?.filterBar.setStyleTitle(style.rawValue, active: style != .all)
+            self?.applyFilters()
         }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        if let popover = alert.popoverPresentationController {
-            popover.sourceView = filterBar.styleButton
-            popover.sourceRect = filterBar.styleButton.bounds
-        }
-        present(alert, animated: true)
+        present(picker, animated: false)
     }
 
     private func showColorPicker() {
-        let alert = UIAlertController(title: "选择颜色", message: nil, preferredStyle: .actionSheet)
-        TemplateColor.allCases.forEach { color in
-            let action = UIAlertAction(title: color.rawValue, style: .default) { [weak self] _ in
-                self?.selectedColor = color
-                let isActive = color != .all
-                self?.filterBar.setColorTitle(color.rawValue, active: isActive)
-                self?.applyFilters()
-            }
-            alert.addAction(action)
+        let options = TemplateColor.allCases.map { $0.rawValue }
+        let current = TemplateColor.allCases.firstIndex(of: selectedColor) ?? 0
+        let picker  = FilterPickerViewController(title: "颜色", options: options, selectedIndex: current)
+        picker.onSelect = { [weak self] index in
+            let color = TemplateColor.allCases[index]
+            self?.selectedColor = color
+            self?.filterBar.setColorTitle(color.rawValue, active: color != .all)
+            self?.applyFilters()
         }
-        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
-        if let popover = alert.popoverPresentationController {
-            popover.sourceView = filterBar.colorButton
-            popover.sourceRect = filterBar.colorButton.bounds
-        }
-        present(alert, animated: true)
+        present(picker, animated: false)
     }
 }
 
