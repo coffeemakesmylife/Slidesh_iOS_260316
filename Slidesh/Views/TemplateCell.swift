@@ -34,10 +34,9 @@ class TemplateCell: UICollectionViewCell {
     // 网格模式：预览图高度 ≈ 自身宽度 × 0.62
     private lazy var gridHeightConstraint = previewImageView.heightAnchor.constraint(
         equalTo: previewImageView.widthAnchor, multiplier: 0.62)
-    // 列表模式：预览图固定宽度 90pt，高度 4:3（height = width × 0.75）
-    private lazy var listWidthConstraint  = previewImageView.widthAnchor.constraint(equalToConstant: 90)
-    private lazy var listHeightConstraint = previewImageView.heightAnchor.constraint(
-        equalTo: previewImageView.widthAnchor, multiplier: 0.75)
+    // 列表模式：120×90pt（cell 110pt，上下各 10pt 边距 = 90pt，与左边距等距）
+    private lazy var listWidthConstraint  = previewImageView.widthAnchor.constraint(equalToConstant: 120)
+    private lazy var listHeightConstraint = previewImageView.heightAnchor.constraint(equalToConstant: 90)
 
     // MARK: - Init
 
@@ -143,9 +142,11 @@ class TemplateCell: UICollectionViewCell {
             gridHeightConstraint.isActive = false
             outerStack.axis      = .horizontal
             outerStack.spacing   = 12
-            outerStack.alignment = .center  // 垂直居中，图片不拉伸
+            // .center 垂直居中：图片 90pt 高恰好填满 outerStack（cell 110 - 上下各 10 = 90）
+            // 左/上/下边距均为 10pt
+            outerStack.alignment = .center
             listWidthConstraint.isActive  = true
-            listHeightConstraint.isActive = true  // 4:3 比例
+            listHeightConstraint.isActive = true
         }
         descLabel.isHidden  = (mode == .grid)
         usageLabel.isHidden = (mode == .grid)
