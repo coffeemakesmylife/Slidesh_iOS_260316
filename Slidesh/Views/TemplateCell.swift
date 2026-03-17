@@ -38,6 +38,8 @@ class TemplateCell: UICollectionViewCell {
     // 列表模式：120×90pt（cell 110pt，上下各 10pt 边距 = 90pt，与左边距等距）
     private lazy var listWidthConstraint  = previewImageView.widthAnchor.constraint(equalToConstant: 120)
     private lazy var listHeightConstraint = previewImageView.heightAnchor.constraint(equalToConstant: 90)
+    // 列表→网格过渡期间使用固定高度，避免宽高比约束在大尺寸下提前生效
+    private var gridTransitionHeightConstraint: NSLayoutConstraint?
 
     // MARK: - Init
 
@@ -165,5 +167,28 @@ class TemplateCell: UICollectionViewCell {
         }
         descLabel.isHidden  = (mode == .grid)
         usageLabel.isHidden = (mode == .grid)
+    }
+
+    /// 列表→网格过渡：用固定高度代替宽高比约束，避免动画起点过高
+    func prepareForGridTransition(expectedImageHeight: CGFloat) {
+        listWidthConstraint.isActive  = false
+        listHeightConstraint.isActive = false
+        gridHeightConstraint.isActive = false
+        outerStack.axis      = .vertical
+        outerStack.spacing   = 8
+        outerStack.alignment = .fill
+        gridTransitionHeightConstraint?.isActive = false
+        gridTransitionHeightConstraint = previewImageView.heightAnchor.constraint(
+            equalToConstant: expectedImageHeight)
+        gridTransitionHeightConstraint?.isActive = true
+        descLabel.isHidden  = true
+        usageLabel.isHidden = true
+    }
+
+    /// 过渡动画结束后换回比例约束
+    func activateProportionalGridConstraint() {
+        gridTransitionHeightConstraint?.isActive = false
+        gridTransitionHeightConstraint = nil
+        gridHeightConstraint.isActive = true
     }
 }

@@ -304,11 +304,26 @@ class TemplatesViewController: UIViewController {
 
     private func switchLayout(to mode: LayoutMode) {
         currentLayoutMode = mode
-        for case let cell as TemplateCell in collectionView.visibleCells {
-            cell.applyMode(mode)
-        }
         let layout = mode == .grid ? makeGridLayout() : makeListLayout()
-        collectionView.setCollectionViewLayout(layout, animated: true)
+        if mode == .list {
+            // 网格→列表：固定尺寸约束不会因宽度变化产生拉伸，直接动画即可
+            for case let cell as TemplateCell in collectionView.visibleCells {
+                cell.applyMode(.list)
+            }
+            collectionView.setCollectionViewLayout(layout, animated: true)
+        } else {
+            // 列表→网格：先设置与目标网格图片等高的固定约束，动画结束后换回比例约束
+            let imageWidth = (collectionView.bounds.width - 20) / 2 - 20
+            let targetImageHeight = imageWidth * 0.62
+            for case let cell as TemplateCell in collectionView.visibleCells {
+                cell.prepareForGridTransition(expectedImageHeight: targetImageHeight)
+            }
+            collectionView.setCollectionViewLayout(layout, animated: true) { [weak self] _ in
+                for case let cell as TemplateCell in self?.collectionView.visibleCells ?? [] {
+                    cell.activateProportionalGridConstraint()
+                }
+            }
+        }
     }
 
     // MARK: - CompositionalLayout
