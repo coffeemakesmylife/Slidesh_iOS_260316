@@ -101,7 +101,7 @@ class FilterChipButton: UIControl {
 
     private func setup() {
         layer.cornerRadius = 14
-        layer.borderWidth = 2.5
+        layer.borderWidth = 1.5
 
         titleLabel.font = .systemFont(ofSize: 13, weight: .medium)
 
@@ -133,11 +133,21 @@ class FilterChipButton: UIControl {
         updateStyle()
     }
 
+    // traitCollectionDidChange 在主题切换时更新 CGColor（不支持动态颜色）
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) {
+            updateStyle()
+        }
+    }
+
     private func updateStyle() {
         let color: UIColor = isActive ? .appPrimary : .appTextSecondary
-        titleLabel.textColor = color
+        titleLabel.textColor  = color
         chevronView.tintColor = color
-        layer.borderColor = isActive ? UIColor.appPrimary.cgColor : UIColor.appCardBorder.cgColor
-        backgroundColor = isActive ? .appPrimarySubtle : .clear
+        // CGColor 不跟随 trait 自动更新，在此手动解析当前 trait 下的颜色
+        let borderUIColor: UIColor = isActive ? .appPrimary : .appChipUnselectedBackground
+        layer.borderColor = borderUIColor.resolvedColor(with: traitCollection).cgColor
+        backgroundColor   = isActive ? .appPrimarySubtle : .clear
     }
 }
