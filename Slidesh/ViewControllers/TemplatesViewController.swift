@@ -112,9 +112,13 @@ class TemplatesViewController: UIViewController {
 
     private func switchLayout(to mode: LayoutMode) {
         layoutMode = mode
+        // 先更新所有可见 cell 的内部布局：animated transition 期间 reloadData 对可见 cell 不可靠，
+        // 新出现的 cell 会在 cellForItemAt → configure 中正确配置
+        for case let cell as TemplateCell in collectionView.visibleCells {
+            cell.applyMode(mode)
+        }
         let layout = mode == .grid ? makeGridLayout() : makeListLayout()
         collectionView.setCollectionViewLayout(layout, animated: true)
-        collectionView.reloadData()
     }
 
     // MARK: - CompositionalLayout

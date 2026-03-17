@@ -123,7 +123,8 @@ class TemplateCell: UICollectionViewCell {
 
     // MARK: - 模式切换
 
-    private func applyMode(_ mode: LayoutMode) {
+    // 供 VC 在布局切换时直接更新可见 cell（animated layout transition 期间 reloadData 不可靠）
+    func applyMode(_ mode: LayoutMode) {
         if mode == .grid {
             listWidthConstraint.isActive  = false
             outerStack.axis      = .vertical
