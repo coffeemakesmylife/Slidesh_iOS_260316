@@ -1,0 +1,36 @@
+PODS:
+  - Alamofire (5.11.1)
+  - Kingfisher (8.6.2)
+  - lottie-ios (4.6.0)
+  - SkeletonView (1.30.4)
+  - SnapKit (5.7.1)
+  - ZXRequestBlock (1.0.4)
+
+DEPENDENCIES:
+  - Alamofire
+  - Kingfisher
+  - lottie-ios
+  - SkeletonView
+  - SnapKit
+  - ZXRequestBlock
+
+SPEC REPOS:
+  trunk:
+    - Alamofire
+    - Kingfisher
+    - lottie-ios
+    - SkeletonView
+    - SnapKit
+    - ZXRequestBlock
+
+SPEC CHECKSUMS:
+  Alamofire: eec6cd8f73b242b59e34153a606a909eb9864b14
+  Kingfisher: 23d18f54677d973b713e54ce6a8f5eef6e7056ba
+  lottie-ios: 8f959969761e9c45d70353667d00af0e5b9cadb3
+  SkeletonView: 5a050f6411e697abd4cda0a8d767013399dccd69
+  SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a
+  ZXRequestBlock: f96e7bf73d7ec2635b7bd2f277f1e1800bd59b31
+
+PODFILE CHECKSUM: ee12a2e22b0afe9c268b9955aefc635918937f4d
+
+COCOAPODS: 1.16.2

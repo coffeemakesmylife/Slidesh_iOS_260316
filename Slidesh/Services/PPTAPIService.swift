@@ -131,15 +131,20 @@ class PPTAPIService {
 
     // MARK: - 私有：JSON → Model
 
+    /// options 响应格式为字典 {category:[...], style:[...], themeColor:[...]}，按 key 分组展平
     private func parseOptions(_ raw: Any) -> [PPTOption] {
-        guard let arr = raw as? [[String: Any]] else { return [] }
-        return arr.compactMap { dict in
-            guard let name  = dict["name"]  as? String,
-                  let type  = dict["type"]  as? String,
-                  let value = dict["value"] as? String
-            else { return nil }
-            return PPTOption(name: name, type: type, value: value)
+        guard let grouped = raw as? [String: Any] else { return [] }
+        var options: [PPTOption] = []
+        for (type, items) in grouped {
+            guard let arr = items as? [[String: Any]] else { continue }
+            for item in arr {
+                guard let name  = item["name"]  as? String,
+                      let value = item["value"] as? String
+                else { continue }
+                options.append(PPTOption(name: name, type: type, value: value))
+            }
         }
+        return options
     }
 
     private func parseTemplates(_ raw: Any) -> [PPTTemplate] {
