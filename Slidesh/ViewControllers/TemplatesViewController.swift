@@ -270,10 +270,10 @@ class TemplatesViewController: UIViewController {
                 // PPTAPIService 已在主线程回调
                 guard let self, case .success(let fresh) = result else { return }
                 TemplateCache.shared.storeTemplates(key: key, templates: fresh)
-                guard self.currentCacheKey() == key else { return }
+                // 仅当筛选未变且用户未翻到第 2 页以后，才用刷新结果覆盖列表
+                guard self.currentCacheKey() == key, self.currentPage == 2 else { return }
                 self.templates   = fresh
                 self.hasMore     = fresh.count >= 20
-                self.currentPage = 2
                 self.collectionView.reloadData()
             }
         }
