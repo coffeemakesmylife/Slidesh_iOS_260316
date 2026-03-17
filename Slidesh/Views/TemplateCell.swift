@@ -117,14 +117,17 @@ class TemplateCell: UICollectionViewCell {
         descLabel.text = "\(model.num) 页"
         usageLabel.text = model.category.isEmpty ? nil : model.category
 
-        // Kingfisher 加载封面图，加载中显示占位色
+        // Kingfisher 加载封面图：先显示骨架闪烁，加载完成后隐藏
         previewImageView.kf.cancelDownloadTask()
         previewImageView.image = nil
         if let url = model.coverImageURL {
+            previewImageView.showAnimatedGradientSkeleton()
             previewImageView.kf.setImage(
                 with: url,
                 options: [.transition(.fade(0.2)), .cacheOriginalImage]
-            )
+            ) { [weak self] _ in
+                self?.previewImageView.hideSkeleton()
+            }
         }
 
         // 每次都强制应用模式，避免 reuse 后状态残留
@@ -134,6 +137,7 @@ class TemplateCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         previewImageView.kf.cancelDownloadTask()
+        previewImageView.hideSkeleton()
         previewImageView.image = nil
         applyMode(.grid)
     }

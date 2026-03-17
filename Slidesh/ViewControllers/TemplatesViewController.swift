@@ -386,9 +386,9 @@ class TemplatesViewController: UIViewController {
 
 extension TemplatesViewController: SkeletonCollectionViewDataSource {
 
-    // SkeletonView 在骨架屏期间调用此方法（不调用标准 numberOfItemsInSection）
+    // SkeletonView 在骨架屏期间调用此方法替代标准 numberOfItemsInSection
     func collectionSkeletonView(_ skeletonView: UICollectionView,
-                                numberOfCellsInSection section: Int) -> Int {
+                                numberOfItemsInSection section: Int) -> Int {
         currentLayoutMode == .grid ? 6 : 5
     }
 
