@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5624474D52A2144679B82ADE /* TemplateCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2BFDCD79527F5E85F052571 /* TemplateCache.swift */; };
 		96999932670AD347A13922A6 /* Pods_Slidesh.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0EB37232F2004844D4EBFA8C /* Pods_Slidesh.framework */; };
 /* End PBXBuildFile section */
 
@@ -15,6 +16,7 @@
 		9F07A2D92F66921000EE7561 /* Slidesh.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slidesh.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A4EEA3A15DF0E01B753CC061 /* Pods-Slidesh.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Slidesh.debug.xcconfig"; path = "Target Support Files/Pods-Slidesh/Pods-Slidesh.debug.xcconfig"; sourceTree = "<group>"; };
 		B837CE57F1CABB3293F735B4 /* Pods-Slidesh.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Slidesh.release.xcconfig"; path = "Target Support Files/Pods-Slidesh/Pods-Slidesh.release.xcconfig"; sourceTree = "<group>"; };
+		D2BFDCD79527F5E85F052571 /* TemplateCache.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TemplateCache.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -50,6 +52,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		57ED5E878E4CE8B5C2E46C17 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				D2BFDCD79527F5E85F052571 /* TemplateCache.swift */,
+			);
+			name = Services;
+			path = Services;
+			sourceTree = "<group>";
+		};
 		61467BD4D3337E4D831622FB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -66,6 +77,7 @@
 				9F07A2DA2F66921000EE7561 /* Products */,
 				61467BD4D3337E4D831622FB /* Pods */,
 				B9D9356F01819D10FB01B880 /* Frameworks */,
+				BC5F2A1D5855D69BE7A3D4B3 /* Slidesh */,
 			);
 			sourceTree = "<group>";
 		};
@@ -83,6 +95,15 @@
 				0EB37232F2004844D4EBFA8C /* Pods_Slidesh.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		BC5F2A1D5855D69BE7A3D4B3 /* Slidesh */ = {
+			isa = PBXGroup;
+			children = (
+				57ED5E878E4CE8B5C2E46C17 /* Services */,
+			);
+			name = Slidesh;
+			path = Slidesh;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -205,6 +226,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5624474D52A2144679B82ADE /* TemplateCache.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
