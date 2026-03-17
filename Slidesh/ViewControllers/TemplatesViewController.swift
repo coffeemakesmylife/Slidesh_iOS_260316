@@ -122,12 +122,15 @@ class TemplatesViewController: UIViewController {
 
     private func loadFilterOptions() {
         PPTAPIService.shared.fetchOptions { [weak self] result in
-            guard let self, case .success(let options) = result else { return }
+            guard let self, case .success(let options) = result else {
+                if case .failure(let e) = result { print("❌ fetchOptions 失败：\(e)") }
+                return
+            }
 
             // 按 type 分组，type 值匹配 API 文档字段名
             let categories = options.filter { $0.type.lowercased() == "category" }
             let styles     = options.filter { $0.type.lowercased() == "style" }
-            let colors     = options.filter { $0.type.lowercased() == "themecolor" || $0.type.lowercased() == "themeColor" }
+            let colors     = options.filter { $0.type.lowercased() == "themecolor" }
 
             self.categoryOptions = [("全部场景", "")] + categories.map { ($0.name, $0.value) }
             self.styleOptions    = [("全部风格", "")] + styles.map    { ($0.name, $0.value) }

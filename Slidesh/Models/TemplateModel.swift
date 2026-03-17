@@ -29,7 +29,7 @@ struct PPTTemplate {
 
     /// 封面图片完整 URL（需拼接 token 才能访问）
     var coverImageURL: URL? {
-        URL(string: coverUrl + "?token=6744651694")
+        URL(string: coverUrl)
     }
 }
 
