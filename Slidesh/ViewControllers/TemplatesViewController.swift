@@ -129,8 +129,9 @@ class TemplatesViewController: UIViewController {
         let item      = NSCollectionLayoutItem(layoutSize: itemSize)
         item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 6, bottom: 0, trailing: 6)
 
+        // estimated 让 cell 根据内容（预览图比例 + 标题文字）自适应高度，消除标题下方多余空白
         let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                               heightDimension: .absolute(200))
+                                               heightDimension: .estimated(160))
         let group     = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
 
         let section   = NSCollectionLayoutSection(group: group)

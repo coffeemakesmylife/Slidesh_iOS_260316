@@ -94,11 +94,14 @@ class TemplateCell: UICollectionViewCell {
         outerStack.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(outerStack)
 
+        // bottom 约束降为 high 优先级，配合 .estimated 高度让网格 cell 自适应内容高度
+        let bottomConstraint = outerStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10)
+        bottomConstraint.priority = .defaultHigh
         NSLayoutConstraint.activate([
             outerStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
             outerStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
             outerStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            outerStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
+            bottomConstraint,
         ])
 
         // 默认网格模式
