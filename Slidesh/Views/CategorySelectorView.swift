@@ -96,7 +96,6 @@ private class CategoryChipButton: UIControl {
 
     private func setup() {
         layer.cornerRadius = 15
-        layer.borderWidth  = 2
         clipsToBounds = true
 
         // 品牌渐变层（仅选中时显示）
@@ -128,6 +127,18 @@ private class CategoryChipButton: UIControl {
         updateStyle(selected: selected)
     }
 
+    // 未选中状态专属颜色：浅色 #D0E6FE 背景/主色文字，深色渐变端点色低饱和背景/同色文字
+    private static let unselectedBackground = UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 0.15)  // #78B5F3 × 15%
+            : UIColor(red: 0.816, green: 0.902, blue: 0.996, alpha: 1.0)   // #D0E6FE 浅蓝
+    }
+    private static let unselectedText = UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.471, green: 0.710, blue: 0.953, alpha: 1.0)   // #78B5F3 appGradientEnd
+            : UIColor.appPrimary
+    }
+
     private func updateStyle(selected: Bool) {
         if selected {
             gradientLayer.isHidden = false
@@ -135,11 +146,10 @@ private class CategoryChipButton: UIControl {
             layer.borderColor      = UIColor.clear.cgColor
             label.textColor        = .white
         } else {
-            // 透明背景 + 可见边框：深浅色都有足够对比度
             gradientLayer.isHidden = true
-            backgroundColor        = .clear
-            layer.borderColor      = UIColor.appCardBorder.cgColor
-            label.textColor        = .appTextPrimary
+            backgroundColor        = Self.unselectedBackground
+            layer.borderColor      = UIColor.clear.cgColor
+            label.textColor        = Self.unselectedText
         }
     }
 
