@@ -305,8 +305,9 @@ private class InlineChipCell: UICollectionViewCell {
     func configure(title: String, selected: Bool) {
         label.text                  = title
         gradientLayer.isHidden      = !selected
-        contentView.backgroundColor = selected ? .clear : .appChipUnselectedBackground
-        label.textColor             = selected ? .white : .appChipUnselectedText
+        // 未选中使用三级背景色（白/深蓝灰），选中使用渐变
+        contentView.backgroundColor = selected ? .clear : .appBackgroundTertiary
+        label.textColor             = selected ? .white : .appTextPrimary
     }
 
     override func layoutSubviews() {

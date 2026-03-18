@@ -217,7 +217,7 @@ private class InspireCategoryCell: UICollectionViewCell {
     }
 
     private func setup() {
-        contentView.backgroundColor    = .appChipUnselectedBackground
+        contentView.backgroundColor    = .appBackgroundTertiary
         contentView.layer.cornerRadius = 14
         contentView.clipsToBounds      = true
 
