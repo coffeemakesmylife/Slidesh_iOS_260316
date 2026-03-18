@@ -29,6 +29,8 @@ class NewProjectViewController: UIViewController {
 
     // 卡片垂直位置约束（键盘弹出时动态调整）
     private var cardCenterYConstraint: NSLayoutConstraint!
+    // subLabel 底部约束（TopicSuggestionsView 出现时上移）
+    private var subLabelBottomConstraint: NSLayoutConstraint!
 
     // 输入框高度约束（动态更新）
     private var textViewHeightConstraint: NSLayoutConstraint!
@@ -96,18 +98,21 @@ class NewProjectViewController: UIViewController {
         subLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(subLabel)
 
+        // 布局方向从下往上：subLabel 底部紧贴卡片顶，mainLabel/icon 依次叠上
+        subLabelBottomConstraint = subLabel.bottomAnchor.constraint(
+            equalTo: cardView.topAnchor, constant: -12)
+
         NSLayoutConstraint.activate([
+            subLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            subLabelBottomConstraint,
+
+            mainLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            mainLabel.bottomAnchor.constraint(equalTo: subLabel.topAnchor, constant: -6),
+
             iconView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             iconView.bottomAnchor.constraint(equalTo: mainLabel.topAnchor, constant: -14),
             iconView.widthAnchor.constraint(equalToConstant: 48),
             iconView.heightAnchor.constraint(equalToConstant: 48),
-
-            mainLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            mainLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
-                                           constant: UIScreen.main.bounds.height * 0.13),
-
-            subLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            subLabel.topAnchor.constraint(equalTo: mainLabel.bottomAnchor, constant: 6),
         ])
     }
 
@@ -232,6 +237,17 @@ class NewProjectViewController: UIViewController {
     func showTopicSuggestions(topics: [String]) {
         currentTopics = topics
         topicSuggestionsView.update(topics: topics)
+        // update() 同步填充 chip 后，立即读取内容高度并上移 subLabel
+        let h = topicSuggestionsView.fittingHeight
+        shiftSubLabel(by: h)
+    }
+
+    /// 根据 TopicSuggestionsView 高度调整 subLabel 底部间距（0 = 复位）
+    private func shiftSubLabel(by suggestionsHeight: CGFloat) {
+        // base -12：subLabel 与卡片顶的基础间距；有建议时再追加高度 + 12 上间距
+        let extra = suggestionsHeight > 0 ? suggestionsHeight + 12 : 0
+        subLabelBottomConstraint.constant = -(12 + extra)
+        UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
     }
 
     private func applyTopic(_ topic: String) {
@@ -523,9 +539,13 @@ extension NewProjectViewController: UITextViewDelegate {
 
         // 建议浮层：有文字→收起，清空→若有已选行业则重新展示
         if textView.text.isEmpty {
-            if !currentTopics.isEmpty { topicSuggestionsView.show() }
+            if !currentTopics.isEmpty {
+                topicSuggestionsView.show()
+                shiftSubLabel(by: topicSuggestionsView.fittingHeight)
+            }
         } else {
             topicSuggestionsView.hide()
+            shiftSubLabel(by: 0)
         }
 
         // 动态计算高度
@@ -627,6 +647,11 @@ private class TopicSuggestionsView: UIView {
 
     private let stackView = UIStackView()
     var onSelect: ((String) -> Void)?
+
+    /// 当前内容的自适应高度（stackView 实际高度，用于外部调整布局）
+    var fittingHeight: CGFloat {
+        stackView.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
