@@ -383,9 +383,12 @@ class TemplatesViewController: UIViewController {
     }
 
     private func showColorPicker() {
-        let options = colorOptions.map { $0.name }
-        let current = colorOptions.firstIndex { $0.value == selectedColor } ?? 0
-        let picker  = FilterPickerViewController(title: "颜色", options: options, selectedIndex: current)
+        let options  = colorOptions.map { $0.name }
+        let current  = colorOptions.firstIndex { $0.value == selectedColor } ?? 0
+        // 将颜色 value 映射为 UIColor，第一个（全部）传 nil 用品牌渐变
+        let swatches: [UIColor?] = colorOptions.map { Self.uiColor(forValue: $0.value) }
+        let picker   = FilterPickerViewController(title: "颜色", options: options,
+                                                  selectedIndex: current, colorSwatches: swatches)
         picker.onSelect = { [weak self] index in
             guard let self, index < self.colorOptions.count else { return }
             let selected = self.colorOptions[index]
@@ -394,6 +397,34 @@ class TemplatesViewController: UIViewController {
             self.loadTemplates(reset: true)
         }
         present(picker, animated: false)
+    }
+
+    /// 根据 API 返回的颜色 value 值映射为 UIColor，空字符串（全部）返回 nil
+    private static func uiColor(forValue value: String) -> UIColor? {
+        switch value.lowercased() {
+        case "":        return nil
+        case "orange":  return UIColor(red: 0.98, green: 0.55, blue: 0.12, alpha: 1)
+        case "blue":    return UIColor(red: 0.20, green: 0.49, blue: 0.96, alpha: 1)
+        case "purple":  return UIColor(red: 0.60, green: 0.25, blue: 0.85, alpha: 1)
+        case "cyan":    return UIColor(red: 0.15, green: 0.75, blue: 0.82, alpha: 1)
+        case "green":   return UIColor(red: 0.22, green: 0.76, blue: 0.40, alpha: 1)
+        case "yellow":  return UIColor(red: 0.98, green: 0.82, blue: 0.12, alpha: 1)
+        case "red":     return UIColor(red: 0.95, green: 0.24, blue: 0.24, alpha: 1)
+        case "brown":   return UIColor(red: 0.60, green: 0.38, blue: 0.22, alpha: 1)
+        case "white":   return UIColor(red: 0.95, green: 0.95, blue: 0.95, alpha: 1)
+        case "black":   return UIColor(red: 0.15, green: 0.15, blue: 0.18, alpha: 1)
+        default:
+            // 尝试解析 #RRGGBB 格式
+            var hex = value.trimmingCharacters(in: .whitespaces)
+            if hex.hasPrefix("#") { hex = String(hex.dropFirst()) }
+            if hex.count == 6, let rgb = UInt64(hex, radix: 16) {
+                return UIColor(red:   CGFloat((rgb >> 16) & 0xFF) / 255,
+                               green: CGFloat((rgb >> 8)  & 0xFF) / 255,
+                               blue:  CGFloat( rgb        & 0xFF) / 255,
+                               alpha: 1)
+            }
+            return UIColor.systemGray
+        }
     }
 }
 

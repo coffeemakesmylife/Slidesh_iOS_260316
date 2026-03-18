@@ -20,6 +20,8 @@ class FilterPickerViewController: UIViewController {
     private let pickerTitle: String
     private let options: [String]
     private var selectedIndex: Int
+    /// 非 nil 时启用色块模式；每个元素对应 options 中同位置的颜色，nil 表示"全部"用品牌渐变
+    private let colorSwatches: [UIColor?]?
 
     private let dimView   = UIView()
     private let panelView = UIView()
@@ -29,10 +31,11 @@ class FilterPickerViewController: UIViewController {
 
     // MARK: - Init
 
-    init(title: String, options: [String], selectedIndex: Int) {
+    init(title: String, options: [String], selectedIndex: Int, colorSwatches: [UIColor?]? = nil) {
         self.pickerTitle   = title
         self.options       = options
         self.selectedIndex = selectedIndex
+        self.colorSwatches = colorSwatches
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .overFullScreen
     }
@@ -122,20 +125,27 @@ class FilterPickerViewController: UIViewController {
             titleLabel.leadingAnchor.constraint(equalTo: panelView.leadingAnchor, constant: 20),
         ])
 
-        // 选项集合视图
-        collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeChipLayout())
+        // 选项集合视图：色块模式用 5 列 64pt，文字模式用 4 列 40pt
+        let isSwatchMode = colorSwatches != nil
+        collectionView = UICollectionView(frame: .zero,
+                                          collectionViewLayout: isSwatchMode ? makeSwatchLayout() : makeChipLayout())
         collectionView.backgroundColor = .clear
-        collectionView.register(PickerChipCell.self, forCellWithReuseIdentifier: PickerChipCell.reuseID)
+        if isSwatchMode {
+            collectionView.register(ColorSwatchCell.self, forCellWithReuseIdentifier: ColorSwatchCell.reuseID)
+        } else {
+            collectionView.register(PickerChipCell.self, forCellWithReuseIdentifier: PickerChipCell.reuseID)
+        }
         collectionView.dataSource = self
         collectionView.delegate   = self
         collectionView.isScrollEnabled = false
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         panelView.addSubview(collectionView)
 
-        // 根据选项数量计算高度（4 列，行高 40，行间距 10）
-        let rows    = Int(ceil(Double(options.count) / 4.0))
-        let chipH: CGFloat = 40
+        // 色块模式：5 列，行高 64pt；文字模式：4 列，行高 40pt
+        let columns: Int    = isSwatchMode ? 5 : 4
+        let chipH: CGFloat  = isSwatchMode ? 64 : 40
         let rowGap: CGFloat = 10
+        let rows    = Int(ceil(Double(options.count) / Double(columns)))
         let collH   = CGFloat(rows) * chipH + CGFloat(max(rows - 1, 0)) * rowGap
 
         NSLayoutConstraint.activate([
@@ -145,6 +155,22 @@ class FilterPickerViewController: UIViewController {
             collectionView.heightAnchor.constraint(equalToConstant: collH),
             collectionView.bottomAnchor.constraint(equalTo: panelView.safeAreaLayoutGuide.bottomAnchor, constant: -24),
         ])
+    }
+
+    private func makeSwatchLayout() -> UICollectionViewLayout {
+        let itemSize  = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.2),
+                                               heightDimension: .absolute(64))
+        let item      = NSCollectionLayoutItem(layoutSize: itemSize)
+        item.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
+
+        let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
+                                               heightDimension: .absolute(64))
+        let group     = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+
+        let section   = NSCollectionLayoutSection(group: group)
+        section.interGroupSpacing = 10
+
+        return UICollectionViewCompositionalLayout(section: section)
     }
 
     private func makeChipLayout() -> UICollectionViewLayout {
@@ -206,9 +232,18 @@ extension FilterPickerViewController: UICollectionViewDataSource, UICollectionVi
 
     func collectionView(_ collectionView: UICollectionView,
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let isSelected = indexPath.item == selectedIndex
+        if let swatches = colorSwatches {
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: ColorSwatchCell.reuseID, for: indexPath) as! ColorSwatchCell
+            cell.configure(title: options[indexPath.item],
+                           color: swatches[indexPath.item],
+                           selected: isSelected)
+            return cell
+        }
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: PickerChipCell.reuseID, for: indexPath) as! PickerChipCell
-        cell.configure(title: options[indexPath.item], selected: indexPath.item == selectedIndex)
+        cell.configure(title: options[indexPath.item], selected: isSelected)
         return cell
     }
 
@@ -220,6 +255,126 @@ extension FilterPickerViewController: UICollectionViewDataSource, UICollectionVi
             self.onSelect?(indexPath.item)
             self.dismissPicker()
         }
+    }
+}
+
+// MARK: - ColorSwatchCell（色块模式）
+
+private class ColorSwatchCell: UICollectionViewCell {
+
+    static let reuseID = "ColorSwatchCell"
+
+    private let circleView    = UIView()
+    private let gradientLayer = CAGradientLayer()   // 全部颜色用品牌渐变
+    private let checkmark     = UIImageView()
+    private let titleLabel    = UILabel()
+    private let borderLayer   = CAShapeLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        // 圆形色块
+        circleView.clipsToBounds = true
+        circleView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(circleView)
+
+        // 品牌渐变（用于"全部"选项）
+        gradientLayer.colors     = [UIColor.appGradientStart.cgColor,
+                                    UIColor.appGradientMid.cgColor,
+                                    UIColor.appGradientEnd.cgColor]
+        gradientLayer.locations  = [0.0, 0.55, 1.0]
+        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
+        gradientLayer.isHidden   = true
+        circleView.layer.insertSublayer(gradientLayer, at: 0)
+
+        // 选中时显示的白色对勾
+        let config  = UIImage.SymbolConfiguration(pointSize: 13, weight: .bold)
+        checkmark.image     = UIImage(systemName: "checkmark", withConfiguration: config)
+        checkmark.tintColor = .white
+        checkmark.isHidden  = true
+        checkmark.translatesAutoresizingMaskIntoConstraints = false
+        circleView.addSubview(checkmark)
+
+        // 选中状态的彩色描边环（叠加在 circleView 之外，用 borderLayer）
+        borderLayer.fillColor   = UIColor.clear.cgColor
+        borderLayer.lineWidth   = 2.5
+        borderLayer.strokeColor = UIColor.clear.cgColor
+        contentView.layer.addSublayer(borderLayer)
+
+        // 颜色名称标签
+        titleLabel.font          = .systemFont(ofSize: 11)
+        titleLabel.textColor     = .appTextSecondary
+        titleLabel.textAlignment = .center
+        titleLabel.numberOfLines = 1
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(titleLabel)
+
+        // 圆形尺寸：34pt，居中偏上
+        NSLayoutConstraint.activate([
+            circleView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            circleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
+            circleView.widthAnchor.constraint(equalToConstant: 34),
+            circleView.heightAnchor.constraint(equalToConstant: 34),
+
+            checkmark.centerXAnchor.constraint(equalTo: circleView.centerXAnchor),
+            checkmark.centerYAnchor.constraint(equalTo: circleView.centerYAnchor),
+
+            titleLabel.topAnchor.constraint(equalTo: circleView.bottomAnchor, constant: 4),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+        ])
+    }
+
+    func configure(title: String, color: UIColor?, selected: Bool) {
+        titleLabel.text = title
+
+        if let c = color {
+            // 有具体颜色
+            circleView.backgroundColor = c
+            gradientLayer.isHidden = true
+        } else {
+            // 全部颜色：品牌渐变
+            circleView.backgroundColor = .clear
+            gradientLayer.isHidden = false
+        }
+
+        checkmark.isHidden = !selected
+
+        // 选中描边：使用颜色本身（全部用白色描边配合渐变背景）
+        if selected {
+            let strokeColor = (color ?? .white).withAlphaComponent(0.6)
+            borderLayer.strokeColor = strokeColor.cgColor
+        } else {
+            borderLayer.strokeColor = UIColor.clear.cgColor
+        }
+
+        // 标签颜色：选中时加强显示
+        titleLabel.textColor = selected ? .appTextPrimary : .appTextSecondary
+        titleLabel.font = selected
+            ? .systemFont(ofSize: 11, weight: .semibold)
+            : .systemFont(ofSize: 11)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        let r = circleView.bounds.width / 2
+        circleView.layer.cornerRadius = r
+        gradientLayer.frame = circleView.bounds
+
+        // 描边环稍大于圆，套在外圈
+        let inset: CGFloat = -3
+        let rect = circleView.frame.insetBy(dx: inset, dy: inset)
+        let path = UIBezierPath(ovalIn: rect)
+        borderLayer.path = path.cgPath
     }
 }
 
