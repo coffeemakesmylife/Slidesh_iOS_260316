@@ -257,7 +257,9 @@ private class InspireCategoryCell: UICollectionViewCell {
     override var isHighlighted: Bool {
         didSet {
             UIView.animate(withDuration: 0.1) {
-                self.contentView.alpha     = self.isHighlighted ? 0.65 : 1.0
+                // 高亮时切换为主色低透明度背景，恢复时回到三级背景
+                self.contentView.backgroundColor = self.isHighlighted
+                    ? .appPrimarySubtle : .appBackgroundTertiary
                 self.contentView.transform = self.isHighlighted
                     ? CGAffineTransform(scaleX: 0.94, y: 0.94) : .identity
             }

@@ -406,8 +406,7 @@ private class InlineChipCell: UICollectionViewCell {
 
     static let reuseID = "InlineChipCell"
 
-    private let label         = UILabel()
-    private let gradientLayer = CAGradientLayer()
+    private let label = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -423,15 +422,6 @@ private class InlineChipCell: UICollectionViewCell {
         contentView.layer.cornerRadius = 10
         contentView.clipsToBounds      = true
 
-        gradientLayer.colors     = [UIColor.appGradientStart.cgColor,
-                                    UIColor.appGradientMid.cgColor,
-                                    UIColor.appGradientEnd.cgColor]
-        gradientLayer.locations  = [0.0, 0.55, 1.0]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
-        gradientLayer.isHidden   = true
-        contentView.layer.insertSublayer(gradientLayer, at: 0)
-
         label.font          = .systemFont(ofSize: 13, weight: .medium)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -446,21 +436,10 @@ private class InlineChipCell: UICollectionViewCell {
     }
 
     func configure(title: String, selected: Bool, isCustomChip: Bool = false) {
-        label.text             = title
-        gradientLayer.isHidden = !selected
-        contentView.backgroundColor = selected ? .clear : .appBackgroundTertiary
-        label.textColor        = selected ? .white : (isCustomChip ? .appPrimary : .appTextPrimary)
-        // 自定义 chip 显示虚线边框以区分普通选项
-        if isCustomChip && !selected {
-            contentView.layer.borderColor = UIColor.appPrimary.cgColor
-            contentView.layer.borderWidth = 1
-        } else {
-            contentView.layer.borderWidth = 0
-        }
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        gradientLayer.frame = contentView.bounds
+        label.text = title
+        // 选中：主色低透明度背景 + 主色文字；未选中：三级背景 + 一级文字
+        contentView.backgroundColor = selected ? .appPrimarySubtle : .appBackgroundTertiary
+        label.textColor             = selected ? .appPrimary : .appTextPrimary
+        contentView.layer.borderWidth = 0
     }
 }
