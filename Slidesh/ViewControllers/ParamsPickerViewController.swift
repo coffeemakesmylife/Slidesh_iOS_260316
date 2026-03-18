@@ -2,32 +2,64 @@
 //  ParamsPickerViewController.swift
 //  Slidesh
 //
-//  参数选择面板：页数、语言、场景、受众，配合 UISheetPresentationController medium detent 使用
+//  参数选择面板：篇幅长度、语言、场景、受众，配合 UISheetPresentationController medium detent 使用
 //
 
 import UIKit
 
 class ParamsPickerViewController: UIViewController {
 
+    // MARK: - 数据类型
+
+    struct LengthOption {
+        let display: String   // 界面显示文本
+        let detail:  String   // 页数范围说明
+        let value:   String   // API 传值
+    }
+
+    struct LanguageOption {
+        let display: String   // 界面显示文本
+        let value:   String   // API 传值
+    }
+
     // MARK: - 静态数据
 
-    static let pageCounts: [Int]    = [5, 8, 10, 15, 20, 25, 30]
-    static let languages:  [String] = ["中文", "English", "日本語", "한국어", "Français", "Español"]
+    static let lengths: [LengthOption] = [
+        .init(display: "短篇", detail: "10-15页", value: "short"),
+        .init(display: "中篇", detail: "20-30页", value: "medium"),
+        .init(display: "长篇", detail: "25-35页", value: "long"),
+    ]
+
+    static let languages: [LanguageOption] = [
+        .init(display: "中文（简体）", value: "zh"),
+        .init(display: "中文（繁體）", value: "zh-Hant"),
+        .init(display: "English",      value: "en"),
+        .init(display: "日本語",        value: "ja"),
+        .init(display: "한국어",        value: "ko"),
+        .init(display: "العربية",      value: "ar"),
+        .init(display: "Deutsch",      value: "de"),
+        .init(display: "Français",     value: "fr"),
+        .init(display: "Italiano",     value: "it"),
+        .init(display: "Português",    value: "pt"),
+        .init(display: "Español",      value: "es"),
+        .init(display: "Русский",      value: "ru"),
+    ]
+
     static let scenes:     [String] = ["通用", "商务", "教育", "科技", "医疗", "创意"]
     static let audiences:  [String] = ["通用", "学生", "职场人士", "管理层", "投资人", "客户"]
 
     // MARK: - 选择结果
 
     struct Selection {
-        var pageIndex:     Int = 2  // 默认 10 页
-        var languageIndex: Int = 0  // 默认中文
+        var lengthIndex:   Int = 1  // 默认中篇 (medium)
+        var languageIndex: Int = 0  // 默认中文简体
         var sceneIndex:    Int = 0  // 默认通用
         var audienceIndex: Int = 0  // 默认通用
 
-        var pageCount: Int    { ParamsPickerViewController.pageCounts[pageIndex] }
-        var language:  String { ParamsPickerViewController.languages[languageIndex] }
-        var scene:     String { ParamsPickerViewController.scenes[sceneIndex] }
-        var audience:  String { ParamsPickerViewController.audiences[audienceIndex] }
+        var length:   LengthOption   { ParamsPickerViewController.lengths[lengthIndex] }
+        var language: LanguageOption { ParamsPickerViewController.languages[languageIndex] }
+        var scene:    String         { ParamsPickerViewController.scenes[sceneIndex] }
+        var audience: String         { ParamsPickerViewController.audiences[audienceIndex] }
     }
 
     var onConfirm: ((Selection) -> Void)?
@@ -35,22 +67,21 @@ class ParamsPickerViewController: UIViewController {
 
     // MARK: - 子视图
 
-    // 每个 section 的 CollectionView，按 tag 0-3 区分
     private var sectionCollections: [UICollectionView] = []
 
-    // Section 元数据
     private struct SectionMeta {
-        let title: String
+        let title:   String
         let options: [String]
         let columns: Int
     }
 
     private lazy var sections: [SectionMeta] = [
-        SectionMeta(title: "页数",
-                    options: Self.pageCounts.map { "\($0) 页" },
-                    columns: 4),
+        SectionMeta(title: "篇幅长度",
+                    // 显示 "短篇 10-15页" 形式
+                    options: Self.lengths.map { "\($0.display)  \($0.detail)" },
+                    columns: 1),   // 每行 1 个，让页数范围文字完整显示
         SectionMeta(title: "语言",
-                    options: Self.languages,
+                    options: Self.languages.map { $0.display },
                     columns: 3),
         SectionMeta(title: "场景",
                     options: Self.scenes,
@@ -65,7 +96,6 @@ class ParamsPickerViewController: UIViewController {
     init(selection: Selection) {
         self.selection = selection
         super.init(nibName: nil, bundle: nil)
-        // 不设置 overFullScreen，交由 sheetPresentationController 管理
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -78,7 +108,6 @@ class ParamsPickerViewController: UIViewController {
         buildContent()
     }
 
-    // 关闭时（完成按钮或手势下滑）均触发回调
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         if isBeingDismissed {
@@ -89,7 +118,6 @@ class ParamsPickerViewController: UIViewController {
     // MARK: - 内容布局
 
     private func buildContent() {
-        // 标题行
         let titleLabel = UILabel()
         titleLabel.text      = "参数设置"
         titleLabel.font      = .systemFont(ofSize: 18, weight: .semibold)
@@ -97,7 +125,6 @@ class ParamsPickerViewController: UIViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(titleLabel)
 
-        // 完成按钮
         let doneBtn = UIButton(type: .system)
         doneBtn.setTitle("完成", for: .normal)
         doneBtn.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
@@ -106,7 +133,6 @@ class ParamsPickerViewController: UIViewController {
         doneBtn.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(doneBtn)
 
-        // 纵向滚动视图（容纳所有 section）
         let scrollView = UIScrollView()
         scrollView.showsVerticalScrollIndicator = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
@@ -118,10 +144,8 @@ class ParamsPickerViewController: UIViewController {
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(contentStack)
 
-        // 添加四个 section
         for (idx, meta) in sections.enumerated() {
-            let sectionView = buildSection(meta: meta, tag: idx)
-            contentStack.addArrangedSubview(sectionView)
+            contentStack.addArrangedSubview(buildSection(meta: meta, tag: idx))
         }
 
         NSLayoutConstraint.activate([
@@ -144,12 +168,10 @@ class ParamsPickerViewController: UIViewController {
         ])
     }
 
-    // 构建单个参数 section
     private func buildSection(meta: SectionMeta, tag: Int) -> UIView {
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
 
-        // Section 标题
         let header = UILabel()
         header.text      = meta.title
         header.font      = .systemFont(ofSize: 13, weight: .medium)
@@ -157,7 +179,6 @@ class ParamsPickerViewController: UIViewController {
         header.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(header)
 
-        // CollectionView（不可滚动，高度由内容决定）
         let layout = makeSectionLayout(columns: meta.columns)
         let cv     = UICollectionView(frame: .zero, collectionViewLayout: layout)
         cv.backgroundColor = .clear
@@ -170,9 +191,8 @@ class ParamsPickerViewController: UIViewController {
         container.addSubview(cv)
         sectionCollections.append(cv)
 
-        // 计算 CollectionView 固定高度
-        let rows  = Int(ceil(Double(meta.options.count) / Double(meta.columns)))
-        let chipH: CGFloat  = 36
+        let rows    = Int(ceil(Double(meta.options.count) / Double(meta.columns)))
+        let chipH:  CGFloat = 40
         let rowGap: CGFloat = 8
         let cvH = CGFloat(rows) * chipH + CGFloat(max(rows - 1, 0)) * rowGap
 
@@ -193,12 +213,12 @@ class ParamsPickerViewController: UIViewController {
     private func makeSectionLayout(columns: Int) -> UICollectionViewLayout {
         let fraction  = 1.0 / CGFloat(columns)
         let itemSize  = NSCollectionLayoutSize(widthDimension: .fractionalWidth(fraction),
-                                               heightDimension: .absolute(36))
+                                               heightDimension: .absolute(40))
         let item      = NSCollectionLayoutItem(layoutSize: itemSize)
         item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4)
 
         let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
-                                               heightDimension: .absolute(36))
+                                               heightDimension: .absolute(40))
         let group     = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
 
         let section   = NSCollectionLayoutSection(group: group)
@@ -213,10 +233,9 @@ class ParamsPickerViewController: UIViewController {
         dismiss(animated: true)
     }
 
-    // 当前 section 的选中 index
     private func selectedIndex(for tag: Int) -> Int {
         switch tag {
-        case 0: return selection.pageIndex
+        case 0: return selection.lengthIndex
         case 1: return selection.languageIndex
         case 2: return selection.sceneIndex
         case 3: return selection.audienceIndex
@@ -247,7 +266,7 @@ extension ParamsPickerViewController: UICollectionViewDataSource, UICollectionVi
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
         switch collectionView.tag {
-        case 0: selection.pageIndex     = indexPath.item
+        case 0: selection.lengthIndex   = indexPath.item
         case 1: selection.languageIndex = indexPath.item
         case 2: selection.sceneIndex    = indexPath.item
         case 3: selection.audienceIndex = indexPath.item
@@ -305,7 +324,6 @@ private class InlineChipCell: UICollectionViewCell {
     func configure(title: String, selected: Bool) {
         label.text                  = title
         gradientLayer.isHidden      = !selected
-        // 未选中使用三级背景色（白/深蓝灰），选中使用渐变
         contentView.backgroundColor = selected ? .clear : .appBackgroundTertiary
         label.textColor             = selected ? .white : .appTextPrimary
     }

@@ -7,12 +7,12 @@ import UIKit
 
 class NewProjectViewController: UIViewController {
 
-    // MARK: - 参数状态
+    // MARK: - 参数状态（存 API 值）
 
-    private var selectedPageCount = 10
-    private var selectedLanguage  = "中文"
-    private var selectedScene     = "通用"
-    private var selectedAudience  = "通用"
+    private var selectedLength   = "medium"   // short / medium / long
+    private var selectedLanguage = "zh"       // 语言 API 值
+    private var selectedScene    = "通用"
+    private var selectedAudience = "通用"
 
     // MARK: - 子视图
 
@@ -308,8 +308,11 @@ class NewProjectViewController: UIViewController {
 
         // 三个 Chip：灵感 / 页数 / 语言
         inspireChip = ParamChip(symbol: "lightbulb", label: "主题灵感")
-        pageChip    = ParamChip(symbol: "doc.text",  label: "\(selectedPageCount) 页")
-        langChip    = ParamChip(symbol: "globe",     label: selectedLanguage)
+        // 用默认值对应的显示文本初始化 chip
+        let defaultLength = ParamsPickerViewController.lengths.first { $0.value == selectedLength }
+        let defaultLang   = ParamsPickerViewController.languages.first { $0.value == selectedLanguage }
+        pageChip = ParamChip(symbol: "doc.text", label: defaultLength?.display ?? "中篇")
+        langChip = ParamChip(symbol: "globe",    label: defaultLang?.display   ?? "中文（简体）")
 
         [inspireChip, pageChip, langChip].forEach { paramsStack.addArrangedSubview($0) }
 
@@ -478,7 +481,7 @@ class NewProjectViewController: UIViewController {
     @objc private func generateTapped() {
         let theme = themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !theme.isEmpty else { themeTextView.becomeFirstResponder(); return }
-        print("生成 PPT: 主题=\(theme), 页数=\(selectedPageCount), 语言=\(selectedLanguage), 场景=\(selectedScene), 受众=\(selectedAudience)")
+        print("生成 PPT: 主题=\(theme), 篇幅=\(selectedLength), 语言=\(selectedLanguage), 场景=\(selectedScene), 受众=\(selectedAudience)")
     }
 
     // MARK: - 选择器
@@ -503,22 +506,21 @@ class NewProjectViewController: UIViewController {
     private func showParamsPicker() {
         view.endEditing(true)  // 弹出前收起键盘
 
-        let pageCounts = ParamsPickerViewController.pageCounts
         let current = ParamsPickerViewController.Selection(
-            pageIndex:     pageCounts.firstIndex(of: selectedPageCount) ?? 2,
-            languageIndex: ParamsPickerViewController.languages.firstIndex(of: selectedLanguage) ?? 0,
+            lengthIndex:   ParamsPickerViewController.lengths.firstIndex(where: { $0.value == selectedLength }) ?? 1,
+            languageIndex: ParamsPickerViewController.languages.firstIndex(where: { $0.value == selectedLanguage }) ?? 0,
             sceneIndex:    ParamsPickerViewController.scenes.firstIndex(of: selectedScene) ?? 0,
             audienceIndex: ParamsPickerViewController.audiences.firstIndex(of: selectedAudience) ?? 0
         )
         let picker = ParamsPickerViewController(selection: current)
         picker.onConfirm = { [weak self] sel in
             guard let self else { return }
-            self.selectedPageCount = sel.pageCount
-            self.selectedLanguage  = sel.language
-            self.selectedScene     = sel.scene
-            self.selectedAudience  = sel.audience
-            self.pageChip.updateLabel("\(sel.pageCount) 页")
-            self.langChip.updateLabel(sel.language)
+            self.selectedLength   = sel.length.value
+            self.selectedLanguage = sel.language.value
+            self.selectedScene    = sel.scene
+            self.selectedAudience = sel.audience
+            self.pageChip.updateLabel(sel.length.display)
+            self.langChip.updateLabel(sel.language.display)
         }
 
         // 使用 native sheet medium detent
