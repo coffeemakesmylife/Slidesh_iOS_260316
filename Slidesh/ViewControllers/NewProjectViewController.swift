@@ -194,14 +194,23 @@ class NewProjectViewController: UIViewController {
 
     @discardableResult
     private func buildParamsBar(below above: UIView) -> UIView {
-        // 容器（必须 clipsToBounds，让 chip 滑到 more 按钮下方时被裁剪）
         let container = UIView()
-        container.clipsToBounds = true
         container.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(container)
 
-        // ScrollView：全宽，chip 可以滑动到右侧 more 按钮下方
+        // 更多按钮：固定在右侧，不参与滚动
+        let moreBtn = buildMoreButton()
+        container.addSubview(moreBtn)
+
+        // 竖向分割线，隔开滚动区域和更多按钮
+        let divider = UIView()
+        divider.backgroundColor = .appSeparator
+        divider.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(divider)
+
+        // ScrollView：从 leading 到 divider.leading，chip 不会遮挡 moreBtn
         paramsScrollView.showsHorizontalScrollIndicator = false
+        paramsScrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 12)
         paramsScrollView.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(paramsScrollView)
 
@@ -212,9 +221,9 @@ class NewProjectViewController: UIViewController {
         paramsScrollView.addSubview(paramsStack)
 
         // 三个 Chip：灵感 / 页数 / 语言
-        inspireChip = ParamChip(symbol: "lightbulb",  label: "主题灵感")
-        pageChip    = ParamChip(symbol: "doc.text",   label: "\(selectedPageCount) 页")
-        langChip    = ParamChip(symbol: "globe",      label: selectedLanguage)
+        inspireChip = ParamChip(symbol: "lightbulb", label: "主题灵感")
+        pageChip    = ParamChip(symbol: "doc.text",  label: "\(selectedPageCount) 页")
+        langChip    = ParamChip(symbol: "globe",     label: selectedLanguage)
 
         [inspireChip, pageChip, langChip].forEach { paramsStack.addArrangedSubview($0) }
 
@@ -222,16 +231,7 @@ class NewProjectViewController: UIViewController {
         pageChip.onTap    = { [weak self] in self?.showParamsPicker() }
         langChip.onTap    = { [weak self] in self?.showParamsPicker() }
 
-        // More 按钮（固定在右侧，chip 在其背后滑动）
-        let moreBtn = buildMoreButton()
-        container.addSubview(moreBtn)
-
-        // 渐变遮罩（透明 → 卡片背景色，在 more 按钮左侧淡出 chip）
-        let fadeView = HorizontalFadeView()
-        container.addSubview(fadeView)
-
         let moreBtnW: CGFloat = 44
-        let fadeW:    CGFloat = 64
 
         NSLayoutConstraint.activate([
             container.topAnchor.constraint(equalTo: above.bottomAnchor),
@@ -239,45 +239,41 @@ class NewProjectViewController: UIViewController {
             container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
             container.heightAnchor.constraint(equalToConstant: 52),
 
-            // ScrollView 全宽覆盖（chip 可滑入 more 按钮区域，被遮盖）
+            // 更多按钮：紧贴右侧，撑满容器高度
+            moreBtn.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            moreBtn.topAnchor.constraint(equalTo: container.topAnchor),
+            moreBtn.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            moreBtn.widthAnchor.constraint(equalToConstant: moreBtnW),
+
+            // 分割线：紧靠 moreBtn 左侧，垂直居中
+            divider.trailingAnchor.constraint(equalTo: moreBtn.leadingAnchor),
+            divider.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            divider.widthAnchor.constraint(equalToConstant: 0.5),
+            divider.heightAnchor.constraint(equalToConstant: 20),
+
+            // ScrollView：从 leading 到 divider.leading（不与 moreBtn 重叠）
             paramsScrollView.topAnchor.constraint(equalTo: container.topAnchor),
             paramsScrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             paramsScrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            paramsScrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            paramsScrollView.trailingAnchor.constraint(equalTo: divider.leadingAnchor),
 
-            paramsStack.topAnchor.constraint(equalTo: paramsScrollView.topAnchor),
-            paramsStack.bottomAnchor.constraint(equalTo: paramsScrollView.bottomAnchor),
-            paramsStack.leadingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.leadingAnchor, constant: 16),
-            paramsStack.trailingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.trailingAnchor, constant: -16),
-            paramsStack.heightAnchor.constraint(equalTo: paramsScrollView.heightAnchor),
-
-            // More 按钮固定右侧
-            moreBtn.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            moreBtn.centerYAnchor.constraint(equalTo: container.centerYAnchor),
-            moreBtn.widthAnchor.constraint(equalToConstant: moreBtnW),
-            moreBtn.heightAnchor.constraint(equalToConstant: 32),
-
-            // 渐变：紧贴 more 按钮左侧
-            fadeView.trailingAnchor.constraint(equalTo: moreBtn.leadingAnchor),
-            fadeView.topAnchor.constraint(equalTo: container.topAnchor),
-            fadeView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            fadeView.widthAnchor.constraint(equalToConstant: fadeW),
+            // Stack 使用 contentLayoutGuide（正确的横向滚动布局方式）
+            paramsStack.topAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.topAnchor),
+            paramsStack.bottomAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.bottomAnchor),
+            paramsStack.leadingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.leadingAnchor, constant: 12),
+            paramsStack.trailingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.trailingAnchor, constant: -12),
+            // 高度锁定为 frameLayoutGuide 高度，防止垂直滚动
+            paramsStack.heightAnchor.constraint(equalTo: paramsScrollView.frameLayoutGuide.heightAnchor),
         ])
-
-        // 滚动终点留出 more 按钮区域，确保最后一个 chip 可以完全显示
-        paramsScrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: moreBtnW + fadeW)
 
         return container
     }
 
     private func buildMoreButton() -> UIButton {
         let btn = UIButton(type: .system)
-        let cfg = UIImage.SymbolConfiguration(pointSize: 13, weight: .medium)
+        let cfg = UIImage.SymbolConfiguration(pointSize: 15, weight: .medium)
         btn.setImage(UIImage(systemName: "line.3.horizontal.decrease", withConfiguration: cfg), for: .normal)
-        btn.tintColor          = .appTextSecondary
-        // chip 样式，使其在卡片中清晰可见
-        btn.backgroundColor    = .appBackgroundSecondary
-        btn.layer.cornerRadius = 14
+        btn.tintColor = .appTextSecondary
         btn.addTarget(self, action: #selector(moreParamsTapped), for: .touchUpInside)
         btn.translatesAutoresizingMaskIntoConstraints = false
         return btn
@@ -484,36 +480,3 @@ private class ParamChip: UIView {
     }
 }
 
-// MARK: - HorizontalFadeView（透明→卡片背景色的横向渐变遮罩）
-
-private class HorizontalFadeView: UIView {
-
-    private let gradient = CAGradientLayer()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        gradient.startPoint = CGPoint(x: 0, y: 0.5)
-        gradient.endPoint   = CGPoint(x: 1, y: 0.5)
-        isUserInteractionEnabled = false
-        layer.addSublayer(gradient)
-        updateColors()
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        gradient.frame = bounds
-    }
-
-    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-        super.traitCollectionDidChange(previous)
-        updateColors()
-    }
-
-    private func updateColors() {
-        // 结束色用不透明卡片背景，完全遮住滑入的 chip
-        let base = UIColor.appCardBackground.resolvedColor(with: traitCollection)
-        gradient.colors = [base.withAlphaComponent(0).cgColor, base.cgColor]
-    }
-}
