@@ -12,14 +12,14 @@ class ParamsPickerViewController: UIViewController {
     // MARK: - 数据类型
 
     struct LengthOption {
-        let display: String   // 界面显示文本
-        let detail:  String   // 页数范围说明
-        let value:   String   // API 传值
+        let display: String
+        let detail:  String
+        let value:   String
     }
 
     struct LanguageOption {
-        let display: String   // 界面显示文本
-        let value:   String   // API 传值
+        let display: String
+        let value:   String
     }
 
     // MARK: - 静态数据
@@ -54,20 +54,36 @@ class ParamsPickerViewController: UIViewController {
         "年度计划", "年度总结", "健康科普",
         "财务报告", "项目计划书", "商业博文",
     ]
-    static let audiences:  [String] = ["通用", "学生", "职场人士", "管理层", "投资人", "客户"]
+
+    static let audiences: [String] = [
+        "大众", "投资者", "商业",
+        "学生", "教师", "老板",
+        "面试官", "员工", "同事同行",
+        "在线访客", "组员",
+    ]
 
     // MARK: - 选择结果
 
     struct Selection {
-        var lengthIndex:   Int = 1  // 默认中篇 (medium)
-        var languageIndex: Int = 0  // 默认中文简体
-        var sceneIndex:    Int = 0  // 默认通用
-        var audienceIndex: Int = 0  // 默认通用
+        var lengthIndex:   Int    = 1   // 默认中篇
+        var languageIndex: Int    = 0   // 默认中文简体
+        var sceneIndex:    Int    = 0   // 默认通用
+        var audienceIndex: Int    = 0   // 默认大众
+        var customScene:   String = ""
+        var customAudience:String = ""
 
         var length:   LengthOption   { ParamsPickerViewController.lengths[lengthIndex] }
         var language: LanguageOption { ParamsPickerViewController.languages[languageIndex] }
-        var scene:    String         { ParamsPickerViewController.scenes[sceneIndex] }
-        var audience: String         { ParamsPickerViewController.audiences[audienceIndex] }
+
+        // 若选中"自定义"（index == 数组末尾之后），返回自定义文本
+        var scene: String {
+            let s = ParamsPickerViewController.scenes
+            return sceneIndex < s.count ? s[sceneIndex] : customScene
+        }
+        var audience: String {
+            let a = ParamsPickerViewController.audiences
+            return audienceIndex < a.count ? a[audienceIndex] : customAudience
+        }
     }
 
     var onConfirm: ((Selection) -> Void)?
@@ -76,27 +92,29 @@ class ParamsPickerViewController: UIViewController {
     // MARK: - 子视图
 
     private var sectionCollections: [UICollectionView] = []
+    // tag → 自定义输入框（仅 tag 2/3 有）
+    private var customTextFields: [Int: UITextField] = [:]
 
     private struct SectionMeta {
-        let title:   String
-        let options: [String]
-        let columns: Int
+        let title:         String
+        let options:       [String]
+        let columns:       Int
+        let supportsCustom: Bool
     }
 
     private lazy var sections: [SectionMeta] = [
         SectionMeta(title: "篇幅长度",
-                    // 显示 "短篇 10-15页" 形式
                     options: Self.lengths.map { "\($0.display)  \($0.detail)" },
-                    columns: 1),   // 每行 1 个，让页数范围文字完整显示
+                    columns: 1, supportsCustom: false),
         SectionMeta(title: "语言",
                     options: Self.languages.map { $0.display },
-                    columns: 3),
+                    columns: 3, supportsCustom: false),
         SectionMeta(title: "场景",
-                    options: Self.scenes,
-                    columns: 3),
+                    options: Self.scenes + ["自定义"],
+                    columns: 3, supportsCustom: true),
         SectionMeta(title: "受众",
-                    options: Self.audiences,
-                    columns: 3),
+                    options: Self.audiences + ["自定义"],
+                    columns: 3, supportsCustom: true),
     ]
 
     // MARK: - Init
@@ -114,13 +132,19 @@ class ParamsPickerViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .appBackgroundSecondary
         buildContent()
+
+        // 恢复自定义选中状态
+        if selection.sceneIndex >= Self.scenes.count {
+            toggleCustomField(tag: 2, show: true, animated: false)
+        }
+        if selection.audienceIndex >= Self.audiences.count {
+            toggleCustomField(tag: 3, show: true, animated: false)
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        if isBeingDismissed {
-            onConfirm?(selection)
-        }
+        if isBeingDismissed { onConfirm?(selection) }
     }
 
     // MARK: - 内容布局
@@ -143,6 +167,7 @@ class ParamsPickerViewController: UIViewController {
 
         let scrollView = UIScrollView()
         scrollView.showsVerticalScrollIndicator = false
+        scrollView.keyboardDismissMode = .onDrag
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
 
@@ -204,18 +229,63 @@ class ParamsPickerViewController: UIViewController {
         let rowGap: CGFloat = 8
         let cvH = CGFloat(rows) * chipH + CGFloat(max(rows - 1, 0)) * rowGap
 
-        NSLayoutConstraint.activate([
-            header.topAnchor.constraint(equalTo: container.topAnchor),
-            header.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+        if meta.supportsCustom {
+            // 自定义输入框：初始高度 0，选中"自定义"后展开
+            let tf = buildCustomTextField(placeholder: "请输入自定义内容...", tag: tag)
+            tf.isHidden = true
+            container.addSubview(tf)
+            customTextFields[tag] = tf
 
-            cv.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 10),
-            cv.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            cv.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            cv.heightAnchor.constraint(equalToConstant: cvH),
-            cv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-        ])
+            NSLayoutConstraint.activate([
+                header.topAnchor.constraint(equalTo: container.topAnchor),
+                header.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+
+                cv.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 10),
+                cv.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                cv.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                cv.heightAnchor.constraint(equalToConstant: cvH),
+
+                tf.topAnchor.constraint(equalTo: cv.bottomAnchor, constant: 8),
+                tf.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                tf.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                tf.heightAnchor.constraint(equalToConstant: 44),
+                tf.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            ])
+        } else {
+            NSLayoutConstraint.activate([
+                header.topAnchor.constraint(equalTo: container.topAnchor),
+                header.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+
+                cv.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 10),
+                cv.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                cv.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                cv.heightAnchor.constraint(equalToConstant: cvH),
+                cv.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            ])
+        }
 
         return container
+    }
+
+    private func buildCustomTextField(placeholder: String, tag: Int) -> UITextField {
+        let tf = UITextField()
+        tf.placeholder            = placeholder
+        tf.font                   = .systemFont(ofSize: 14)
+        tf.textColor              = .appTextPrimary
+        tf.backgroundColor        = .appBackgroundTertiary
+        tf.layer.cornerRadius     = 10
+        tf.layer.borderWidth      = 1
+        tf.layer.borderColor      = UIColor.appSeparator.cgColor
+        tf.leftView               = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
+        tf.leftViewMode           = .always
+        tf.rightView              = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
+        tf.rightViewMode          = .always
+        tf.returnKeyType          = .done
+        tf.tag                    = tag
+        tf.translatesAutoresizingMaskIntoConstraints = false
+        tf.addTarget(self, action: #selector(customTextChanged(_:)), for: .editingChanged)
+        tf.delegate               = self
+        return tf
     }
 
     private func makeSectionLayout(columns: Int) -> UICollectionViewLayout {
@@ -235,10 +305,37 @@ class ParamsPickerViewController: UIViewController {
         return UICollectionViewCompositionalLayout(section: section)
     }
 
+    // MARK: - 自定义输入框 展开/收起
+
+    private func toggleCustomField(tag: Int, show: Bool, animated: Bool = true) {
+        guard let tf = customTextFields[tag] else { return }
+
+        let duration = animated ? 0.25 : 0.0
+
+        if show {
+            tf.alpha    = 0
+            tf.isHidden = false
+            UIView.animate(withDuration: duration) {
+                tf.alpha = 1
+                self.view.layoutIfNeeded()
+            }
+            tf.becomeFirstResponder()
+        } else {
+            UIView.animate(withDuration: animated ? 0.2 : 0.0,
+                           animations: { tf.alpha = 0 },
+                           completion: { _ in tf.isHidden = true })
+            tf.resignFirstResponder()
+        }
+    }
+
     // MARK: - Actions
 
-    @objc private func doneTapped() {
-        dismiss(animated: true)
+    @objc private func doneTapped() { dismiss(animated: true) }
+
+    @objc private func customTextChanged(_ tf: UITextField) {
+        let text = tf.text ?? ""
+        if tf.tag == 2 { selection.customScene    = text }
+        if tf.tag == 3 { selection.customAudience = text }
     }
 
     private func selectedIndex(for tag: Int) -> Int {
@@ -265,22 +362,41 @@ extension ParamsPickerViewController: UICollectionViewDataSource, UICollectionVi
                         cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: InlineChipCell.reuseID, for: indexPath) as! InlineChipCell
-        let option   = sections[collectionView.tag].options[indexPath.item]
+        let meta     = sections[collectionView.tag]
+        let option   = meta.options[indexPath.item]
         let selected = indexPath.item == selectedIndex(for: collectionView.tag)
-        cell.configure(title: option, selected: selected)
+        // "自定义"使用虚线边框样式区分
+        let isCustomChip = meta.supportsCustom && indexPath.item == meta.options.count - 1
+        cell.configure(title: option, selected: selected, isCustomChip: isCustomChip)
         return cell
     }
 
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
+        let meta     = sections[collectionView.tag]
+        let isCustom = meta.supportsCustom && indexPath.item == meta.options.count - 1
+
         switch collectionView.tag {
         case 0: selection.lengthIndex   = indexPath.item
         case 1: selection.languageIndex = indexPath.item
-        case 2: selection.sceneIndex    = indexPath.item
-        case 3: selection.audienceIndex = indexPath.item
+        case 2:
+            selection.sceneIndex = indexPath.item
+            toggleCustomField(tag: 2, show: isCustom)
+        case 3:
+            selection.audienceIndex = indexPath.item
+            toggleCustomField(tag: 3, show: isCustom)
         default: break
         }
         collectionView.reloadData()
+    }
+}
+
+// MARK: - UITextFieldDelegate
+
+extension ParamsPickerViewController: UITextFieldDelegate {
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
     }
 }
 
@@ -329,11 +445,18 @@ private class InlineChipCell: UICollectionViewCell {
         ])
     }
 
-    func configure(title: String, selected: Bool) {
-        label.text                  = title
-        gradientLayer.isHidden      = !selected
+    func configure(title: String, selected: Bool, isCustomChip: Bool = false) {
+        label.text             = title
+        gradientLayer.isHidden = !selected
         contentView.backgroundColor = selected ? .clear : .appBackgroundTertiary
-        label.textColor             = selected ? .white : .appTextPrimary
+        label.textColor        = selected ? .white : (isCustomChip ? .appPrimary : .appTextPrimary)
+        // 自定义 chip 显示虚线边框以区分普通选项
+        if isCustomChip && !selected {
+            contentView.layer.borderColor = UIColor.appPrimary.cgColor
+            contentView.layer.borderWidth = 1
+        } else {
+            contentView.layer.borderWidth = 0
+        }
     }
 
     override func layoutSubviews() {

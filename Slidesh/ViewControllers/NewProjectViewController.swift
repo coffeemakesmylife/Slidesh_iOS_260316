@@ -12,7 +12,7 @@ class NewProjectViewController: UIViewController {
     private var selectedLength   = "medium"   // short / medium / long
     private var selectedLanguage = "zh"       // 语言 API 值
     private var selectedScene    = "通用"
-    private var selectedAudience = "通用"
+    private var selectedAudience = "大众"
 
     // MARK: - 子视图
 
@@ -507,19 +507,29 @@ class NewProjectViewController: UIViewController {
     private func showParamsPicker() {
         view.endEditing(true)  // 弹出前收起键盘
 
-        let current = ParamsPickerViewController.Selection(
+        // 若当前值不在数组中，则说明之前选了自定义（index 指向数组末尾之后）
+        let scenes    = ParamsPickerViewController.scenes
+        let audiences = ParamsPickerViewController.audiences
+        let sceneIdx  = scenes.firstIndex(of: selectedScene) ?? scenes.count      // 不在数组则指向"自定义"位置
+        let audIdx    = audiences.firstIndex(of: selectedAudience) ?? audiences.count
+
+        var current = ParamsPickerViewController.Selection(
             lengthIndex:   ParamsPickerViewController.lengths.firstIndex(where: { $0.value == selectedLength }) ?? 1,
             languageIndex: ParamsPickerViewController.languages.firstIndex(where: { $0.value == selectedLanguage }) ?? 0,
-            sceneIndex:    ParamsPickerViewController.scenes.firstIndex(of: selectedScene) ?? 0,
-            audienceIndex: ParamsPickerViewController.audiences.firstIndex(of: selectedAudience) ?? 0
+            sceneIndex:    sceneIdx,
+            audienceIndex: audIdx
         )
+        // 恢复自定义文本
+        if sceneIdx >= scenes.count    { current.customScene    = selectedScene }
+        if audIdx   >= audiences.count { current.customAudience = selectedAudience }
+
         let picker = ParamsPickerViewController(selection: current)
         picker.onConfirm = { [weak self] sel in
             guard let self else { return }
             self.selectedLength   = sel.length.value
             self.selectedLanguage = sel.language.value
-            self.selectedScene    = sel.scene
-            self.selectedAudience = sel.audience
+            self.selectedScene    = sel.scene     // 自定义时返回 customScene
+            self.selectedAudience = sel.audience  // 自定义时返回 customAudience
             self.pageChip.updateLabel("\(sel.length.display) \(sel.length.detail)")
             self.langChip.updateLabel(sel.language.display)
         }
