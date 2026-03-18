@@ -371,8 +371,7 @@ private class PickerChipCell: UICollectionViewCell {
 
     static let reuseID = "PickerChipCell"
 
-    private let label         = UILabel()
-    private let gradientLayer = CAGradientLayer()
+    private let label = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -388,16 +387,6 @@ private class PickerChipCell: UICollectionViewCell {
         contentView.layer.cornerRadius = 20
         contentView.clipsToBounds = true
 
-        // 品牌渐变层（选中时显示）
-        gradientLayer.colors     = [UIColor.appGradientStart.cgColor,
-                                    UIColor.appGradientMid.cgColor,
-                                    UIColor.appGradientEnd.cgColor]
-        gradientLayer.locations  = [0.0, 0.55, 1.0]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
-        gradientLayer.isHidden   = true
-        contentView.layer.insertSublayer(gradientLayer, at: 0)
-
         label.font          = .systemFont(ofSize: 14, weight: .medium)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
@@ -410,13 +399,8 @@ private class PickerChipCell: UICollectionViewCell {
 
     func configure(title: String, selected: Bool) {
         label.text = title
-        gradientLayer.isHidden     = !selected
-        contentView.backgroundColor = selected ? .clear : .appChipUnselectedBackground
-        label.textColor             = selected ? .white : .appChipUnselectedText
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        gradientLayer.frame = contentView.bounds
+        // 与 ParamsPickerViewController 保持一致：选中用主色低透明度背景+主色文字
+        contentView.backgroundColor = selected ? .appPrimarySubtle : .appBackgroundTertiary
+        label.textColor             = selected ? .appPrimary : .appTextPrimary
     }
 }
