@@ -2,7 +2,7 @@
 //  ParamsPickerViewController.swift
 //  Slidesh
 //
-//  统一参数选择面板：页数、语言、场景、受众在同一页展示
+//  参数选择面板：页数、语言、场景、受众，配合 UISheetPresentationController medium detent 使用
 //
 
 import UIKit
@@ -35,10 +35,6 @@ class ParamsPickerViewController: UIViewController {
 
     // MARK: - 子视图
 
-    private let dimView   = UIView()
-    private let panelView = UIView()
-    private var panelBottomConstraint: NSLayoutConstraint!
-
     // 每个 section 的 CollectionView，按 tag 0-3 区分
     private var sectionCollections: [UICollectionView] = []
 
@@ -69,7 +65,7 @@ class ParamsPickerViewController: UIViewController {
     init(selection: Selection) {
         self.selection = selection
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = .overFullScreen
+        // 不设置 overFullScreen，交由 sheetPresentationController 管理
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -78,90 +74,47 @@ class ParamsPickerViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .clear
-        setupDim()
-        setupPanel()
+        view.backgroundColor = .appBackgroundSecondary
+        buildContent()
     }
 
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        panelBottomConstraint.constant = 0
-        UIView.animate(withDuration: 0.38, delay: 0,
-                       usingSpringWithDamping: 0.82, initialSpringVelocity: 0.6,
-                       options: .curveEaseOut) { self.view.layoutIfNeeded() }
+    // 关闭时（完成按钮或手势下滑）均触发回调
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        if isBeingDismissed {
+            onConfirm?(selection)
+        }
     }
 
-    // MARK: - 暗色遮罩
+    // MARK: - 内容布局
 
-    private func setupDim() {
-        dimView.backgroundColor = .appOverlay
-        dimView.alpha = 0
-        dimView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(dimView)
-        NSLayoutConstraint.activate([
-            dimView.topAnchor.constraint(equalTo: view.topAnchor),
-            dimView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            dimView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            dimView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-        ])
-        dimView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dismiss_)))
-        UIView.animate(withDuration: 0.22) { self.dimView.alpha = 1 }
-    }
-
-    // MARK: - 面板
-
-    private func setupPanel() {
-        panelView.backgroundColor = .appBackgroundSecondary
-        panelView.layer.cornerRadius  = 26
-        panelView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-        panelView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(panelView)
-
-        panelBottomConstraint = panelView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: 700)
-        NSLayoutConstraint.activate([
-            panelView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            panelView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            panelBottomConstraint,
-        ])
-
-        panelView.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:))))
-        buildPanelContent()
-    }
-
-    private func buildPanelContent() {
-        // 拖拽条
-        let indicator = UIView()
-        indicator.backgroundColor    = .appTextTertiary.withAlphaComponent(0.4)
-        indicator.layer.cornerRadius = 2.5
-        indicator.translatesAutoresizingMaskIntoConstraints = false
-        panelView.addSubview(indicator)
-
+    private func buildContent() {
         // 标题行
         let titleLabel = UILabel()
         titleLabel.text      = "参数设置"
         titleLabel.font      = .systemFont(ofSize: 18, weight: .semibold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        panelView.addSubview(titleLabel)
+        view.addSubview(titleLabel)
 
         // 完成按钮
         let doneBtn = UIButton(type: .system)
         doneBtn.setTitle("完成", for: .normal)
         doneBtn.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
         doneBtn.tintColor = .appPrimary
-        doneBtn.addTarget(self, action: #selector(dismiss_), for: .touchUpInside)
+        doneBtn.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
         doneBtn.translatesAutoresizingMaskIntoConstraints = false
-        panelView.addSubview(doneBtn)
+        view.addSubview(doneBtn)
 
         // 纵向滚动视图（容纳所有 section）
         let scrollView = UIScrollView()
         scrollView.showsVerticalScrollIndicator = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
-        panelView.addSubview(scrollView)
+        view.addSubview(scrollView)
 
         let contentStack = UIStackView()
-        contentStack.axis      = .vertical
-        contentStack.spacing   = 24
+        contentStack.axis    = .vertical
+        contentStack.spacing = 24
         contentStack.translatesAutoresizingMaskIntoConstraints = false
         scrollView.addSubview(contentStack)
 
@@ -171,37 +124,17 @@ class ParamsPickerViewController: UIViewController {
             contentStack.addArrangedSubview(sectionView)
         }
 
-        // 计算 scrollView 固定高度（sections 内容高度，上限屏幕75%-顶部区域）
-        let scrollH = calculatedScrollHeight()
-
-        // 底部安全区占位（连接 scrollView.bottom → panelView.safeArea.bottom）
-        let bottomPad = UIView()
-        bottomPad.translatesAutoresizingMaskIntoConstraints = false
-        panelView.addSubview(bottomPad)
-
         NSLayoutConstraint.activate([
-            indicator.topAnchor.constraint(equalTo: panelView.topAnchor, constant: 10),
-            indicator.centerXAnchor.constraint(equalTo: panelView.centerXAnchor),
-            indicator.widthAnchor.constraint(equalToConstant: 36),
-            indicator.heightAnchor.constraint(equalToConstant: 5),
-
-            titleLabel.topAnchor.constraint(equalTo: indicator.bottomAnchor, constant: 16),
-            titleLabel.leadingAnchor.constraint(equalTo: panelView.leadingAnchor, constant: 20),
+            titleLabel.topAnchor.constraint(equalTo: view.topAnchor, constant: 20),
+            titleLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
 
             doneBtn.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
-            doneBtn.trailingAnchor.constraint(equalTo: panelView.trailingAnchor, constant: -20),
+            doneBtn.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
 
-            // scrollView：固定高度，由计算值驱动面板高度
             scrollView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 16),
-            scrollView.leadingAnchor.constraint(equalTo: panelView.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: panelView.trailingAnchor),
-            scrollView.heightAnchor.constraint(equalToConstant: scrollH),
-
-            // bottomPad 使面板在 scrollView 下方留出安全区空间
-            bottomPad.topAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            bottomPad.leadingAnchor.constraint(equalTo: panelView.leadingAnchor),
-            bottomPad.trailingAnchor.constraint(equalTo: panelView.trailingAnchor),
-            bottomPad.bottomAnchor.constraint(equalTo: panelView.safeAreaLayoutGuide.bottomAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
 
             contentStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 4),
             contentStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -8),
@@ -274,44 +207,10 @@ class ParamsPickerViewController: UIViewController {
         return UICollectionViewCompositionalLayout(section: section)
     }
 
-    // MARK: - 关闭
+    // MARK: - Actions
 
-    @objc private func dismiss_() {
-        onConfirm?(selection)
-        panelBottomConstraint.constant = 700
-        UIView.animate(withDuration: 0.28, animations: {
-            self.dimView.alpha = 0
-            self.view.layoutIfNeeded()
-        }) { _ in self.dismiss(animated: false) }
-    }
-
-    @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        let y = gesture.translation(in: view).y
-        switch gesture.state {
-        case .changed where y > 0:
-            panelBottomConstraint.constant = -y
-            view.layoutIfNeeded()
-        case .ended, .cancelled:
-            if y > 80 { dismiss_() }
-            else {
-                panelBottomConstraint.constant = 0
-                UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
-            }
-        default: break
-        }
-    }
-
-    // 计算 scrollView 所需高度（各 section 内容高度之和，上限屏幕65%）
-    private func calculatedScrollHeight() -> CGFloat {
-        var totalH: CGFloat = 12  // contentStack 上下内边距（4 + 8）
-        for (i, meta) in sections.enumerated() {
-            let rows = Int(ceil(Double(meta.options.count) / Double(meta.columns)))
-            let cvH  = CGFloat(rows) * 36 + CGFloat(max(rows - 1, 0)) * 8
-            totalH  += 20 + 10 + cvH  // header label 高度 + 间距 + chips 高度
-            if i < sections.count - 1 { totalH += 24 }  // section 间距
-        }
-        let maxScrollH = UIScreen.main.bounds.height * 0.65
-        return min(totalH, maxScrollH)
+    @objc private func doneTapped() {
+        dismiss(animated: true)
     }
 
     // 当前 section 的选中 index

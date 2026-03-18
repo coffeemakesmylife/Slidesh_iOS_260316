@@ -23,6 +23,10 @@ class NewProjectViewController: UIViewController {
     private let paramsStack      = UIStackView()
     private let generateButton   = UIButton(type: .system)
 
+    // 生成按钮渐变层（需在 viewDidLayoutSubviews 中更新 frame）
+    private var generateGradient: CAGradientLayer?
+    private weak var generateContainer: UIView?
+
     // 输入框高度约束（动态更新）
     private var textViewHeightConstraint: NSLayoutConstraint!
     private let minInputHeight: CGFloat = 44
@@ -109,17 +113,41 @@ class NewProjectViewController: UIViewController {
         cardView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(cardView)
 
+        // 卡片描边（dark mode 自适应）
+        updateCardBorder()
+
         NSLayoutConstraint.activate([
             cardView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             cardView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            cardView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 30),
+            cardView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 10),
         ])
 
         let inputContainer = buildThemeRow()
         let sep1           = buildSeparator(below: inputContainer)
         let params         = buildParamsBar(below: sep1)
-        let sep2           = buildSeparator(below: params)
-        buildGenerateButton(below: sep2)
+        // 参数栏底部 = 卡片底部（决定卡片高度）
+        params.bottomAnchor.constraint(equalTo: cardView.bottomAnchor).isActive = true
+
+        // 生成按钮独立在卡片外部
+        buildGenerateButton()
+    }
+
+    private func updateCardBorder() {
+        let color = UIColor.appSeparator.resolvedColor(with: traitCollection)
+        cardView.layer.borderColor = color.cgColor
+        cardView.layer.borderWidth = 1
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        updateCardBorder()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let gc = generateContainer {
+            generateGradient?.frame = gc.bounds
+        }
     }
 
     // MARK: - 主题输入区（UITextView + 动态高度）
@@ -279,14 +307,15 @@ class NewProjectViewController: UIViewController {
         return btn
     }
 
-    // MARK: - 生成按钮
+    // MARK: - 生成按钮（独立在卡片外部）
 
-    private func buildGenerateButton(below above: UIView) {
+    private func buildGenerateButton() {
         let container = UIView()
-        container.layer.cornerRadius = 14
+        container.layer.cornerRadius = 16
         container.clipsToBounds      = true
         container.translatesAutoresizingMaskIntoConstraints = false
-        cardView.addSubview(container)
+        view.addSubview(container)
+        generateContainer = container
 
         let gradient        = CAGradientLayer()
         gradient.colors     = [UIColor.appGradientStart.cgColor,
@@ -296,11 +325,12 @@ class NewProjectViewController: UIViewController {
         gradient.startPoint = CGPoint(x: 0, y: 0.5)
         gradient.endPoint   = CGPoint(x: 1, y: 0.5)
         container.layer.insertSublayer(gradient, at: 0)
+        generateGradient = gradient
 
         generateButton.setTitle("立即生成", for: .normal)
         let imgCfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         generateButton.setImage(UIImage(systemName: "sparkles", withConfiguration: imgCfg), for: .normal)
-        generateButton.tintColor       = .white
+        generateButton.tintColor        = .white
         generateButton.setTitleColor(.white, for: .normal)
         generateButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         generateButton.semanticContentAttribute = .forceLeftToRight
@@ -311,19 +341,17 @@ class NewProjectViewController: UIViewController {
         container.addSubview(generateButton)
 
         NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: above.bottomAnchor, constant: 12),
-            container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
-            container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            container.heightAnchor.constraint(equalToConstant: 48),
-            container.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -16),
+            // 紧贴卡片底部，与卡片左右对齐
+            container.topAnchor.constraint(equalTo: cardView.bottomAnchor, constant: 12),
+            container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            container.heightAnchor.constraint(equalToConstant: 52),
 
             generateButton.topAnchor.constraint(equalTo: container.topAnchor),
             generateButton.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             generateButton.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             generateButton.trailingAnchor.constraint(equalTo: container.trailingAnchor),
         ])
-
-        DispatchQueue.main.async { gradient.frame = container.bounds }
     }
 
     // MARK: - 键盘
@@ -349,6 +377,7 @@ class NewProjectViewController: UIViewController {
     // MARK: - 选择器
 
     private func showInspirePicker() {
+        view.endEditing(true)  // 弹出前收起键盘
         let topics = ["2025年人工智能发展趋势", "季度销售业绩回顾",
                       "新员工入职培训", "产品发布会方案",
                       "市场竞争分析", "团队建设与文化"]
@@ -358,6 +387,8 @@ class NewProjectViewController: UIViewController {
     }
 
     private func showParamsPicker() {
+        view.endEditing(true)  // 弹出前收起键盘
+
         let pageCounts = ParamsPickerViewController.pageCounts
         let current = ParamsPickerViewController.Selection(
             pageIndex:     pageCounts.firstIndex(of: selectedPageCount) ?? 2,
@@ -375,7 +406,14 @@ class NewProjectViewController: UIViewController {
             self.pageChip.updateLabel("\(sel.pageCount) 页")
             self.langChip.updateLabel(sel.language)
         }
-        present(picker, animated: false)
+
+        // 使用 native sheet medium detent
+        picker.modalPresentationStyle = .pageSheet
+        if let sheet = picker.sheetPresentationController {
+            sheet.detents                = [.medium(), .large()]
+            sheet.prefersGrabberVisible  = true
+        }
+        present(picker, animated: true)
     }
 }
 
