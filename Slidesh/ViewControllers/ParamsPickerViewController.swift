@@ -45,7 +45,15 @@ class ParamsPickerViewController: UIViewController {
         .init(display: "Русский",      value: "ru"),
     ]
 
-    static let scenes:     [String] = ["通用", "商务", "教育", "科技", "医疗", "创意"]
+    static let scenes: [String] = [
+        "通用", "分析报告", "教学课件",
+        "宣传材料", "公众演讲", "在线媒体",
+        "公告", "研究报告", "学术会议",
+        "项目汇报", "个人介绍", "商业计划书",
+        "解决方案", "产品介绍", "会议流程",
+        "年度计划", "年度总结", "健康科普",
+        "财务报告", "项目计划书", "商业博文",
+    ]
     static let audiences:  [String] = ["通用", "学生", "职场人士", "管理层", "投资人", "客户"]
 
     // MARK: - 选择结果

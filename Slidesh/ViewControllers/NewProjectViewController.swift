@@ -311,7 +311,8 @@ class NewProjectViewController: UIViewController {
         // 用默认值对应的显示文本初始化 chip
         let defaultLength = ParamsPickerViewController.lengths.first { $0.value == selectedLength }
         let defaultLang   = ParamsPickerViewController.languages.first { $0.value == selectedLanguage }
-        pageChip = ParamChip(symbol: "doc.text", label: defaultLength?.display ?? "中篇")
+        let lengthLabel = defaultLength.map { "\($0.display) \($0.detail)" } ?? "中篇 20-30页"
+        pageChip = ParamChip(symbol: "doc.text", label: lengthLabel)
         langChip = ParamChip(symbol: "globe",    label: defaultLang?.display   ?? "中文（简体）")
 
         [inspireChip, pageChip, langChip].forEach { paramsStack.addArrangedSubview($0) }
@@ -519,7 +520,7 @@ class NewProjectViewController: UIViewController {
             self.selectedLanguage = sel.language.value
             self.selectedScene    = sel.scene
             self.selectedAudience = sel.audience
-            self.pageChip.updateLabel(sel.length.display)
+            self.pageChip.updateLabel("\(sel.length.display) \(sel.length.detail)")
             self.langChip.updateLabel(sel.language.display)
         }
 
