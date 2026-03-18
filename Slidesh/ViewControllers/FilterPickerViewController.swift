@@ -264,11 +264,13 @@ private class ColorSwatchCell: UICollectionViewCell {
 
     static let reuseID = "ColorSwatchCell"
 
+    // 色块直径固定 34pt
+    private static let diameter: CGFloat = 34
+
     private let circleView    = UIView()
-    private let gradientLayer = CAGradientLayer()   // 全部颜色用品牌渐变
+    private let gradientLayer = CAGradientLayer()
     private let checkmark     = UIImageView()
     private let titleLabel    = UILabel()
-    private let borderLayer   = CAShapeLayer()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -281,34 +283,34 @@ private class ColorSwatchCell: UICollectionViewCell {
     }
 
     private func setup() {
-        // 圆形色块
-        circleView.clipsToBounds = true
+        let d = Self.diameter
+
+        // 圆形：固定 cornerRadius，避免依赖 layoutSubviews 时机
+        circleView.layer.cornerRadius = d / 2
+        circleView.clipsToBounds      = true
+        circleView.layer.borderWidth  = 2.5
+        circleView.layer.borderColor  = UIColor.clear.cgColor
         circleView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(circleView)
 
-        // 品牌渐变（用于"全部"选项）
+        // 品牌渐变（全部颜色），frame 在 setup 时直接给定，不依赖 layoutSubviews
         gradientLayer.colors     = [UIColor.appGradientStart.cgColor,
                                     UIColor.appGradientMid.cgColor,
                                     UIColor.appGradientEnd.cgColor]
         gradientLayer.locations  = [0.0, 0.55, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
+        gradientLayer.frame      = CGRect(x: 0, y: 0, width: d, height: d)
         gradientLayer.isHidden   = true
         circleView.layer.insertSublayer(gradientLayer, at: 0)
 
-        // 选中时显示的白色对勾
-        let config  = UIImage.SymbolConfiguration(pointSize: 13, weight: .bold)
+        // 选中对勾
+        let config = UIImage.SymbolConfiguration(pointSize: 13, weight: .bold)
         checkmark.image     = UIImage(systemName: "checkmark", withConfiguration: config)
         checkmark.tintColor = .white
         checkmark.isHidden  = true
         checkmark.translatesAutoresizingMaskIntoConstraints = false
         circleView.addSubview(checkmark)
-
-        // 选中状态的彩色描边环（叠加在 circleView 之外，用 borderLayer）
-        borderLayer.fillColor   = UIColor.clear.cgColor
-        borderLayer.lineWidth   = 2.5
-        borderLayer.strokeColor = UIColor.clear.cgColor
-        contentView.layer.addSublayer(borderLayer)
 
         // 颜色名称标签
         titleLabel.font          = .systemFont(ofSize: 11)
@@ -318,12 +320,11 @@ private class ColorSwatchCell: UICollectionViewCell {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(titleLabel)
 
-        // 圆形尺寸：34pt，居中偏上
         NSLayoutConstraint.activate([
             circleView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             circleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 4),
-            circleView.widthAnchor.constraint(equalToConstant: 34),
-            circleView.heightAnchor.constraint(equalToConstant: 34),
+            circleView.widthAnchor.constraint(equalToConstant: d),
+            circleView.heightAnchor.constraint(equalToConstant: d),
 
             checkmark.centerXAnchor.constraint(equalTo: circleView.centerXAnchor),
             checkmark.centerYAnchor.constraint(equalTo: circleView.centerYAnchor),
@@ -338,43 +339,25 @@ private class ColorSwatchCell: UICollectionViewCell {
         titleLabel.text = title
 
         if let c = color {
-            // 有具体颜色
             circleView.backgroundColor = c
             gradientLayer.isHidden = true
         } else {
-            // 全部颜色：品牌渐变
+            // 全部颜色：显示品牌渐变
             circleView.backgroundColor = .clear
             gradientLayer.isHidden = false
         }
 
         checkmark.isHidden = !selected
 
-        // 选中描边：使用颜色本身（全部用白色描边配合渐变背景）
-        if selected {
-            let strokeColor = (color ?? .white).withAlphaComponent(0.6)
-            borderLayer.strokeColor = strokeColor.cgColor
-        } else {
-            borderLayer.strokeColor = UIColor.clear.cgColor
-        }
+        // 选中描边直接用 circleView.layer.borderColor（坐标系始终正确）
+        circleView.layer.borderColor = selected
+            ? (color ?? .white).withAlphaComponent(0.55).cgColor
+            : UIColor.clear.cgColor
 
-        // 标签颜色：选中时加强显示
         titleLabel.textColor = selected ? .appTextPrimary : .appTextSecondary
         titleLabel.font = selected
             ? .systemFont(ofSize: 11, weight: .semibold)
             : .systemFont(ofSize: 11)
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        let r = circleView.bounds.width / 2
-        circleView.layer.cornerRadius = r
-        gradientLayer.frame = circleView.bounds
-
-        // 描边环稍大于圆，套在外圈
-        let inset: CGFloat = -3
-        let rect = circleView.frame.insetBy(dx: inset, dy: inset)
-        let path = UIBezierPath(ovalIn: rect)
-        borderLayer.path = path.cgPath
     }
 }
 
