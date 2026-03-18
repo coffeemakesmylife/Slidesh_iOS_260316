@@ -547,11 +547,14 @@ class NewProjectViewController: UIViewController {
 // MARK: - UIGestureRecognizerDelegate
 
 extension NewProjectViewController: UIGestureRecognizerDelegate {
-    /// 点击落在 TopicSuggestionsView 内时不拦截，让 chip 按钮直接响应
+    /// 只有 touch 精确命中 topicSuggestionsView 内的 chip 按钮时才不拦截
+    /// 其余所有区域（空白、titleLabel、subLabel 等）均允许手势触发收键盘
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                            shouldReceive touch: UITouch) -> Bool {
-        let point = touch.location(in: topicSuggestionsView)
-        return !topicSuggestionsView.bounds.contains(point)
+        let point   = touch.location(in: view)
+        let hitView = view.hitTest(point, with: nil)
+        // 命中的是 topicSuggestionsView 内的 chip 按钮 → 不拦截，让按钮自己处理
+        return !(hitView is UIButton && hitView?.isDescendant(of: topicSuggestionsView) == true)
     }
 }
 
