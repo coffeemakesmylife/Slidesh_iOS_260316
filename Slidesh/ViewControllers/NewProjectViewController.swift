@@ -37,9 +37,8 @@ class NewProjectViewController: UIViewController {
     private var pageChip:    ParamChip!
     private var langChip:    ParamChip!
 
-    // 主题灵感建议区（选中行业后显示在输入框上方）
-    private var topicSuggestionsWrapper: UIView!
-    private var topicSuggestionsStack:   UIStackView!
+    // 主题灵感建议浮层（卡片外部，靠右对齐，参考 PromptSuggestionsView 设计）
+    private var topicSuggestionsView: TopicSuggestionsView!
 
     // MARK: - 生命周期
 
@@ -50,6 +49,7 @@ class NewProjectViewController: UIViewController {
         setupNav()
         setupSlogan()
         setupCard()
+        setupTopicSuggestions()
         setupKeyboardDismiss()
     }
 
@@ -136,6 +136,23 @@ class NewProjectViewController: UIViewController {
         buildGenerateButton()
     }
 
+    // 主题建议浮层：定位在 cardView 上方，靠右对齐
+    private func setupTopicSuggestions() {
+        topicSuggestionsView = TopicSuggestionsView()
+        topicSuggestionsView.isHidden = true
+        topicSuggestionsView.translatesAutoresizingMaskIntoConstraints = false
+        topicSuggestionsView.onSelect = { [weak self] topic in
+            self?.applyTopic(topic)
+        }
+        view.addSubview(topicSuggestionsView)
+
+        NSLayoutConstraint.activate([
+            topicSuggestionsView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            topicSuggestionsView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            topicSuggestionsView.bottomAnchor.constraint(equalTo: cardView.topAnchor, constant: -12),
+        ])
+    }
+
     private func updateCardBorder() {
         let color = UIColor.appCardBorder.resolvedColor(with: traitCollection)
         cardView.layer.borderColor = color.cgColor
@@ -154,45 +171,13 @@ class NewProjectViewController: UIViewController {
         }
     }
 
-    // MARK: - 主题输入区（UITextView + 动态高度 + 主题建议区）
+    // MARK: - 主题输入区（UITextView + 动态高度）
 
     @discardableResult
     private func buildThemeRow() -> UIView {
         let container = UIView()
         container.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(container)
-
-        // --- 主题建议区（默认隐藏，选择行业后出现在输入框上方）---
-        let suggestWrapper = UIView()
-        suggestWrapper.isHidden = true
-        suggestWrapper.translatesAutoresizingMaskIntoConstraints = false
-        topicSuggestionsWrapper = suggestWrapper
-
-        topicSuggestionsStack = UIStackView()
-        topicSuggestionsStack.axis    = .vertical
-        topicSuggestionsStack.spacing = 8
-        topicSuggestionsStack.translatesAutoresizingMaskIntoConstraints = false
-        suggestWrapper.addSubview(topicSuggestionsStack)
-
-        NSLayoutConstraint.activate([
-            topicSuggestionsStack.topAnchor.constraint(equalTo: suggestWrapper.topAnchor, constant: 14),
-            topicSuggestionsStack.bottomAnchor.constraint(equalTo: suggestWrapper.bottomAnchor, constant: -8),
-            topicSuggestionsStack.leadingAnchor.constraint(equalTo: suggestWrapper.leadingAnchor),
-            topicSuggestionsStack.trailingAnchor.constraint(equalTo: suggestWrapper.trailingAnchor),
-        ])
-
-        // --- 外层 StackView（建议区 + 输入区垂直排列，隐藏时自动折叠）---
-        let outerStack = UIStackView()
-        outerStack.axis    = .vertical
-        outerStack.spacing = 0
-        outerStack.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(outerStack)
-        outerStack.addArrangedSubview(suggestWrapper)
-
-        // --- 输入区 ---
-        let inputWrapper = UIView()
-        inputWrapper.translatesAutoresizingMaskIntoConstraints = false
-        outerStack.addArrangedSubview(inputWrapper)
 
         // UITextView
         themeTextView.backgroundColor       = .clear
@@ -204,35 +189,29 @@ class NewProjectViewController: UIViewController {
         themeTextView.autocorrectionType    = .no
         themeTextView.delegate              = self
         themeTextView.translatesAutoresizingMaskIntoConstraints = false
-        inputWrapper.addSubview(themeTextView)
+        container.addSubview(themeTextView)
 
-        // 占位符
+        // 占位符（UITextView 不内置 placeholder）
         placeholderLabel.text                     = "输入您的幻灯片主题..."
         placeholderLabel.font                     = .systemFont(ofSize: 15)
         placeholderLabel.textColor                = .appTextTertiary
         placeholderLabel.isUserInteractionEnabled = false
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
-        inputWrapper.addSubview(placeholderLabel)
+        container.addSubview(placeholderLabel)
 
         // 动态高度约束
         textViewHeightConstraint = themeTextView.heightAnchor.constraint(equalToConstant: minInputHeight)
 
         NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: cardView.topAnchor),
+            container.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
             container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
 
-            outerStack.topAnchor.constraint(equalTo: container.topAnchor),
-            outerStack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            outerStack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            outerStack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-
-            // inputWrapper 内部
-            themeTextView.leadingAnchor.constraint(equalTo: inputWrapper.leadingAnchor),
-            themeTextView.trailingAnchor.constraint(equalTo: inputWrapper.trailingAnchor),
-            themeTextView.topAnchor.constraint(equalTo: inputWrapper.topAnchor, constant: 14),
+            themeTextView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            themeTextView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            themeTextView.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
             textViewHeightConstraint,
-            themeTextView.bottomAnchor.constraint(equalTo: inputWrapper.bottomAnchor, constant: -10),
+            themeTextView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10),
 
             placeholderLabel.leadingAnchor.constraint(equalTo: themeTextView.leadingAnchor),
             placeholderLabel.topAnchor.constraint(equalTo: themeTextView.topAnchor),
@@ -241,33 +220,17 @@ class NewProjectViewController: UIViewController {
         return container
     }
 
-    // MARK: - 主题建议 Chip 展示
+    // MARK: - 主题建议浮层
 
     func showTopicSuggestions(topics: [String]) {
-        // 清除旧 chip
-        topicSuggestionsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
-
-        for topic in topics {
-            let btn = TopicChipButton(topic: topic)
-            btn.onTap = { [weak self] in
-                self?.applyTopic(topic)
-            }
-            topicSuggestionsStack.addArrangedSubview(btn)
-        }
-
-        topicSuggestionsWrapper.isHidden = false
-        UIView.animate(withDuration: 0.28, delay: 0,
-                       usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5,
-                       options: .curveEaseOut) {
-            self.view.layoutIfNeeded()
-        }
+        topicSuggestionsView.update(topics: topics)
     }
 
     private func applyTopic(_ topic: String) {
         themeTextView.text = topic
         placeholderLabel.isHidden = true
         textViewDidChange(themeTextView)
-        topicSuggestionsWrapper.isHidden = true
+        topicSuggestionsView.hide()
     }
 
     // MARK: - 分割线
@@ -592,63 +555,81 @@ private class ParamChip: UIView {
     }
 }
 
-// MARK: - TopicChipButton（主题建议 chip，显示在输入框上方）
+// MARK: - TopicSuggestionsView（主题建议浮层，卡片外部靠右对齐，参考 PromptSuggestionsView）
 
-private class TopicChipButton: UIView {
+private class TopicSuggestionsView: UIView {
 
-    let topic: String
-    var onTap: (() -> Void)?
+    private let stackView = UIStackView()
+    var onSelect: ((String) -> Void)?
 
-    private let topicLabel = UILabel()
-    private let arrowView  = UIImageView()
-
-    init(topic: String) {
-        self.topic = topic
-        super.init(frame: .zero)
+    override init(frame: CGRect) {
+        super.init(frame: frame)
         setup()
     }
 
     required init?(coder: NSCoder) { fatalError() }
 
     private func setup() {
-        backgroundColor    = .appChipUnselectedBackground
-        layer.cornerRadius = 12
-
-        topicLabel.text          = topic
-        topicLabel.font          = .systemFont(ofSize: 14)
-        topicLabel.textColor     = .appTextPrimary
-        topicLabel.numberOfLines = 1
-        topicLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(topicLabel)
-
-        let cfg = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
-        arrowView.image       = UIImage(systemName: "arrow.down.left", withConfiguration: cfg)
-        arrowView.tintColor   = .appTextTertiary
-        arrowView.contentMode = .scaleAspectFit
-        arrowView.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(arrowView)
+        // alignment = .trailing 使每个按钮按内容宽度自适应，整体靠右
+        stackView.axis      = .vertical
+        stackView.spacing   = 8
+        stackView.alignment = .trailing
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(stackView)
 
         NSLayoutConstraint.activate([
-            heightAnchor.constraint(equalToConstant: 44),
-
-            topicLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
-            topicLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
-            topicLabel.trailingAnchor.constraint(equalTo: arrowView.leadingAnchor, constant: -8),
-
-            arrowView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
-            arrowView.centerYAnchor.constraint(equalTo: centerYAnchor),
-            arrowView.widthAnchor.constraint(equalToConstant: 14),
-            arrowView.heightAnchor.constraint(equalToConstant: 14),
+            stackView.topAnchor.constraint(equalTo: topAnchor),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-
-        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
     }
 
-    @objc private func handleTap() {
-        UIView.animate(withDuration: 0.1, animations: { self.alpha = 0.65 }) { _ in
-            UIView.animate(withDuration: 0.1) { self.alpha = 1 }
-            self.onTap?()
+    // 刷新主题建议，带淡入动画
+    func update(topics: [String]) {
+        stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for topic in topics {
+            stackView.addArrangedSubview(makeChip(topic: topic))
         }
+        alpha = 0
+        isHidden = false
+        UIView.animate(withDuration: 0.25) { self.alpha = 1 }
+    }
+
+    // 淡出并隐藏
+    func hide() {
+        UIView.animate(withDuration: 0.2) { self.alpha = 0 } completion: { _ in
+            self.isHidden = true
+            self.stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        }
+    }
+
+    private func makeChip(topic: String) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.setTitle(topic, for: .normal)
+        btn.titleLabel?.font    = .systemFont(ofSize: 14)
+        btn.titleLabel?.lineBreakMode = .byTruncatingTail
+        btn.setTitleColor(.appTextPrimary, for: .normal)
+        btn.backgroundColor     = .appCardBackground.withAlphaComponent(0.92)
+        btn.layer.cornerRadius  = 16
+        btn.layer.borderColor   = UIColor.appSeparator.cgColor
+        btn.layer.borderWidth   = 1
+        btn.contentEdgeInsets   = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 12)
+
+        // 右侧箭头图标，图标在文字右侧（semanticContentAttribute = .forceRightToLeft）
+        let cfg = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+        btn.setImage(UIImage(systemName: "arrow.down.left", withConfiguration: cfg), for: .normal)
+        btn.tintColor                   = .appTextTertiary
+        btn.semanticContentAttribute    = .forceRightToLeft
+        btn.imageEdgeInsets             = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: -8)
+
+        btn.addTarget(self, action: #selector(chipTapped(_:)), for: .touchUpInside)
+        return btn
+    }
+
+    @objc private func chipTapped(_ sender: UIButton) {
+        guard let title = sender.title(for: .normal) else { return }
+        onSelect?(title)
     }
 }
 
