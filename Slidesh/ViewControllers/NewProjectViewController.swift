@@ -27,6 +27,9 @@ class NewProjectViewController: UIViewController {
     private var generateGradient: CAGradientLayer?
     private weak var generateContainer: UIView?
 
+    // 卡片垂直位置约束（键盘弹出时动态调整）
+    private var cardCenterYConstraint: NSLayoutConstraint!
+
     // 输入框高度约束（动态更新）
     private var textViewHeightConstraint: NSLayoutConstraint!
     private let minInputHeight: CGFloat = 44
@@ -53,6 +56,7 @@ class NewProjectViewController: UIViewController {
         setupCard()
         setupTopicSuggestions()
         setupKeyboardDismiss()
+        setupKeyboardObservers()
     }
 
     // MARK: - 导航栏
@@ -122,10 +126,11 @@ class NewProjectViewController: UIViewController {
         // 卡片描边（dark mode 自适应）
         updateCardBorder()
 
+        cardCenterYConstraint = cardView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 10)
         NSLayoutConstraint.activate([
             cardView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             cardView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            cardView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 10),
+            cardCenterYConstraint,
         ])
 
         let inputContainer = buildThemeRow()
@@ -396,6 +401,54 @@ class NewProjectViewController: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
         view.addGestureRecognizer(tap)
+    }
+
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self,
+            selector: #selector(keyboardWillShow(_:)),
+            name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self,
+            selector: #selector(keyboardWillHide(_:)),
+            name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let info     = notification.userInfo,
+              let kbValue  = info[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve    = info[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt
+        else { return }
+
+        // 键盘顶部（在当前 view 坐标系中）
+        let kbTop = view.convert(kbValue.cgRectValue, from: nil).minY
+        // 生成按钮底部（cardView 底 + 12 间距 + 60 按钮高）
+        let buttonBottom = cardView.frame.maxY + 72
+        // 超出部分就是需要上移的距离，额外留 16pt 间距
+        let overlap = buttonBottom - (kbTop - 16)
+        guard overlap > 0 else { return }
+
+        cardCenterYConstraint.constant = 10 - overlap
+        UIView.animate(withDuration: duration, delay: 0,
+                       options: UIView.AnimationOptions(rawValue: curve << 16)) {
+            self.view.layoutIfNeeded()
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        guard let info     = notification.userInfo,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve    = info[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt
+        else { return }
+
+        cardCenterYConstraint.constant = 10
+        UIView.animate(withDuration: duration, delay: 0,
+                       options: UIView.AnimationOptions(rawValue: curve << 16)) {
+            self.view.layoutIfNeeded()
+        }
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - Actions
