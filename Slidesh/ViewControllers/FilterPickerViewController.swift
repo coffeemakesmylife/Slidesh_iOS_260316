@@ -293,11 +293,15 @@ private class ColorSwatchCell: UICollectionViewCell {
         circleView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(circleView)
 
-        // 品牌渐变（全部颜色），frame 在 setup 时直接给定，不依赖 layoutSubviews
-        gradientLayer.colors     = [UIColor.appGradientStart.cgColor,
-                                    UIColor.appGradientMid.cgColor,
-                                    UIColor.appGradientEnd.cgColor]
-        gradientLayer.locations  = [0.0, 0.55, 1.0]
+        // 彩虹渐变（全部颜色），frame 在 setup 时直接给定，不依赖 layoutSubviews
+        gradientLayer.colors     = [UIColor.systemRed.cgColor,
+                                    UIColor.systemOrange.cgColor,
+                                    UIColor.systemYellow.cgColor,
+                                    UIColor.systemGreen.cgColor,
+                                    UIColor.systemCyan.cgColor,
+                                    UIColor.systemBlue.cgColor,
+                                    UIColor.systemPurple.cgColor]
+        gradientLayer.locations  = [0.0, 0.17, 0.33, 0.5, 0.67, 0.83, 1.0]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
         gradientLayer.frame      = CGRect(x: 0, y: 0, width: d, height: d)
