@@ -57,7 +57,6 @@
 			children = (
 				D2BFDCD79527F5E85F052571 /* TemplateCache.swift */,
 			);
-			name = Services;
 			path = Services;
 			sourceTree = "<group>";
 		};
@@ -102,7 +101,6 @@
 			children = (
 				57ED5E878E4CE8B5C2E46C17 /* Services */,
 			);
-			name = Slidesh;
 			path = Slidesh;
 			sourceTree = "<group>";
 		};

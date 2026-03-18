@@ -37,6 +37,10 @@ class NewProjectViewController: UIViewController {
     private var pageChip:    ParamChip!
     private var langChip:    ParamChip!
 
+    // 主题灵感建议区（选中行业后显示在输入框上方）
+    private var topicSuggestionsWrapper: UIView!
+    private var topicSuggestionsStack:   UIStackView!
+
     // MARK: - 生命周期
 
     override func viewDidLoad() {
@@ -107,7 +111,7 @@ class NewProjectViewController: UIViewController {
         cardView.backgroundColor     = .appCardBackground.withAlphaComponent(0.7)
         cardView.layer.cornerRadius  = 30
         cardView.layer.shadowColor   = UIColor.black.cgColor
-        cardView.layer.shadowOpacity = 0.08
+        cardView.layer.shadowOpacity = 0.1
         cardView.layer.shadowRadius  = 24
         cardView.layer.shadowOffset  = CGSize(width: 0, height: 6)
         cardView.translatesAutoresizingMaskIntoConstraints = false
@@ -133,9 +137,9 @@ class NewProjectViewController: UIViewController {
     }
 
     private func updateCardBorder() {
-        let color = UIColor.appSeparator.resolvedColor(with: traitCollection)
+        let color = UIColor.appCardBorder.resolvedColor(with: traitCollection)
         cardView.layer.borderColor = color.cgColor
-        cardView.layer.borderWidth = 1
+        cardView.layer.borderWidth = 1.5
     }
 
     override func traitCollectionDidChange(_ previous: UITraitCollection?) {
@@ -150,7 +154,7 @@ class NewProjectViewController: UIViewController {
         }
     }
 
-    // MARK: - 主题输入区（UITextView + 动态高度）
+    // MARK: - 主题输入区（UITextView + 动态高度 + 主题建议区）
 
     @discardableResult
     private func buildThemeRow() -> UIView {
@@ -158,46 +162,112 @@ class NewProjectViewController: UIViewController {
         container.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(container)
 
+        // --- 主题建议区（默认隐藏，选择行业后出现在输入框上方）---
+        let suggestWrapper = UIView()
+        suggestWrapper.isHidden = true
+        suggestWrapper.translatesAutoresizingMaskIntoConstraints = false
+        topicSuggestionsWrapper = suggestWrapper
+
+        topicSuggestionsStack = UIStackView()
+        topicSuggestionsStack.axis    = .vertical
+        topicSuggestionsStack.spacing = 8
+        topicSuggestionsStack.translatesAutoresizingMaskIntoConstraints = false
+        suggestWrapper.addSubview(topicSuggestionsStack)
+
+        NSLayoutConstraint.activate([
+            topicSuggestionsStack.topAnchor.constraint(equalTo: suggestWrapper.topAnchor, constant: 14),
+            topicSuggestionsStack.bottomAnchor.constraint(equalTo: suggestWrapper.bottomAnchor, constant: -8),
+            topicSuggestionsStack.leadingAnchor.constraint(equalTo: suggestWrapper.leadingAnchor),
+            topicSuggestionsStack.trailingAnchor.constraint(equalTo: suggestWrapper.trailingAnchor),
+        ])
+
+        // --- 外层 StackView（建议区 + 输入区垂直排列，隐藏时自动折叠）---
+        let outerStack = UIStackView()
+        outerStack.axis    = .vertical
+        outerStack.spacing = 0
+        outerStack.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(outerStack)
+        outerStack.addArrangedSubview(suggestWrapper)
+
+        // --- 输入区 ---
+        let inputWrapper = UIView()
+        inputWrapper.translatesAutoresizingMaskIntoConstraints = false
+        outerStack.addArrangedSubview(inputWrapper)
+
         // UITextView
         themeTextView.backgroundColor       = .clear
         themeTextView.font                  = .systemFont(ofSize: 15)
         themeTextView.textColor             = .appTextPrimary
-        themeTextView.isScrollEnabled       = false  // 高度自适应，需要时由代码改为 true
+        themeTextView.isScrollEnabled       = false
         themeTextView.textContainerInset    = .zero
         themeTextView.textContainer.lineFragmentPadding = 0
         themeTextView.autocorrectionType    = .no
         themeTextView.delegate              = self
         themeTextView.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(themeTextView)
+        inputWrapper.addSubview(themeTextView)
 
-        // 占位符（UITextView 不内置 placeholder）
-        placeholderLabel.text                  = "输入您的幻灯片主题..."
-        placeholderLabel.font                  = .systemFont(ofSize: 15)
-        placeholderLabel.textColor             = .appTextTertiary
+        // 占位符
+        placeholderLabel.text                     = "输入您的幻灯片主题..."
+        placeholderLabel.font                     = .systemFont(ofSize: 15)
+        placeholderLabel.textColor                = .appTextTertiary
         placeholderLabel.isUserInteractionEnabled = false
         placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(placeholderLabel)
+        inputWrapper.addSubview(placeholderLabel)
 
         // 动态高度约束
         textViewHeightConstraint = themeTextView.heightAnchor.constraint(equalToConstant: minInputHeight)
 
         NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
+            container.topAnchor.constraint(equalTo: cardView.topAnchor),
             container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
             container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
 
-            themeTextView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            themeTextView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            themeTextView.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
-            textViewHeightConstraint,
-            themeTextView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10),
+            outerStack.topAnchor.constraint(equalTo: container.topAnchor),
+            outerStack.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            outerStack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            outerStack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
 
-            // 占位符与 textView 左对齐
+            // inputWrapper 内部
+            themeTextView.leadingAnchor.constraint(equalTo: inputWrapper.leadingAnchor),
+            themeTextView.trailingAnchor.constraint(equalTo: inputWrapper.trailingAnchor),
+            themeTextView.topAnchor.constraint(equalTo: inputWrapper.topAnchor, constant: 14),
+            textViewHeightConstraint,
+            themeTextView.bottomAnchor.constraint(equalTo: inputWrapper.bottomAnchor, constant: -10),
+
             placeholderLabel.leadingAnchor.constraint(equalTo: themeTextView.leadingAnchor),
             placeholderLabel.topAnchor.constraint(equalTo: themeTextView.topAnchor),
         ])
 
         return container
+    }
+
+    // MARK: - 主题建议 Chip 展示
+
+    func showTopicSuggestions(topics: [String]) {
+        // 清除旧 chip
+        topicSuggestionsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
+        for topic in topics {
+            let btn = TopicChipButton(topic: topic)
+            btn.onTap = { [weak self] in
+                self?.applyTopic(topic)
+            }
+            topicSuggestionsStack.addArrangedSubview(btn)
+        }
+
+        topicSuggestionsWrapper.isHidden = false
+        UIView.animate(withDuration: 0.28, delay: 0,
+                       usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5,
+                       options: .curveEaseOut) {
+            self.view.layoutIfNeeded()
+        }
+    }
+
+    private func applyTopic(_ topic: String) {
+        themeTextView.text = topic
+        placeholderLabel.isHidden = true
+        textViewDidChange(themeTextView)
+        topicSuggestionsWrapper.isHidden = true
     }
 
     // MARK: - 分割线
@@ -311,7 +381,7 @@ class NewProjectViewController: UIViewController {
 
     private func buildGenerateButton() {
         let container = UIView()
-        container.layer.cornerRadius = 16
+        container.layer.cornerRadius = 22
         container.clipsToBounds      = true
         container.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(container)
@@ -345,7 +415,7 @@ class NewProjectViewController: UIViewController {
             container.topAnchor.constraint(equalTo: cardView.bottomAnchor, constant: 12),
             container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
             container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
-            container.heightAnchor.constraint(equalToConstant: 52),
+            container.heightAnchor.constraint(equalToConstant: 60),
 
             generateButton.topAnchor.constraint(equalTo: container.topAnchor),
             generateButton.bottomAnchor.constraint(equalTo: container.bottomAnchor),
@@ -378,12 +448,16 @@ class NewProjectViewController: UIViewController {
 
     private func showInspirePicker() {
         view.endEditing(true)  // 弹出前收起键盘
-        let topics = ["2025年人工智能发展趋势", "季度销售业绩回顾",
-                      "新员工入职培训", "产品发布会方案",
-                      "市场竞争分析", "团队建设与文化"]
-        let picker = FilterPickerViewController(title: "主题灵感", options: topics, selectedIndex: -1)
-        picker.onSelect = { [weak self] idx in self?.themeTextView.text = topics[idx]; self?.placeholderLabel.isHidden = true }
-        present(picker, animated: false)
+        let picker = InspirationPickerViewController()
+        picker.onSelectTopics = { [weak self] topics in
+            self?.showTopicSuggestions(topics: topics)
+        }
+        picker.modalPresentationStyle = .pageSheet
+        if let sheet = picker.sheetPresentationController {
+            sheet.detents               = [.medium()]
+            sheet.prefersGrabberVisible = true
+        }
+        present(picker, animated: true)
     }
 
     private func showParamsPicker() {
@@ -515,6 +589,66 @@ private class ParamChip: UIView {
             UIView.animate(withDuration: 0.1) { self.transform = .identity }
         }
         onTap?()
+    }
+}
+
+// MARK: - TopicChipButton（主题建议 chip，显示在输入框上方）
+
+private class TopicChipButton: UIView {
+
+    let topic: String
+    var onTap: (() -> Void)?
+
+    private let topicLabel = UILabel()
+    private let arrowView  = UIImageView()
+
+    init(topic: String) {
+        self.topic = topic
+        super.init(frame: .zero)
+        setup()
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    private func setup() {
+        backgroundColor    = .appChipUnselectedBackground
+        layer.cornerRadius = 12
+
+        topicLabel.text          = topic
+        topicLabel.font          = .systemFont(ofSize: 14)
+        topicLabel.textColor     = .appTextPrimary
+        topicLabel.numberOfLines = 1
+        topicLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(topicLabel)
+
+        let cfg = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+        arrowView.image       = UIImage(systemName: "arrow.down.left", withConfiguration: cfg)
+        arrowView.tintColor   = .appTextTertiary
+        arrowView.contentMode = .scaleAspectFit
+        arrowView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(arrowView)
+
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: 44),
+
+            topicLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            topicLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+            topicLabel.trailingAnchor.constraint(equalTo: arrowView.leadingAnchor, constant: -8),
+
+            arrowView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            arrowView.centerYAnchor.constraint(equalTo: centerYAnchor),
+            arrowView.widthAnchor.constraint(equalToConstant: 14),
+            arrowView.heightAnchor.constraint(equalToConstant: 14),
+        ])
+
+        addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleTap)))
+    }
+
+    @objc private func handleTap() {
+        UIView.animate(withDuration: 0.1, animations: { self.alpha = 0.65 }) { _ in
+            UIView.animate(withDuration: 0.1) { self.alpha = 1 }
+            self.onTap?()
+        }
     }
 }
 
