@@ -39,6 +39,8 @@ class NewProjectViewController: UIViewController {
 
     // 主题灵感建议浮层（卡片外部，靠右对齐，参考 PromptSuggestionsView 设计）
     private var topicSuggestionsView: TopicSuggestionsView!
+    // 当前选中行业的主题列表（文本清空后用于复显）
+    private var currentTopics: [String] = []
 
     // MARK: - 生命周期
 
@@ -223,14 +225,15 @@ class NewProjectViewController: UIViewController {
     // MARK: - 主题建议浮层
 
     func showTopicSuggestions(topics: [String]) {
+        currentTopics = topics
         topicSuggestionsView.update(topics: topics)
     }
 
     private func applyTopic(_ topic: String) {
         themeTextView.text = topic
         placeholderLabel.isHidden = true
+        // textViewDidChange 会根据文本非空调用 hide()，无需重复
         textViewDidChange(themeTextView)
-        topicSuggestionsView.hide()
     }
 
     // MARK: - 分割线
@@ -410,10 +413,13 @@ class NewProjectViewController: UIViewController {
     // MARK: - 选择器
 
     private func showInspirePicker() {
-        view.endEditing(true)  // 弹出前收起键盘
+        view.endEditing(true)
         let picker = InspirationPickerViewController()
-        picker.onSelectTopics = { [weak self] topics in
-            self?.showTopicSuggestions(topics: topics)
+        picker.onSelect = { [weak self] category in
+            guard let self else { return }
+            // 参数栏 chip 显示选中的行业名
+            self.inspireChip.updateLabel(category.name)
+            self.showTopicSuggestions(topics: category.topics)
         }
         picker.modalPresentationStyle = .pageSheet
         if let sheet = picker.sheetPresentationController {
@@ -461,6 +467,13 @@ extension NewProjectViewController: UITextViewDelegate {
     func textViewDidChange(_ textView: UITextView) {
         // 占位符显隐
         placeholderLabel.isHidden = !textView.text.isEmpty
+
+        // 建议浮层：有文字→收起，清空→若有已选行业则重新展示
+        if textView.text.isEmpty {
+            if !currentTopics.isEmpty { topicSuggestionsView.show() }
+        } else {
+            topicSuggestionsView.hide()
+        }
 
         // 动态计算高度
         let size   = textView.sizeThatFits(CGSize(width: textView.frame.width, height: .infinity))
@@ -585,7 +598,7 @@ private class TopicSuggestionsView: UIView {
         ])
     }
 
-    // 刷新主题建议，带淡入动画
+    // 刷新主题建议（换新行业时调用），带淡入动画
     func update(topics: [String]) {
         stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         for topic in topics {
@@ -596,11 +609,19 @@ private class TopicSuggestionsView: UIView {
         UIView.animate(withDuration: 0.25) { self.alpha = 1 }
     }
 
-    // 淡出并隐藏
+    // 仅淡入展示（chips 不变，文本清空后复用）
+    func show() {
+        guard isHidden, !stackView.arrangedSubviews.isEmpty else { return }
+        alpha = 0
+        isHidden = false
+        UIView.animate(withDuration: 0.25) { self.alpha = 1 }
+    }
+
+    // 淡出并隐藏（保留 chips，供 show() 复用）
     func hide() {
+        guard !isHidden else { return }
         UIView.animate(withDuration: 0.2) { self.alpha = 0 } completion: { _ in
             self.isHidden = true
-            self.stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
         }
     }
 

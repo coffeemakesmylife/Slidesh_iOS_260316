@@ -99,9 +99,9 @@ class InspirationPickerViewController: UIViewController {
         ]),
     ]
 
-    // MARK: - 回调
+    // MARK: - 回调（返回完整分类，包含名称和主题）
 
-    var onSelectTopics: (([String]) -> Void)?
+    var onSelect: ((InspirationCategory) -> Void)?
 
     // MARK: - 子视图
 
@@ -190,9 +190,9 @@ extension InspirationPickerViewController: UICollectionViewDataSource, UICollect
 
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
-        let topics = Self.categories[indexPath.item].topics
+        let category = Self.categories[indexPath.item]
         dismiss(animated: true) { [weak self] in
-            self?.onSelectTopics?(topics)
+            self?.onSelect?(category)
         }
     }
 }
