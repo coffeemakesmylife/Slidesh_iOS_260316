@@ -54,8 +54,8 @@ class NewProjectViewController: UIViewController {
         navigationItem.title = ""
         addMeshGradientBackground()
         setupNav()
-        setupSlogan()
-        setupCard()
+        setupCard()      // 先将 cardView 加入视图层级
+        setupSlogan()    // 再建立 subLabel → cardView 的底部约束
         setupTopicSuggestions()
         setupKeyboardDismiss()
         setupKeyboardObservers()
@@ -100,7 +100,7 @@ class NewProjectViewController: UIViewController {
 
         // 布局方向从下往上：subLabel 底部紧贴卡片顶，mainLabel/icon 依次叠上
         subLabelBottomConstraint = subLabel.bottomAnchor.constraint(
-            equalTo: cardView.topAnchor, constant: -12)
+            equalTo: cardView.topAnchor, constant: -20)
 
         NSLayoutConstraint.activate([
             subLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -244,13 +244,14 @@ class NewProjectViewController: UIViewController {
 
     /// 根据 TopicSuggestionsView 高度调整 subLabel 底部间距（0 = 复位）
     private func shiftSubLabel(by suggestionsHeight: CGFloat) {
-        // base -12：subLabel 与卡片顶的基础间距；有建议时再追加高度 + 12 上间距
-        let extra = suggestionsHeight > 0 ? suggestionsHeight + 12 : 0
-        subLabelBottomConstraint.constant = -(12 + extra)
+        // base -20：subLabel 与卡片顶的基础间距；有建议时再追加高度 + 20 上间距
+        let extra = suggestionsHeight > 0 ? suggestionsHeight + 20 : 0
+        subLabelBottomConstraint.constant = -(20 + extra)
         UIView.animate(withDuration: 0.25) { self.view.layoutIfNeeded() }
     }
 
     private func applyTopic(_ topic: String) {
+        view.endEditing(true)   // 同时收起键盘
         themeTextView.text = topic
         placeholderLabel.isHidden = true
         // textViewDidChange 会根据文本非空调用 hide()，无需重复
@@ -416,6 +417,7 @@ class NewProjectViewController: UIViewController {
     private func setupKeyboardDismiss() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         tap.cancelsTouchesInView = false
+        tap.delegate = self   // 过滤 topicSuggestionsView 内的点击
         view.addGestureRecognizer(tap)
     }
 
@@ -526,6 +528,17 @@ class NewProjectViewController: UIViewController {
             sheet.prefersGrabberVisible  = true
         }
         present(picker, animated: true)
+    }
+}
+
+// MARK: - UIGestureRecognizerDelegate
+
+extension NewProjectViewController: UIGestureRecognizerDelegate {
+    /// 点击落在 TopicSuggestionsView 内时不拦截，让 chip 按钮直接响应
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldReceive touch: UITouch) -> Bool {
+        let point = touch.location(in: topicSuggestionsView)
+        return !topicSuggestionsView.bounds.contains(point)
     }
 }
 
