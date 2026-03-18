@@ -238,11 +238,12 @@ class TemplatesViewController: UIViewController {
                     self.hasMore     = newTemplates.count >= 20
                     self.currentPage += 1
                     let startIndex   = self.templates.count
-                    self.templates.append(contentsOf: newTemplates)
-                    let indexPaths = (startIndex..<self.templates.count).map {
+                    let indexPaths   = (startIndex..<startIndex + newTemplates.count).map {
                         IndexPath(item: $0, section: 0)
                     }
+                    // 数据源变更必须在 performBatchUpdates 块内，否则前后数量不一致导致崩溃
                     self.collectionView.performBatchUpdates({
+                        self.templates.append(contentsOf: newTemplates)
                         self.collectionView.insertItems(at: indexPaths)
                     }, completion: { _ in self.reloadFooter() })
                 case .failure(let error):
