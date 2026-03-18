@@ -2,8 +2,6 @@
 //  NewProjectViewController.swift
 //  Slidesh
 //
-//  极简 AI 建单页，视觉重心聚焦于输入卡片
-//
 
 import UIKit
 
@@ -13,23 +11,27 @@ class NewProjectViewController: UIViewController {
 
     private var selectedPageCount = 10
     private var selectedLanguage  = "中文"
-    private var selectedScene     = ""
-    private var selectedAudience  = ""
+    private var selectedScene     = "通用"
+    private var selectedAudience  = "通用"
 
     // MARK: - 子视图
 
     private let cardView         = UIView()
-    private let themeField       = UITextField()
+    private let themeTextView    = UITextView()
+    private let placeholderLabel = UILabel()
     private let paramsScrollView = UIScrollView()
     private let paramsStack      = UIStackView()
     private let generateButton   = UIButton(type: .system)
 
-    // 参数 Chip 引用（便于更新标题）
-    private var inspireChip:  ParamChip!
-    private var pageChip:     ParamChip!
-    private var langChip:     ParamChip!
-    private var sceneChip:    ParamChip!
-    private var audienceChip: ParamChip!
+    // 输入框高度约束（动态更新）
+    private var textViewHeightConstraint: NSLayoutConstraint!
+    private let minInputHeight: CGFloat = 44
+    private let maxInputHeight: CGFloat = 120
+
+    // 参数 Chip 引用
+    private var inspireChip: ParamChip!
+    private var pageChip:    ParamChip!
+    private var langChip:    ParamChip!
 
     // MARK: - 生命周期
 
@@ -98,8 +100,8 @@ class NewProjectViewController: UIViewController {
     // MARK: - 输入卡片
 
     private func setupCard() {
-        cardView.backgroundColor     = .appCardBackground
-        cardView.layer.cornerRadius  = 20
+        cardView.backgroundColor     = .appCardBackground.withAlphaComponent(0.7)
+        cardView.layer.cornerRadius  = 30
         cardView.layer.shadowColor   = UIColor.black.cgColor
         cardView.layer.shadowOpacity = 0.08
         cardView.layer.shadowRadius  = 24
@@ -113,57 +115,65 @@ class NewProjectViewController: UIViewController {
             cardView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: 30),
         ])
 
-        let inputRow = buildThemeRow()
-        let sep1     = buildSeparator(below: inputRow)
-        let params   = buildParamsBar(below: sep1)
-        let sep2     = buildSeparator(below: params)
+        let inputContainer = buildThemeRow()
+        let sep1           = buildSeparator(below: inputContainer)
+        let params         = buildParamsBar(below: sep1)
+        let sep2           = buildSeparator(below: params)
         buildGenerateButton(below: sep2)
     }
 
-    // 主题输入行（无发送按钮），返回视图用于后续链式约束
+    // MARK: - 主题输入区（UITextView + 动态高度）
+
     @discardableResult
     private func buildThemeRow() -> UIView {
-        let row = UIView()
-        row.translatesAutoresizingMaskIntoConstraints = false
-        cardView.addSubview(row)
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(container)
 
-        let leftIcon = UIImageView(image: UIImage(systemName: "text.cursor"))
-        leftIcon.tintColor    = .appTextTertiary
-        leftIcon.contentMode  = .scaleAspectFit
-        leftIcon.translatesAutoresizingMaskIntoConstraints = false
-        row.addSubview(leftIcon)
+        // UITextView
+        themeTextView.backgroundColor       = .clear
+        themeTextView.font                  = .systemFont(ofSize: 15)
+        themeTextView.textColor             = .appTextPrimary
+        themeTextView.isScrollEnabled       = false  // 高度自适应，需要时由代码改为 true
+        themeTextView.textContainerInset    = .zero
+        themeTextView.textContainer.lineFragmentPadding = 0
+        themeTextView.autocorrectionType    = .no
+        themeTextView.delegate              = self
+        themeTextView.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(themeTextView)
 
-        themeField.placeholder        = "输入您的幻灯片主题..."
-        themeField.font               = .systemFont(ofSize: 15)
-        themeField.textColor          = .appTextPrimary
-        themeField.borderStyle        = .none
-        themeField.returnKeyType      = .send
-        themeField.autocorrectionType = .no
-        themeField.enablesReturnKeyAutomatically = true
-        themeField.delegate           = self
-        themeField.translatesAutoresizingMaskIntoConstraints = false
-        row.addSubview(themeField)
+        // 占位符（UITextView 不内置 placeholder）
+        placeholderLabel.text                  = "输入您的幻灯片主题..."
+        placeholderLabel.font                  = .systemFont(ofSize: 15)
+        placeholderLabel.textColor             = .appTextTertiary
+        placeholderLabel.isUserInteractionEnabled = false
+        placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(placeholderLabel)
+
+        // 动态高度约束
+        textViewHeightConstraint = themeTextView.heightAnchor.constraint(equalToConstant: minInputHeight)
 
         NSLayoutConstraint.activate([
-            row.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 16),
-            row.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
-            row.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
-            row.heightAnchor.constraint(equalToConstant: 44),
+            container.topAnchor.constraint(equalTo: cardView.topAnchor, constant: 14),
+            container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor, constant: 16),
+            container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
 
-            leftIcon.leadingAnchor.constraint(equalTo: row.leadingAnchor),
-            leftIcon.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-            leftIcon.widthAnchor.constraint(equalToConstant: 20),
-            leftIcon.heightAnchor.constraint(equalToConstant: 20),
+            themeTextView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            themeTextView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            themeTextView.topAnchor.constraint(equalTo: container.topAnchor, constant: 10),
+            textViewHeightConstraint,
+            themeTextView.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -10),
 
-            themeField.leadingAnchor.constraint(equalTo: leftIcon.trailingAnchor, constant: 10),
-            themeField.trailingAnchor.constraint(equalTo: row.trailingAnchor),
-            themeField.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            // 占位符与 textView 左对齐
+            placeholderLabel.leadingAnchor.constraint(equalTo: themeTextView.leadingAnchor),
+            placeholderLabel.topAnchor.constraint(equalTo: themeTextView.topAnchor),
         ])
 
-        return row
+        return container
     }
 
-    // 0.5pt 分割线，链接到 above 视图底部
+    // MARK: - 分割线
+
     @discardableResult
     private func buildSeparator(below above: UIView) -> UIView {
         let sep = UIView()
@@ -180,13 +190,20 @@ class NewProjectViewController: UIViewController {
         return sep
     }
 
-    // 参数横向滚动栏
+    // MARK: - 参数横向滚动栏
+
     @discardableResult
     private func buildParamsBar(below above: UIView) -> UIView {
+        // 容器（必须 clipsToBounds，让 chip 滑到 more 按钮下方时被裁剪）
+        let container = UIView()
+        container.clipsToBounds = true
+        container.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(container)
+
+        // ScrollView：全宽，chip 可以滑动到右侧 more 按钮下方
         paramsScrollView.showsHorizontalScrollIndicator = false
-        paramsScrollView.contentInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         paramsScrollView.translatesAutoresizingMaskIntoConstraints = false
-        cardView.addSubview(paramsScrollView)
+        container.addSubview(paramsScrollView)
 
         paramsStack.axis      = .horizontal
         paramsStack.spacing   = 8
@@ -194,48 +211,87 @@ class NewProjectViewController: UIViewController {
         paramsStack.translatesAutoresizingMaskIntoConstraints = false
         paramsScrollView.addSubview(paramsStack)
 
-        // 五个参数 Chip：灵感 / 页数 / 语言 / 场景 / 受众
-        inspireChip  = ParamChip(symbol: "lightbulb",   label: "主题灵感")
-        pageChip     = ParamChip(symbol: "doc.text",    label: "\(selectedPageCount) 页")
-        langChip     = ParamChip(symbol: "globe",       label: selectedLanguage)
-        sceneChip    = ParamChip(symbol: "theatermasks", label: "场景")
-        audienceChip = ParamChip(symbol: "person.2",    label: "受众")
+        // 三个 Chip：灵感 / 页数 / 语言
+        inspireChip = ParamChip(symbol: "lightbulb",  label: "主题灵感")
+        pageChip    = ParamChip(symbol: "doc.text",   label: "\(selectedPageCount) 页")
+        langChip    = ParamChip(symbol: "globe",      label: selectedLanguage)
 
-        [inspireChip, pageChip, langChip, sceneChip, audienceChip]
-            .forEach { paramsStack.addArrangedSubview($0) }
+        [inspireChip, pageChip, langChip].forEach { paramsStack.addArrangedSubview($0) }
 
-        inspireChip.onTap  = { [weak self] in self?.showInspirePicker() }
-        pageChip.onTap     = { [weak self] in self?.showPagePicker() }
-        langChip.onTap     = { [weak self] in self?.showLanguagePicker() }
-        sceneChip.onTap    = { [weak self] in self?.showScenePicker() }
-        audienceChip.onTap = { [weak self] in self?.showAudiencePicker() }
+        inspireChip.onTap = { [weak self] in self?.showInspirePicker() }
+        pageChip.onTap    = { [weak self] in self?.showParamsPicker() }
+        langChip.onTap    = { [weak self] in self?.showParamsPicker() }
+
+        // More 按钮（固定在右侧，chip 在其背后滑动）
+        let moreBtn = buildMoreButton()
+        container.addSubview(moreBtn)
+
+        // 渐变遮罩（透明 → 卡片背景色，在 more 按钮左侧淡出 chip）
+        let fadeView = HorizontalFadeView()
+        container.addSubview(fadeView)
+
+        let moreBtnW: CGFloat = 44
+        let fadeW:    CGFloat = 64
 
         NSLayoutConstraint.activate([
-            paramsScrollView.topAnchor.constraint(equalTo: above.bottomAnchor),
-            paramsScrollView.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
-            paramsScrollView.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
-            paramsScrollView.heightAnchor.constraint(equalToConstant: 52),
+            container.topAnchor.constraint(equalTo: above.bottomAnchor),
+            container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            container.heightAnchor.constraint(equalToConstant: 52),
+
+            // ScrollView 全宽覆盖（chip 可滑入 more 按钮区域，被遮盖）
+            paramsScrollView.topAnchor.constraint(equalTo: container.topAnchor),
+            paramsScrollView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            paramsScrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            paramsScrollView.trailingAnchor.constraint(equalTo: container.trailingAnchor),
 
             paramsStack.topAnchor.constraint(equalTo: paramsScrollView.topAnchor),
             paramsStack.bottomAnchor.constraint(equalTo: paramsScrollView.bottomAnchor),
-            paramsStack.leadingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.leadingAnchor),
-            paramsStack.trailingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.trailingAnchor),
+            paramsStack.leadingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.leadingAnchor, constant: 16),
+            paramsStack.trailingAnchor.constraint(equalTo: paramsScrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             paramsStack.heightAnchor.constraint(equalTo: paramsScrollView.heightAnchor),
+
+            // More 按钮固定右侧
+            moreBtn.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            moreBtn.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            moreBtn.widthAnchor.constraint(equalToConstant: moreBtnW),
+            moreBtn.heightAnchor.constraint(equalToConstant: 32),
+
+            // 渐变：紧贴 more 按钮左侧
+            fadeView.trailingAnchor.constraint(equalTo: moreBtn.leadingAnchor),
+            fadeView.topAnchor.constraint(equalTo: container.topAnchor),
+            fadeView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            fadeView.widthAnchor.constraint(equalToConstant: fadeW),
         ])
 
-        return paramsScrollView
+        // 滚动终点留出 more 按钮区域，确保最后一个 chip 可以完全显示
+        paramsScrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: moreBtnW + fadeW)
+
+        return container
     }
 
-    // 底部"立即生成"渐变按钮
+    private func buildMoreButton() -> UIButton {
+        let btn = UIButton(type: .system)
+        let cfg = UIImage.SymbolConfiguration(pointSize: 13, weight: .medium)
+        btn.setImage(UIImage(systemName: "line.3.horizontal.decrease", withConfiguration: cfg), for: .normal)
+        btn.tintColor          = .appTextSecondary
+        // chip 样式，使其在卡片中清晰可见
+        btn.backgroundColor    = .appBackgroundSecondary
+        btn.layer.cornerRadius = 14
+        btn.addTarget(self, action: #selector(moreParamsTapped), for: .touchUpInside)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        return btn
+    }
+
+    // MARK: - 生成按钮
+
     private func buildGenerateButton(below above: UIView) {
-        // 渐变容器（UIButton 不直接支持渐变，用包装 UIView）
         let container = UIView()
         container.layer.cornerRadius = 14
         container.clipsToBounds      = true
         container.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(container)
 
-        // 品牌渐变层
         let gradient        = CAGradientLayer()
         gradient.colors     = [UIColor.appGradientStart.cgColor,
                                 UIColor.appGradientMid.cgColor,
@@ -245,10 +301,9 @@ class NewProjectViewController: UIViewController {
         gradient.endPoint   = CGPoint(x: 1, y: 0.5)
         container.layer.insertSublayer(gradient, at: 0)
 
-        // 按钮叠加在渐变上
         generateButton.setTitle("立即生成", for: .normal)
-        let cfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-        generateButton.setImage(UIImage(systemName: "sparkles", withConfiguration: cfg), for: .normal)
+        let imgCfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        generateButton.setImage(UIImage(systemName: "sparkles", withConfiguration: imgCfg), for: .normal)
         generateButton.tintColor       = .white
         generateButton.setTitleColor(.white, for: .normal)
         generateButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
@@ -272,15 +327,10 @@ class NewProjectViewController: UIViewController {
             generateButton.trailingAnchor.constraint(equalTo: container.trailingAnchor),
         ])
 
-        // 渐变 frame 在布局后设定
-        container.layoutIfNeeded()
-        gradient.frame = container.bounds
-
-        // 用 KVO-less 方式在 layoutSubviews 后更新 frame
         DispatchQueue.main.async { gradient.frame = container.bounds }
     }
 
-    // MARK: - 键盘收起
+    // MARK: - 键盘
 
     private func setupKeyboardDismiss() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
@@ -292,89 +342,76 @@ class NewProjectViewController: UIViewController {
 
     @objc private func dismissSelf()     { dismiss(animated: true) }
     @objc private func dismissKeyboard() { view.endEditing(true) }
+    @objc private func moreParamsTapped() { showParamsPicker() }
 
     @objc private func generateTapped() {
-        let theme = themeField.text?.trimmingCharacters(in: .whitespaces) ?? ""
-        guard !theme.isEmpty else {
-            themeField.becomeFirstResponder()
-            return
-        }
-        // TODO: 调用生成 API
+        let theme = themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !theme.isEmpty else { themeTextView.becomeFirstResponder(); return }
         print("生成 PPT: 主题=\(theme), 页数=\(selectedPageCount), 语言=\(selectedLanguage), 场景=\(selectedScene), 受众=\(selectedAudience)")
     }
 
-    // MARK: - 参数选择器
+    // MARK: - 选择器
 
     private func showInspirePicker() {
-        let topics  = ["2025年人工智能发展趋势", "季度销售业绩回顾", "新员工入职培训",
-                       "产品发布会方案", "市场竞争分析", "团队建设与文化"]
-        let picker  = FilterPickerViewController(title: "主题灵感", options: topics, selectedIndex: -1)
-        picker.onSelect = { [weak self] idx in
-            self?.themeField.text = topics[idx]
-        }
+        let topics = ["2025年人工智能发展趋势", "季度销售业绩回顾",
+                      "新员工入职培训", "产品发布会方案",
+                      "市场竞争分析", "团队建设与文化"]
+        let picker = FilterPickerViewController(title: "主题灵感", options: topics, selectedIndex: -1)
+        picker.onSelect = { [weak self] idx in self?.themeTextView.text = topics[idx]; self?.placeholderLabel.isHidden = true }
         present(picker, animated: false)
     }
 
-    private func showPagePicker() {
-        let counts  = [5, 8, 10, 15, 20, 25, 30]
-        let options = counts.map { "\($0) 页" }
-        let current = counts.firstIndex(of: selectedPageCount) ?? 2
-        let picker  = FilterPickerViewController(title: "页数", options: options, selectedIndex: current)
-        picker.onSelect = { [weak self] idx in
+    private func showParamsPicker() {
+        let pageCounts = ParamsPickerViewController.pageCounts
+        let current = ParamsPickerViewController.Selection(
+            pageIndex:     pageCounts.firstIndex(of: selectedPageCount) ?? 2,
+            languageIndex: ParamsPickerViewController.languages.firstIndex(of: selectedLanguage) ?? 0,
+            sceneIndex:    ParamsPickerViewController.scenes.firstIndex(of: selectedScene) ?? 0,
+            audienceIndex: ParamsPickerViewController.audiences.firstIndex(of: selectedAudience) ?? 0
+        )
+        let picker = ParamsPickerViewController(selection: current)
+        picker.onConfirm = { [weak self] sel in
             guard let self else { return }
-            self.selectedPageCount = counts[idx]
-            self.pageChip.updateLabel("\(counts[idx]) 页")
-        }
-        present(picker, animated: false)
-    }
-
-    private func showLanguagePicker() {
-        let langs   = ["中文", "English", "日本語", "한국어", "Français", "Español"]
-        let current = langs.firstIndex(of: selectedLanguage) ?? 0
-        let picker  = FilterPickerViewController(title: "语言", options: langs, selectedIndex: current)
-        picker.onSelect = { [weak self] idx in
-            guard let self else { return }
-            self.selectedLanguage = langs[idx]
-            self.langChip.updateLabel(langs[idx])
-        }
-        present(picker, animated: false)
-    }
-
-    private func showScenePicker() {
-        let scenes  = ["通用", "商务", "教育", "科技", "医疗", "创意"]
-        let current = max(scenes.firstIndex(of: selectedScene) ?? 0, 0)
-        let picker  = FilterPickerViewController(title: "场景", options: scenes, selectedIndex: current)
-        picker.onSelect = { [weak self] idx in
-            guard let self else { return }
-            self.selectedScene = scenes[idx]
-            self.sceneChip.updateLabel(scenes[idx])
-        }
-        present(picker, animated: false)
-    }
-
-    private func showAudiencePicker() {
-        let audiences = ["通用", "学生", "职场人士", "管理层", "投资人", "客户"]
-        let current   = max(audiences.firstIndex(of: selectedAudience) ?? 0, 0)
-        let picker    = FilterPickerViewController(title: "受众", options: audiences, selectedIndex: current)
-        picker.onSelect = { [weak self] idx in
-            guard let self else { return }
-            self.selectedAudience = audiences[idx]
-            self.audienceChip.updateLabel(audiences[idx])
+            self.selectedPageCount = sel.pageCount
+            self.selectedLanguage  = sel.language
+            self.selectedScene     = sel.scene
+            self.selectedAudience  = sel.audience
+            self.pageChip.updateLabel("\(sel.pageCount) 页")
+            self.langChip.updateLabel(sel.language)
         }
         present(picker, animated: false)
     }
 }
 
-// MARK: - UITextFieldDelegate
+// MARK: - UITextViewDelegate
 
-extension NewProjectViewController: UITextFieldDelegate {
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        generateTapped()
-        return false
+extension NewProjectViewController: UITextViewDelegate {
+
+    func textViewDidChange(_ textView: UITextView) {
+        // 占位符显隐
+        placeholderLabel.isHidden = !textView.text.isEmpty
+
+        // 动态计算高度
+        let size   = textView.sizeThatFits(CGSize(width: textView.frame.width, height: .infinity))
+        let newH   = min(max(size.height, minInputHeight), maxInputHeight)
+        let scroll = size.height > maxInputHeight
+
+        guard newH != textViewHeightConstraint.constant || textView.isScrollEnabled != scroll else { return }
+
+        textViewHeightConstraint.constant = newH
+        textView.isScrollEnabled = scroll
+        UIView.animate(withDuration: 0.15) { self.view.layoutIfNeeded() }
+    }
+
+    func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange,
+                  replacementText text: String) -> Bool {
+        // 单独一个换行 = 触发生成（不插入换行符）
+        if text == "\n" { generateTapped(); return false }
+        return true
     }
 }
 
-// MARK: - ParamChip（参数横向滑动栏中的单个参数按钮）
+// MARK: - ParamChip
 
 private class ParamChip: UIView {
 
@@ -384,7 +421,6 @@ private class ParamChip: UIView {
     private let textLabel = UILabel()
     private let chevron   = UIImageView()
 
-    /// symbol: SF Symbol 名称；label: 当前显示值
     init(symbol: String, label: String) {
         super.init(frame: .zero)
         setup(symbol: symbol, label: label)
@@ -393,24 +429,20 @@ private class ParamChip: UIView {
     required init?(coder: NSCoder) { fatalError() }
 
     private func setup(symbol: String, label: String) {
-        // 二级背景 + 三级背景层次：chip 用二级，卡片已是三级（白色/深蓝灰）
         backgroundColor    = .appBackgroundSecondary
         layer.cornerRadius = 14
 
-        // SF Symbol 图标（替代字母徽章）
         let iconCfg = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
         iconView.image       = UIImage(systemName: symbol, withConfiguration: iconCfg)
         iconView.tintColor   = .appTextSecondary
         iconView.contentMode = .scaleAspectFit
         iconView.translatesAutoresizingMaskIntoConstraints = false
 
-        // 参数值标签
         textLabel.text      = label
         textLabel.font      = .systemFont(ofSize: 13, weight: .medium)
         textLabel.textColor = .appTextPrimary
         textLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        // 展开箭头
         let chevronCfg = UIImage.SymbolConfiguration(pointSize: 9, weight: .medium)
         chevron.image       = UIImage(systemName: "chevron.down", withConfiguration: chevronCfg)
         chevron.tintColor   = .appTextTertiary
@@ -441,9 +473,7 @@ private class ParamChip: UIView {
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTap)))
     }
 
-    func updateLabel(_ text: String) {
-        textLabel.text = text
-    }
+    func updateLabel(_ text: String) { textLabel.text = text }
 
     @objc private func didTap() {
         UIView.animate(withDuration: 0.1,
@@ -451,5 +481,39 @@ private class ParamChip: UIView {
             UIView.animate(withDuration: 0.1) { self.transform = .identity }
         }
         onTap?()
+    }
+}
+
+// MARK: - HorizontalFadeView（透明→卡片背景色的横向渐变遮罩）
+
+private class HorizontalFadeView: UIView {
+
+    private let gradient = CAGradientLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        gradient.startPoint = CGPoint(x: 0, y: 0.5)
+        gradient.endPoint   = CGPoint(x: 1, y: 0.5)
+        isUserInteractionEnabled = false
+        layer.addSublayer(gradient)
+        updateColors()
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradient.frame = bounds
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        updateColors()
+    }
+
+    private func updateColors() {
+        // 结束色用不透明卡片背景，完全遮住滑入的 chip
+        let base = UIColor.appCardBackground.resolvedColor(with: traitCollection)
+        gradient.colors = [base.withAlphaComponent(0).cgColor, base.cgColor]
     }
 }
