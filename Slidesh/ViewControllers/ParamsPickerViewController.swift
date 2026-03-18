@@ -94,6 +94,7 @@ class ParamsPickerViewController: UIViewController {
     private var sectionCollections: [UICollectionView] = []
     // tag → 自定义输入框（仅 tag 2/3 有）
     private var customTextFields: [Int: UITextField] = [:]
+    private var contentScrollView: UIScrollView!
 
     private struct SectionMeta {
         let title:         String
@@ -140,11 +141,23 @@ class ParamsPickerViewController: UIViewController {
         if selection.audienceIndex >= Self.audiences.count {
             toggleCustomField(tag: 3, show: true, animated: false)
         }
+
+        // 键盘监听：输入框上移
+        NotificationCenter.default.addObserver(self,
+            selector: #selector(keyboardWillShow(_:)),
+            name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self,
+            selector: #selector(keyboardWillHide(_:)),
+            name: UIResponder.keyboardWillHideNotification, object: nil)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         if isBeingDismissed { onConfirm?(selection) }
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - 内容布局
@@ -170,6 +183,10 @@ class ParamsPickerViewController: UIViewController {
         scrollView.keyboardDismissMode = .onDrag
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(scrollView)
+        contentScrollView = scrollView
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        scrollView.addGestureRecognizer(tap)
 
         let contentStack = UIStackView()
         contentStack.axis    = .vertical
@@ -328,9 +345,60 @@ class ParamsPickerViewController: UIViewController {
         }
     }
 
+    // MARK: - 键盘处理
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let info     = notification.userInfo,
+              let kbValue  = info[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve    = info[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt
+        else { return }
+
+        // 键盘高度（相对于 scrollView 所在的 window 坐标系）
+        let kbFrame = kbValue.cgRectValue
+        let kbHeight = kbFrame.height
+
+        // 增大 scrollView 底部 inset，使内容可滚动到键盘上方
+        contentScrollView.contentInset.bottom = kbHeight
+        contentScrollView.scrollIndicatorInsets.bottom = kbHeight
+
+        // 找到当前第一响应者（自定义输入框），滚动使其可见
+        let activeTF = customTextFields.values.first { $0.isFirstResponder }
+        if let tf = activeTF {
+            let tfFrame = contentScrollView.convert(tf.frame, from: tf.superview)
+            let visibleRect = CGRect(x: 0, y: 0,
+                                     width: contentScrollView.bounds.width,
+                                     height: contentScrollView.bounds.height - kbHeight)
+            if !visibleRect.contains(tfFrame) {
+                UIView.animate(withDuration: duration, delay: 0,
+                               options: UIView.AnimationOptions(rawValue: curve << 16)) {
+                    self.contentScrollView.scrollRectToVisible(tfFrame, animated: false)
+                }
+            }
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        guard let info     = notification.userInfo,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve    = info[UIResponder.keyboardAnimationCurveUserInfoKey] as? UInt
+        else { return }
+
+        UIView.animate(withDuration: duration, delay: 0,
+                       options: UIView.AnimationOptions(rawValue: curve << 16)) {
+            self.contentScrollView.contentInset.bottom = 0
+            self.contentScrollView.scrollIndicatorInsets.bottom = 0
+        }
+    }
+
     // MARK: - Actions
 
-    @objc private func doneTapped() { dismiss(animated: true) }
+    @objc private func doneTapped() {
+        view.endEditing(true)
+        dismiss(animated: true)
+    }
+
+    @objc private func dismissKeyboard() { view.endEditing(true) }
 
     @objc private func customTextChanged(_ tf: UITextField) {
         let text = tf.text ?? ""
@@ -375,6 +443,9 @@ extension ParamsPickerViewController: UICollectionViewDataSource, UICollectionVi
                         didSelectItemAt indexPath: IndexPath) {
         let meta     = sections[collectionView.tag]
         let isCustom = meta.supportsCustom && indexPath.item == meta.options.count - 1
+
+        // 选中非自定义 chip 时收起键盘
+        if !isCustom { view.endEditing(true) }
 
         switch collectionView.tag {
         case 0: selection.lengthIndex   = indexPath.item
