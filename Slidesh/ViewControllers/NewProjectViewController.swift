@@ -730,23 +730,25 @@ private class TopicSuggestionsView: UIView {
     }
 
     private func makeChip(topic: String) -> UIButton {
-        let btn = UIButton(type: .system)
+        // 用 .custom 避免 system button 从父视图继承蓝色 tintColor
+        let btn = UIButton(type: .custom)
         btn.setTitle(topic, for: .normal)
-        btn.titleLabel?.font    = .systemFont(ofSize: 14)
+        btn.titleLabel?.font          = .systemFont(ofSize: 14)
         btn.titleLabel?.lineBreakMode = .byTruncatingTail
         btn.setTitleColor(.appTextPrimary, for: .normal)
-        btn.backgroundColor     = .appCardBackground.withAlphaComponent(0.92)
-        btn.layer.cornerRadius  = 16
-        btn.layer.borderColor   = UIColor.appSeparator.cgColor
-        btn.layer.borderWidth   = 1
-        btn.contentEdgeInsets   = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 12)
+        btn.backgroundColor           = .appCardBackground.withAlphaComponent(0.92)
+        btn.layer.cornerRadius        = 16
+        btn.layer.borderColor         = UIColor.appSeparator.cgColor
+        btn.layer.borderWidth         = 1
+        btn.contentEdgeInsets         = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 20)
 
-        // 右侧箭头图标，图标在文字右侧（semanticContentAttribute = .forceRightToLeft）
-        let cfg = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
-        btn.setImage(UIImage(systemName: "arrow.down.left", withConfiguration: cfg), for: .normal)
-        btn.tintColor                   = .appTextTertiary
-        btn.semanticContentAttribute    = .forceRightToLeft
-        btn.imageEdgeInsets             = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: -8)
+        // alwaysOriginal 固定颜色，不受 tint 继承影响
+        let cfg   = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+        let arrow = UIImage(systemName: "arrow.down.left", withConfiguration: cfg)?
+                        .withTintColor(.appTextSecondary, renderingMode: .alwaysOriginal)
+        btn.setImage(arrow, for: .normal)
+        btn.semanticContentAttribute  = .forceRightToLeft
+        btn.imageEdgeInsets           = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: -8)
 
         btn.addTarget(self, action: #selector(chipTapped(_:)), for: .touchUpInside)
         return btn
