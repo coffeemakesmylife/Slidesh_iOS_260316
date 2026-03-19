@@ -42,6 +42,9 @@ class NewProjectViewController: UIViewController {
     private var pageChip:    ParamChip!
     private var langChip:    ParamChip!
 
+    // 当前 SSE 任务（用于取消）
+    private var generateTask: URLSessionDataTask?
+
     // 主题灵感建议浮层（卡片外部，靠右对齐，参考 PromptSuggestionsView 设计）
     private var topicSuggestionsView: TopicSuggestionsView!
     // 当前选中行业的主题列表（文本清空后用于复显）
@@ -486,7 +489,60 @@ class NewProjectViewController: UIViewController {
     @objc private func generateTapped() {
         let theme = themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !theme.isEmpty else { themeTextView.becomeFirstResponder(); return }
-        print("生成 PPT: 主题=\(theme), 篇幅=\(selectedLength), 语言=\(selectedLanguage), 场景=\(selectedScene), 受众=\(selectedAudience)")
+
+        view.endEditing(true)
+        setGenerating(true)
+
+        // Step 1：创建任务，获取 taskId
+        PPTAPIService.shared.createTask(subject: theme) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .failure(let error):
+                self.setGenerating(false)
+                self.showGenerateError(error.localizedDescription)
+            case .success(let taskId):
+                self.startGenerateContent(taskId: taskId)
+            }
+        }
+    }
+
+    /// Step 2：用 taskId 发起 SSE 流式大纲生成
+    private func startGenerateContent(taskId: String) {
+        generateTask = PPTAPIService.shared.generateContent(
+            taskId:   taskId,
+            language: selectedLanguage,
+            length:   selectedLength,
+            scene:    selectedScene,
+            audience: selectedAudience,
+            onChunk: { [weak self] _ in
+                // 可在此处实时展示进度（当前版本忽略 chunk）
+                _ = self
+            },
+            onComplete: { [weak self] markdown in
+                guard let self else { return }
+                self.setGenerating(false)
+                print("✅ 大纲生成完成，length=\(markdown.count)\n\(markdown.prefix(200))")
+                // TODO: 导航到大纲编辑 / 模板选择页
+            },
+            onError: { [weak self] error in
+                guard let self else { return }
+                self.setGenerating(false)
+                self.showGenerateError(error.localizedDescription)
+            }
+        )
+    }
+
+    /// 切换生成中/完成状态（按钮禁用 + alpha 反馈）
+    private func setGenerating(_ generating: Bool) {
+        generateButton.isEnabled = !generating
+        generateContainer?.alpha = generating ? 0.6 : 1.0
+        if !generating { generateTask = nil }
+    }
+
+    private func showGenerateError(_ message: String) {
+        let alert = UIAlertController(title: "生成失败", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        present(alert, animated: true)
     }
 
     // MARK: - 选择器
