@@ -97,6 +97,7 @@ class OutlineViewController: UIViewController {
     private var accumulatedMarkdown = ""
     private var sseTask: URLSessionDataTask?
     private var sections: [OutlineSection] = []
+    private var activeIndexPath: IndexPath?   // 当前正在编辑的 cell 位置（用于键盘滚动）
 
     // 流式展示
     private let streamScrollView = UIScrollView()
@@ -135,6 +136,7 @@ class OutlineViewController: UIViewController {
         setupStreamView()
         setupTableView()
         setupKeyboardDismiss()
+        setupKeyboardHandling()
         startSSE()
     }
 
@@ -178,9 +180,9 @@ class OutlineViewController: UIViewController {
             streamLabel.bottomAnchor.constraint(equalTo: streamScrollView.contentLayoutGuide.bottomAnchor, constant: -16),
             streamLabel.widthAnchor.constraint(equalTo: streamScrollView.frameLayoutGuide.widthAnchor, constant: -32),
 
-            // spinner + 文字居中底部
+            // spinner 固定在 safeArea 底部，不受 bottomBar 影响
             spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -48),
-            spinner.bottomAnchor.constraint(equalTo: bottomBar.topAnchor, constant: -12),
+            spinner.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
 
             spinnerLabel.centerYAnchor.constraint(equalTo: spinner.centerYAnchor),
             spinnerLabel.leadingAnchor.constraint(equalTo: spinner.trailingAnchor, constant: 8),
@@ -311,7 +313,7 @@ class OutlineViewController: UIViewController {
         ])
     }
 
-    // MARK: - 收键盘
+    // MARK: - 键盘处理
 
     private func setupKeyboardDismiss() {
         let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
@@ -321,6 +323,55 @@ class OutlineViewController: UIViewController {
 
     @objc private func dismissKeyboard() {
         view.endEditing(true)
+    }
+
+    private func setupKeyboardHandling() {
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(keyboardWillShow(_:)),
+            name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(keyboardWillHide(_:)),
+            name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+
+    @objc private func keyboardWillShow(_ notification: Notification) {
+        guard let info     = notification.userInfo,
+              let kbValue  = info[UIResponder.keyboardFrameEndUserInfoKey]         as? NSValue,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve    = info[UIResponder.keyboardAnimationCurveUserInfoKey]    as? UInt
+        else { return }
+
+        let kbHeight = kbValue.cgRectValue.height - view.safeAreaInsets.bottom
+        let inset    = UIEdgeInsets(top: 0, left: 0, bottom: kbHeight, right: 0)
+        UIView.animate(withDuration: duration,
+                       delay: 0,
+                       options: UIView.AnimationOptions(rawValue: curve << 16)) {
+            self.tableView.contentInset                = inset
+            self.tableView.verticalScrollIndicatorInsets = inset
+        }
+        // 把正在编辑的 cell 滚到键盘上方可见区域
+        if let ip = activeIndexPath {
+            DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+                self.tableView.scrollToRow(at: ip, at: .none, animated: true)
+            }
+        }
+    }
+
+    @objc private func keyboardWillHide(_ notification: Notification) {
+        guard let info     = notification.userInfo,
+              let duration = info[UIResponder.keyboardAnimationDurationUserInfoKey] as? Double,
+              let curve    = info[UIResponder.keyboardAnimationCurveUserInfoKey]    as? UInt
+        else { return }
+        UIView.animate(withDuration: duration,
+                       delay: 0,
+                       options: UIView.AnimationOptions(rawValue: curve << 16)) {
+            self.tableView.contentInset                = .zero
+            self.tableView.verticalScrollIndicatorInsets = .zero
+        }
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     // MARK: - SSE 流式生成
@@ -388,7 +439,8 @@ class OutlineViewController: UIViewController {
                                      font: .boldSystemFont(ofSize: 14), color: .label,
                                      indent: 0, spacingBefore: 10)
             } else if t.hasPrefix("#### ") {
-                lineAttr = plainLine("  ○ " + String(t.dropFirst(5)),
+                // ◦ 比 ○ 小一号，视觉上更轻
+                lineAttr = plainLine("  ◦ " + String(t.dropFirst(5)),
                                      font: .systemFont(ofSize: 13), color: .label,
                                      indent: 16, spacingBefore: 4)
             } else if t.hasPrefix("- ") || t.hasPrefix("* ") {
@@ -398,8 +450,8 @@ class OutlineViewController: UIViewController {
             } else if t.isEmpty {
                 lineAttr = NSAttributedString(string: "")
             } else {
-                // body 文本仅显示一行预览
-                let preview = t.count > 52 ? String(t.prefix(52)) + "..." : t
+                // body 文本限制一行：约 22 个汉字 ≈ 一屏行宽
+                let preview = t.count > 22 ? String(t.prefix(22)) + "..." : t
                 lineAttr = plainLine(preview, font: .systemFont(ofSize: 12),
                                      color: .secondaryLabel, indent: 28, spacingBefore: 2)
             }
@@ -521,6 +573,7 @@ extension OutlineViewController: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        activeIndexPath = indexPath
         if indexPath.row == 0 {
             (tableView.cellForRow(at: indexPath) as? OutlineHeaderCell)?.beginEditing()
         } else {
@@ -534,9 +587,9 @@ extension OutlineViewController: UITableViewDataSource, UITableViewDelegate {
 private class OutlineHeaderCell: UITableViewCell {
     static let reuseID = "OutlineHeaderCell"
 
-    private let badgeLabel              = UILabel()
-    private let badgeBg                 = UIView()
-    private var titleLabel: UILabel!   // 在 init 中赋值
+    private let badgeLabel = UILabel()
+    private let badgeBg    = UIView()
+    private let titleView  = UITextView()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -546,20 +599,31 @@ private class OutlineHeaderCell: UITableViewCell {
         badgeBg.backgroundColor    = .appPrimarySubtle
         badgeBg.layer.cornerRadius = 4
         badgeBg.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(badgeBg)
 
+        // badge 文字永不被压缩，保证完整显示
         badgeLabel.font      = .systemFont(ofSize: 11, weight: .semibold)
         badgeLabel.textColor = .appPrimary
+        badgeLabel.numberOfLines = 1
+        badgeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        badgeLabel.setContentHuggingPriority(.required, for: .horizontal)
         badgeLabel.translatesAutoresizingMaskIntoConstraints = false
         badgeBg.addSubview(badgeLabel)
 
-            // 标题（UILabel 精确居中，UITextView 内边距不可控）
-        let titleLabel = UILabel()
-        titleLabel.font         = .systemFont(ofSize: 16, weight: .semibold)
-        titleLabel.numberOfLines = 0
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(titleLabel)
-        self.titleLabel = titleLabel
+        // 可编辑标题
+        titleView.font                              = .systemFont(ofSize: 16, weight: .semibold)
+        titleView.isScrollEnabled                   = false
+        titleView.textContainerInset                = UIEdgeInsets(top: 1, left: 0, bottom: 1, right: 0)
+        titleView.textContainer.lineFragmentPadding = 0
+        titleView.backgroundColor                   = .clear
+        titleView.translatesAutoresizingMaskIntoConstraints = false
+
+        // UIStackView 自动处理 badge 与 titleView 的垂直居中
+        let stack = UIStackView(arrangedSubviews: [badgeBg, titleView])
+        stack.axis      = .horizontal
+        stack.spacing   = 10
+        stack.alignment = .center
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(stack)
 
         NSLayoutConstraint.activate([
             badgeLabel.topAnchor.constraint(equalTo: badgeBg.topAnchor, constant: 3),
@@ -567,15 +631,10 @@ private class OutlineHeaderCell: UITableViewCell {
             badgeLabel.leadingAnchor.constraint(equalTo: badgeBg.leadingAnchor, constant: 6),
             badgeLabel.trailingAnchor.constraint(equalTo: badgeBg.trailingAnchor, constant: -6),
 
-            // badge 左对齐，垂直对齐 titleLabel
-            badgeBg.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            badgeBg.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
-
-            // titleLabel 决定 cell 高度
-            titleLabel.leadingAnchor.constraint(equalTo: badgeBg.trailingAnchor, constant: 10),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
-            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -14),
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -14),
         ])
     }
 
@@ -583,10 +642,10 @@ private class OutlineHeaderCell: UITableViewCell {
 
     func configure(tag: String, title: String) {
         badgeLabel.text = tag
-        titleLabel.text = title
+        titleView.text  = title
     }
 
-    func beginEditing() { titleLabel.becomeFirstResponder() }
+    func beginEditing() { titleView.becomeFirstResponder() }
 }
 
 // MARK: - OutlineBulletCell（可编辑子条目）
