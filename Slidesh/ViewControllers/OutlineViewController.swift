@@ -169,7 +169,7 @@ class OutlineViewController: UIViewController {
         view.addSubview(spinnerLabel)
 
         NSLayoutConstraint.activate([
-            // 从 view.topAnchor 开始，内容通过 contentInsetAdjustmentBehavior 自动避开导航栏
+            // 从 view.topAnchor 开始延伸到导航栏下，系统自动通过 adjustedContentInset 留出安全区
             streamScrollView.topAnchor.constraint(equalTo: view.topAnchor),
             streamScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             streamScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -302,7 +302,6 @@ class OutlineViewController: UIViewController {
         tableView.alpha          = 0
         tableView.backgroundColor = .systemGroupedBackground
         tableView.separatorStyle  = .none
-        // 延伸到导航栏下方，与 SettingsViewController 保持一致
         tableView.contentInsetAdjustmentBehavior = .always
         tableView.register(OutlineHeaderCell.self,  forCellReuseIdentifier: OutlineHeaderCell.reuseID)
         tableView.register(OutlineBulletCell.self,  forCellReuseIdentifier: OutlineBulletCell.reuseID)
@@ -392,9 +391,11 @@ class OutlineViewController: UIViewController {
                 self.accumulatedMarkdown += chunk
                 print("📝 chunk(\(chunk.count)): \(chunk.prefix(60))")
                 self.streamLabel.attributedText = self.renderMarkdown(self.accumulatedMarkdown)
-                // 滚到底部跟随流式输出
-                let bottom = max(0, self.streamScrollView.contentSize.height - self.streamScrollView.bounds.height)
-                self.streamScrollView.setContentOffset(CGPoint(x: 0, y: bottom), animated: false)
+                // 滚到底部跟随流式输出（需计入 adjustedContentInset，否则内容会跑到导航栏后面）
+                let sv = self.streamScrollView
+                let maxY = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
+                let y    = max(-sv.adjustedContentInset.top, maxY)
+                sv.setContentOffset(CGPoint(x: 0, y: y), animated: false)
             },
             onComplete: { [weak self] fullMarkdown in
                 guard let self else { return }
