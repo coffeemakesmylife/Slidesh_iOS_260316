@@ -99,6 +99,11 @@ class OutlineViewController: UIViewController {
     private var sections: [OutlineSection] = []
     private var activeIndexPath: IndexPath?   // 当前正在编辑的 cell 位置（用于键盘滚动）
 
+    // 渲染节流：每 80ms 最多重渲一次，避免频繁 renderMarkdown 卡主线程
+    private var renderPending = false
+    // badge 图片缓存：主题/章节/目录固定样式，避免每次重复渲染
+    private var badgeImageCache: [String: UIImage] = [:]
+
     // 流式展示
     private let streamScrollView = UIScrollView()
     private let streamLabel      = UILabel()
@@ -402,6 +407,30 @@ class OutlineViewController: UIViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
+    // MARK: - 流式渲染（节流）
+
+    /// 节流：80ms 内最多触发一次渲染，防止每个 chunk 都重绘全量 markdown 导致主线程卡顿
+    private func scheduleStreamRender() {
+        guard !renderPending else { return }
+        renderPending = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+            guard let self else { return }
+            self.renderPending = false
+            let md = self.accumulatedMarkdown
+            self.streamLabel.attributedText = self.renderMarkdown(md)
+            self.scrollStreamToBottom()
+            // 若渲染期间又积累了新内容，立即再调度一次
+            if self.accumulatedMarkdown != md { self.scheduleStreamRender() }
+        }
+    }
+
+    private func scrollStreamToBottom() {
+        let sv  = streamScrollView
+        let top = -sv.adjustedContentInset.top
+        let bot = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
+        sv.setContentOffset(CGPoint(x: 0, y: max(top, bot)), animated: false)
+    }
+
     // MARK: - SSE 流式生成
 
     private func startSSE() {
@@ -415,12 +444,7 @@ class OutlineViewController: UIViewController {
                 guard let self else { return }
                 self.accumulatedMarkdown += chunk
                 print("📝 chunk(\(chunk.count)): \(chunk.prefix(60))")
-                self.streamLabel.attributedText = self.renderMarkdown(self.accumulatedMarkdown)
-                // 滚到底部跟随流式输出；max 下界为 -adjustedContentInset.top 确保第一行始终在导航栏下方
-                let sv  = self.streamScrollView
-                let top = -sv.adjustedContentInset.top
-                let bot = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
-                sv.setContentOffset(CGPoint(x: 0, y: max(top, bot)), animated: false)
+                self.scheduleStreamRender()
             },
             onComplete: { [weak self] fullMarkdown in
                 guard let self else { return }
@@ -499,20 +523,22 @@ class OutlineViewController: UIViewController {
         return result
     }
 
-    /// 生成带圆角的 badge 图片，用于流式阶段的标签（NSTextAttachment 不支持 backgroundColor 圆角）
+    /// 生成带圆角的 badge 图片，结果按文字缓存避免重复渲染
     private func makeBadgeImage(text: String, fg: UIColor, bg: UIColor) -> UIImage {
+        if let cached = badgeImageCache[text] { return cached }
         let font     = UIFont.systemFont(ofSize: 11, weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: fg]
         let textSize = (text as NSString).size(withAttributes: attrs)
         let hPad: CGFloat = 6
         let vPad: CGFloat = 3
         let imgSize = CGSize(width: textSize.width + hPad * 2, height: textSize.height + vPad * 2)
-
-        return UIGraphicsImageRenderer(size: imgSize).image { ctx in
+        let image = UIGraphicsImageRenderer(size: imgSize).image { _ in
             bg.setFill()
             UIBezierPath(roundedRect: CGRect(origin: .zero, size: imgSize), cornerRadius: 4).fill()
             (text as NSString).draw(at: CGPoint(x: hPad, y: vPad), withAttributes: attrs)
         }
+        badgeImageCache[text] = image
+        return image
     }
 
     private func taggedLine(tag: String, text: String,
