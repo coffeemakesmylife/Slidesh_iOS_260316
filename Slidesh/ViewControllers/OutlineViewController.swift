@@ -409,25 +409,19 @@ class OutlineViewController: UIViewController {
 
     // MARK: - 流式渲染（节流）
 
-    /// 节流 + 后台渲染：renderMarkdown 在后台线程执行，只有 setAttributedText 回主线程
-    /// 这样主线程不被阻塞，UI 保持丝滑响应
+    /// 节流渲染（主线程）：80ms 内最多渲染一次
+    /// UIColor.label 等自适应色需要主线程 TraitCollection，不能移到后台线程
     private func scheduleStreamRender() {
         guard !renderPending else { return }
         renderPending = true
-        // 在主线程快照当前 markdown，避免后台线程与主线程竞争
-        let md = accumulatedMarkdown
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
             guard let self else { return }
-            // renderMarkdown 只创建 NSAttributedString，不接触 UIView，可安全在后台执行
-            let attributed = self.renderMarkdown(md)
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                self.renderPending = false
-                self.streamLabel.attributedText = attributed
-                self.scrollStreamToBottom()
-                // 渲染期间又来了新内容，立即再调度
-                if self.accumulatedMarkdown != md { self.scheduleStreamRender() }
-            }
+            self.renderPending = false
+            let md = self.accumulatedMarkdown
+            self.streamLabel.attributedText = self.renderMarkdown(md)
+            self.scrollStreamToBottom()
+            // 节流窗口内积累了新内容，立即再调度一次
+            if self.accumulatedMarkdown != md { self.scheduleStreamRender() }
         }
     }
 
