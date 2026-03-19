@@ -148,6 +148,8 @@ class OutlineViewController: UIViewController {
     // MARK: - 布局
 
     private func setupStreamView() {
+        // 延伸到导航栏下方，与 SettingsViewController 保持一致
+        streamScrollView.contentInsetAdjustmentBehavior = .always
         streamScrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(streamScrollView)
 
@@ -167,8 +169,8 @@ class OutlineViewController: UIViewController {
         view.addSubview(spinnerLabel)
 
         NSLayoutConstraint.activate([
-            // 流式滚动区占据主体
-            streamScrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            // 从 view.topAnchor 开始，内容通过 contentInsetAdjustmentBehavior 自动避开导航栏
+            streamScrollView.topAnchor.constraint(equalTo: view.topAnchor),
             streamScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             streamScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             streamScrollView.bottomAnchor.constraint(equalTo: spinner.topAnchor, constant: -12),
@@ -300,13 +302,15 @@ class OutlineViewController: UIViewController {
         tableView.alpha          = 0
         tableView.backgroundColor = .systemGroupedBackground
         tableView.separatorStyle  = .none
+        // 延伸到导航栏下方，与 SettingsViewController 保持一致
+        tableView.contentInsetAdjustmentBehavior = .always
         tableView.register(OutlineHeaderCell.self,  forCellReuseIdentifier: OutlineHeaderCell.reuseID)
         tableView.register(OutlineBulletCell.self,  forCellReuseIdentifier: OutlineBulletCell.reuseID)
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
