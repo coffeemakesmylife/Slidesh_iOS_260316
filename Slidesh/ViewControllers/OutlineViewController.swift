@@ -416,6 +416,12 @@ class OutlineViewController: UIViewController {
     // MARK: - Markdown 渲染（流式阶段）
 
     /// 将 markdown 文本转换为带样式的 NSAttributedString
+    // 间距规范：
+    //   主题(#)    spacingBefore=8
+    //   章节(##)   spacingBefore=24  —— 每章节前大间距
+    //   h3(###)    spacingBefore=16  —— 章节内一级子标题
+    //   h4(####)   spacingBefore=10  —— 二级子标题
+    //   body       spacingBefore=4, spacingAfter=4  —— 正文前后各留一点
     private func renderMarkdown(_ md: String) -> NSAttributedString {
         let result   = NSMutableAttributedString()
         let purple   = UIColor.appPrimary
@@ -431,29 +437,29 @@ class OutlineViewController: UIViewController {
             if t.hasPrefix("# ") {
                 lineAttr = taggedLine(tag: "主题", text: String(t.dropFirst(2)),
                                       tagFg: purple, tagBg: purpleBg,
-                                      textFont: .boldSystemFont(ofSize: 18), spacingBefore: 0)
+                                      textFont: .boldSystemFont(ofSize: 18), spacingBefore: 8)
             } else if t.hasPrefix("## ") {
                 lineAttr = taggedLine(tag: "章节", text: String(t.dropFirst(3)),
                                       tagFg: purple, tagBg: purpleBg,
-                                      textFont: .boldSystemFont(ofSize: 16), spacingBefore: 20)
+                                      textFont: .boldSystemFont(ofSize: 16), spacingBefore: 24)
             } else if t.hasPrefix("### ") {
                 lineAttr = plainLine("• " + String(t.dropFirst(4)),
                                      font: .boldSystemFont(ofSize: 14), color: .label,
-                                     indent: 0, spacingBefore: 10)
+                                     indent: 0, spacingBefore: 16, spacingAfter: 2)
             } else if t.hasPrefix("#### ") {
                 // 与卡片视图统一，使用 ○
                 lineAttr = plainLine("  ○ " + String(t.dropFirst(5)),
                                      font: .systemFont(ofSize: 13), color: .label,
-                                     indent: 16, spacingBefore: 4)
+                                     indent: 16, spacingBefore: 10, spacingAfter: 0)
             } else if t.hasPrefix("- ") || t.hasPrefix("* ") {
                 lineAttr = plainLine("• " + String(t.dropFirst(2)),
                                      font: .systemFont(ofSize: 14), color: .label,
-                                     indent: 0, spacingBefore: 6)
+                                     indent: 0, spacingBefore: 16, spacingAfter: 2)
             } else {
                 // body 文本限制一行：约 25 个汉字 ≈ 一屏行宽
                 let preview = t.count > 25 ? String(t.prefix(25)) + "..." : t
                 lineAttr = plainLine(preview, font: .systemFont(ofSize: 12),
-                                     color: .secondaryLabel, indent: 28, spacingBefore: 2)
+                                     color: .secondaryLabel, indent: 28, spacingBefore: 4, spacingAfter: 4)
             }
 
             if !isFirst { result.append(NSAttributedString(string: "\n")) }
@@ -487,14 +493,17 @@ class OutlineViewController: UIViewController {
         ps.paragraphSpacingBefore = spacingBefore
 
         // 使用圆角图片作为 badge，避免 .backgroundColor 无圆角问题
-        let badgeImg        = makeBadgeImage(text: tag, fg: tagFg, bg: tagBg)
-        let attachment      = NSTextAttachment()
-        attachment.image    = badgeImg
-        // 让图片垂直居中于当前行基线
-        let lineH           = textFont.lineHeight
-        let imgH            = badgeImg.size.height
-        attachment.bounds   = CGRect(x: 0, y: (lineH - imgH) / 2 - textFont.descender,
-                                     width: badgeImg.size.width, height: imgH)
+        let badgeImg   = makeBadgeImage(text: tag, fg: tagFg, bg: tagBg)
+        let attachment = NSTextAttachment()
+        attachment.image = badgeImg
+        // 以 capHeight 为参考让 badge 垂直居中，确保与文字基线对齐
+        let capH = textFont.capHeight
+        let imgH = badgeImg.size.height
+        attachment.bounds = CGRect(x: 0,
+                                   y: (capH - imgH) / 2,
+                                   width: badgeImg.size.width,
+                                   height: imgH)
+
         let attachStr = NSMutableAttributedString(attachment: attachment)
         attachStr.addAttribute(.paragraphStyle, value: ps,
                                range: NSRange(location: 0, length: attachStr.length))
@@ -509,11 +518,13 @@ class OutlineViewController: UIViewController {
     }
 
     private func plainLine(_ text: String, font: UIFont, color: UIColor,
-                           indent: CGFloat, spacingBefore: CGFloat = 0) -> NSAttributedString {
+                           indent: CGFloat, spacingBefore: CGFloat = 0,
+                           spacingAfter: CGFloat = 0) -> NSAttributedString {
         let ps = NSMutableParagraphStyle()
         ps.firstLineHeadIndent    = indent
         ps.headIndent             = indent
         ps.paragraphSpacingBefore = spacingBefore
+        ps.paragraphSpacing       = spacingAfter
         return NSAttributedString(string: text, attributes: [
             .font:            font,
             .foregroundColor: color,
