@@ -101,8 +101,8 @@ class OutlineViewController: UIViewController {
 
     // 渲染节流：每 80ms 最多重渲一次，避免频繁 renderMarkdown 卡主线程
     private var renderPending = false
-    // badge 图片缓存：主题/章节/目录固定样式，避免每次重复渲染
-    private var badgeImageCache: [String: UIImage] = [:]
+    // badge 图片缓存：主题/章节/目录固定样式，NSCache 线程安全
+    private let badgeImageCache = NSCache<NSString, UIImage>()
 
     // 流式展示
     private let streamScrollView = UIScrollView()
@@ -409,18 +409,25 @@ class OutlineViewController: UIViewController {
 
     // MARK: - 流式渲染（节流）
 
-    /// 节流：80ms 内最多触发一次渲染，防止每个 chunk 都重绘全量 markdown 导致主线程卡顿
+    /// 节流 + 后台渲染：renderMarkdown 在后台线程执行，只有 setAttributedText 回主线程
+    /// 这样主线程不被阻塞，UI 保持丝滑响应
     private func scheduleStreamRender() {
         guard !renderPending else { return }
         renderPending = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+        // 在主线程快照当前 markdown，避免后台线程与主线程竞争
+        let md = accumulatedMarkdown
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
-            self.renderPending = false
-            let md = self.accumulatedMarkdown
-            self.streamLabel.attributedText = self.renderMarkdown(md)
-            self.scrollStreamToBottom()
-            // 若渲染期间又积累了新内容，立即再调度一次
-            if self.accumulatedMarkdown != md { self.scheduleStreamRender() }
+            // renderMarkdown 只创建 NSAttributedString，不接触 UIView，可安全在后台执行
+            let attributed = self.renderMarkdown(md)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                self.renderPending = false
+                self.streamLabel.attributedText = attributed
+                self.scrollStreamToBottom()
+                // 渲染期间又来了新内容，立即再调度
+                if self.accumulatedMarkdown != md { self.scheduleStreamRender() }
+            }
         }
     }
 
@@ -525,7 +532,7 @@ class OutlineViewController: UIViewController {
 
     /// 生成带圆角的 badge 图片，结果按文字缓存避免重复渲染
     private func makeBadgeImage(text: String, fg: UIColor, bg: UIColor) -> UIImage {
-        if let cached = badgeImageCache[text] { return cached }
+        if let cached = badgeImageCache.object(forKey: text as NSString) { return cached }
         let font     = UIFont.systemFont(ofSize: 11, weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: fg]
         let textSize = (text as NSString).size(withAttributes: attrs)
@@ -537,7 +544,7 @@ class OutlineViewController: UIViewController {
             UIBezierPath(roundedRect: CGRect(origin: .zero, size: imgSize), cornerRadius: 4).fill()
             (text as NSString).draw(at: CGPoint(x: hPad, y: vPad), withAttributes: attrs)
         }
-        badgeImageCache[text] = image
+        badgeImageCache.setObject(image, forKey: text as NSString)
         return image
     }
 
