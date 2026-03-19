@@ -281,6 +281,10 @@ class NewProjectViewController: UIViewController {
     @discardableResult
     private func buildParamsBar(below above: UIView) -> UIView {
         let container = UIView()
+        // 底部两角裁剪，与 cardView 圆角（30）对齐，防止 chip 滑出圆角边界
+        container.layer.cornerRadius  = 30
+        container.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        container.clipsToBounds       = true
         container.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(container)
 
