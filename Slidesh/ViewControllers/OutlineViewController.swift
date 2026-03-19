@@ -158,6 +158,15 @@ class OutlineViewController: UIViewController {
         startSSE()
     }
 
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // adjustedContentInset 在 viewDidAppear 时才确定；设置初始 offset 让内容从导航栏下方开始
+        if streamScrollView.contentOffset.y > -streamScrollView.adjustedContentInset.top {
+            streamScrollView.setContentOffset(
+                CGPoint(x: 0, y: -streamScrollView.adjustedContentInset.top), animated: false)
+        }
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         templateGrad?.frame = templateBtn.bounds
@@ -166,6 +175,8 @@ class OutlineViewController: UIViewController {
     // MARK: - 布局
 
     private func setupStreamView() {
+        // 延伸到 view.topAnchor 实现导航栏透明效果，系统自动通过 adjustedContentInset 留出安全区
+        streamScrollView.contentInsetAdjustmentBehavior = .always
         streamScrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(streamScrollView)
 
@@ -405,11 +416,11 @@ class OutlineViewController: UIViewController {
                 self.accumulatedMarkdown += chunk
                 print("📝 chunk(\(chunk.count)): \(chunk.prefix(60))")
                 self.streamLabel.attributedText = self.renderMarkdown(self.accumulatedMarkdown)
-                // 滚到底部跟随流式输出（计入 adjustedContentInset，避免内容滚到导航栏后面）
-                let sv = self.streamScrollView
-                let y  = max(-sv.adjustedContentInset.top,
-                             sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom)
-                sv.setContentOffset(CGPoint(x: 0, y: y), animated: false)
+                // 滚到底部跟随流式输出；max 下界为 -adjustedContentInset.top 确保第一行始终在导航栏下方
+                let sv  = self.streamScrollView
+                let top = -sv.adjustedContentInset.top
+                let bot = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
+                sv.setContentOffset(CGPoint(x: 0, y: max(top, bot)), animated: false)
             },
             onComplete: { [weak self] fullMarkdown in
                 guard let self else { return }
@@ -475,8 +486,8 @@ class OutlineViewController: UIViewController {
                                      font: .systemFont(ofSize: 14), color: .label,
                                      indent: 0, spacingBefore: 16, spacingAfter: 2)
             } else {
-                // body 文本限制一行：约 25 个汉字 ≈ 一屏行宽
-                let preview = t.count > 25 ? String(t.prefix(25)) + "..." : t
+                // body 文本限制一行：约 30 个汉字 ≈ 一屏行宽（indent=28 占用约 28pt）
+                let preview = t.count > 30 ? String(t.prefix(30)) + "..." : t
                 lineAttr = plainLine(preview, font: .systemFont(ofSize: 12),
                                      color: .secondaryLabel, indent: 28, spacingBefore: 4, spacingAfter: 4)
             }
