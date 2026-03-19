@@ -417,15 +417,17 @@ class OutlineViewController: UIViewController {
 
     /// 将 markdown 文本转换为带样式的 NSAttributedString
     private func renderMarkdown(_ md: String) -> NSAttributedString {
-        let result    = NSMutableAttributedString()
-        let purple    = UIColor.appPrimary
-        let purpleBg  = UIColor.appPrimarySubtle
-        let lines     = md.components(separatedBy: "\n")
+        let result   = NSMutableAttributedString()
+        let purple   = UIColor.appPrimary
+        let purpleBg = UIColor.appPrimarySubtle
+        var isFirst  = true
 
-        for (i, line) in lines.enumerated() {
+        for line in md.components(separatedBy: "\n") {
             let t = line.trimmingCharacters(in: .whitespaces)
-            let lineAttr: NSAttributedString
+            // 跳过空行，避免产生大段空白
+            if t.isEmpty { continue }
 
+            let lineAttr: NSAttributedString
             if t.hasPrefix("# ") {
                 lineAttr = taggedLine(tag: "主题", text: String(t.dropFirst(2)),
                                       tagFg: purple, tagBg: purpleBg,
@@ -439,29 +441,42 @@ class OutlineViewController: UIViewController {
                                      font: .boldSystemFont(ofSize: 14), color: .label,
                                      indent: 0, spacingBefore: 10)
             } else if t.hasPrefix("#### ") {
-                // ◦ 比 ○ 小一号，视觉上更轻
-                lineAttr = plainLine("  ◦ " + String(t.dropFirst(5)),
+                // 与卡片视图统一，使用 ○
+                lineAttr = plainLine("  ○ " + String(t.dropFirst(5)),
                                      font: .systemFont(ofSize: 13), color: .label,
                                      indent: 16, spacingBefore: 4)
             } else if t.hasPrefix("- ") || t.hasPrefix("* ") {
                 lineAttr = plainLine("• " + String(t.dropFirst(2)),
                                      font: .systemFont(ofSize: 14), color: .label,
                                      indent: 0, spacingBefore: 6)
-            } else if t.isEmpty {
-                lineAttr = NSAttributedString(string: "")
             } else {
-                // body 文本限制一行：约 22 个汉字 ≈ 一屏行宽
-                let preview = t.count > 22 ? String(t.prefix(22)) + "..." : t
+                // body 文本限制一行：约 25 个汉字 ≈ 一屏行宽
+                let preview = t.count > 25 ? String(t.prefix(25)) + "..." : t
                 lineAttr = plainLine(preview, font: .systemFont(ofSize: 12),
                                      color: .secondaryLabel, indent: 28, spacingBefore: 2)
             }
 
+            if !isFirst { result.append(NSAttributedString(string: "\n")) }
             result.append(lineAttr)
-            if i < lines.count - 1 {
-                result.append(NSAttributedString(string: "\n"))
-            }
+            isFirst = false
         }
         return result
+    }
+
+    /// 生成带圆角的 badge 图片，用于流式阶段的标签（NSTextAttachment 不支持 backgroundColor 圆角）
+    private func makeBadgeImage(text: String, fg: UIColor, bg: UIColor) -> UIImage {
+        let font     = UIFont.systemFont(ofSize: 11, weight: .semibold)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: fg]
+        let textSize = (text as NSString).size(withAttributes: attrs)
+        let hPad: CGFloat = 6
+        let vPad: CGFloat = 3
+        let imgSize = CGSize(width: textSize.width + hPad * 2, height: textSize.height + vPad * 2)
+
+        return UIGraphicsImageRenderer(size: imgSize).image { ctx in
+            bg.setFill()
+            UIBezierPath(roundedRect: CGRect(origin: .zero, size: imgSize), cornerRadius: 4).fill()
+            (text as NSString).draw(at: CGPoint(x: hPad, y: vPad), withAttributes: attrs)
+        }
     }
 
     private func taggedLine(tag: String, text: String,
@@ -470,15 +485,25 @@ class OutlineViewController: UIViewController {
         let r  = NSMutableAttributedString()
         let ps = NSMutableParagraphStyle()
         ps.paragraphSpacingBefore = spacingBefore
-        r.append(NSAttributedString(string: " \(tag) ", attributes: [
-            .font:            UIFont.systemFont(ofSize: 11, weight: .semibold),
-            .foregroundColor: tagFg,
-            .backgroundColor: tagBg,
-            .paragraphStyle:  ps,
-        ]))
+
+        // 使用圆角图片作为 badge，避免 .backgroundColor 无圆角问题
+        let badgeImg        = makeBadgeImage(text: tag, fg: tagFg, bg: tagBg)
+        let attachment      = NSTextAttachment()
+        attachment.image    = badgeImg
+        // 让图片垂直居中于当前行基线
+        let lineH           = textFont.lineHeight
+        let imgH            = badgeImg.size.height
+        attachment.bounds   = CGRect(x: 0, y: (lineH - imgH) / 2 - textFont.descender,
+                                     width: badgeImg.size.width, height: imgH)
+        let attachStr = NSMutableAttributedString(attachment: attachment)
+        attachStr.addAttribute(.paragraphStyle, value: ps,
+                               range: NSRange(location: 0, length: attachStr.length))
+        r.append(attachStr)
+
         r.append(NSAttributedString(string: "  \(text)", attributes: [
             .font:            textFont,
             .foregroundColor: UIColor.label,
+            .paragraphStyle:  ps,
         ]))
         return r
     }
