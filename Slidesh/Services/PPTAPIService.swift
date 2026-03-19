@@ -86,7 +86,13 @@ class PPTAPIService {
         request.setValue("text/event-stream",   forHTTPHeaderField: "Accept")
         request.httpBody = bodyData
 
-        let delegate = SSEDelegate(onChunk: onChunk, onComplete: onComplete, onError: onError)
+        // 将 RSA 解密能力以闭包形式传入 SSEDelegate，避免暴露私有 key
+        let decrypt: (String) -> String? = { [weak self] encrypted in
+            guard let self else { return nil }
+            let decoded = encrypted.removingPercentEncoding ?? encrypted
+            return RSAHelper.decryptString(decoded, publicKey: self.publicKey)
+        }
+        let delegate = SSEDelegate(decrypt: decrypt, onChunk: onChunk, onComplete: onComplete, onError: onError)
         let session  = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
         let task     = session.dataTask(with: request)
         task.resume()
@@ -258,19 +264,23 @@ enum APIError: LocalizedError {
 
 // MARK: - SSE 流式代理
 
-/// 解析 text/event-stream，提取 data: 行并回调
+/// 解析 text/event-stream：每条 data: 行是 JSON {"code":200,"result":"<RSA密文>"}
+/// decrypt 闭包负责 URL 解码 + RSA 解密，返回明文 markdown 片段
 private class SSEDelegate: NSObject, URLSessionDataDelegate {
 
     private var buffer      = Data()   // 未处理的原始字节
-    private var accumulated = ""       // 已拼接的完整内容
+    private var accumulated = ""       // 已拼接的完整明文内容
 
+    private let decrypt:    (String) -> String?
     private let onChunk:    (String) -> Void
     private let onComplete: (String) -> Void
-    private let onError:    (Error) -> Void
+    private let onError:    (Error)  -> Void
 
-    init(onChunk:    @escaping (String) -> Void,
+    init(decrypt:    @escaping (String) -> String?,
+         onChunk:    @escaping (String) -> Void,
          onComplete: @escaping (String) -> Void,
          onError:    @escaping (Error)  -> Void) {
+        self.decrypt    = decrypt
         self.onChunk    = onChunk
         self.onComplete = onComplete
         self.onError    = onError
@@ -288,10 +298,23 @@ private class SSEDelegate: NSObject, URLSessionDataDelegate {
             for line in event.components(separatedBy: "\n") {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
                 guard trimmed.hasPrefix("data:") else { continue }
-                let chunk = String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespaces)
-                guard chunk != "[DONE]", !chunk.isEmpty else { continue }
-                accumulated += chunk
-                let copy = chunk
+                let raw = String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespaces)
+                guard raw != "[DONE]", !raw.isEmpty else { continue }
+
+                // 尝试解析 JSON 并解密 result 字段，否则直接使用原始文本
+                let plainText: String
+                if let jsonData  = raw.data(using: .utf8),
+                   let json      = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
+                   let encrypted = json["result"] as? String,
+                   let decrypted = decrypt(encrypted) {
+                    plainText = decrypted
+                } else {
+                    plainText = raw
+                }
+                guard !plainText.isEmpty else { continue }
+
+                accumulated += plainText
+                let copy = plainText
                 DispatchQueue.main.async { self.onChunk(copy) }
             }
         }

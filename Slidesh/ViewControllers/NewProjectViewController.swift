@@ -26,6 +26,8 @@ class NewProjectViewController: UIViewController {
     // 生成按钮渐变层（需在 viewDidLayoutSubviews 中更新 frame）
     private var generateGradient: CAGradientLayer?
     private weak var generateContainer: UIView?
+    // 生成中 loading 指示器
+    private weak var generateSpinner: UIActivityIndicatorView?
 
     // 卡片垂直位置约束（键盘弹出时动态调整）
     private var cardCenterYConstraint: NSLayoutConstraint!
@@ -409,6 +411,19 @@ class NewProjectViewController: UIViewController {
         generateButton.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(generateButton)
 
+        // loading 转圈，生成时覆盖按钮文字
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.color = .white
+        spinner.hidesWhenStopped = true
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(spinner)
+        generateSpinner = spinner
+
+        NSLayoutConstraint.activate([
+            spinner.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            spinner.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+        ])
+
         NSLayoutConstraint.activate([
             // 紧贴卡片底部，与卡片左右对齐
             container.topAnchor.constraint(equalTo: cardView.bottomAnchor, constant: 12),
@@ -506,37 +521,36 @@ class NewProjectViewController: UIViewController {
         }
     }
 
-    /// Step 2：用 taskId 发起 SSE 流式大纲生成
+    /// Step 2：createTask 成功后直接推送大纲页，由 OutlineViewController 自行发起 SSE
     private func startGenerateContent(taskId: String) {
-        generateTask = PPTAPIService.shared.generateContent(
+        let theme = themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let vc = OutlineViewController(
             taskId:   taskId,
+            subject:  theme,
             language: selectedLanguage,
             length:   selectedLength,
             scene:    selectedScene,
-            audience: selectedAudience,
-            onChunk: { [weak self] _ in
-                // 可在此处实时展示进度（当前版本忽略 chunk）
-                _ = self
-            },
-            onComplete: { [weak self] markdown in
-                guard let self else { return }
-                self.setGenerating(false)
-                print("✅ 大纲生成完成，length=\(markdown.count)\n\(markdown.prefix(200))")
-                // TODO: 导航到大纲编辑 / 模板选择页
-            },
-            onError: { [weak self] error in
-                guard let self else { return }
-                self.setGenerating(false)
-                self.showGenerateError(error.localizedDescription)
-            }
+            audience: selectedAudience
         )
+        setGenerating(false)
+        navigationController?.pushViewController(vc, animated: true)
     }
 
-    /// 切换生成中/完成状态（按钮禁用 + alpha 反馈）
+    /// 切换生成中/完成状态：按钮禁用 + spinner 动画
     private func setGenerating(_ generating: Bool) {
         generateButton.isEnabled = !generating
-        generateContainer?.alpha = generating ? 0.6 : 1.0
-        if !generating { generateTask = nil }
+        generateContainer?.alpha = generating ? 0.85 : 1.0
+        if generating {
+            generateButton.setTitle("", for: .normal)
+            generateButton.setImage(nil, for: .normal)
+            generateSpinner?.startAnimating()
+        } else {
+            generateSpinner?.stopAnimating()
+            generateButton.setTitle("立即生成", for: .normal)
+            let imgCfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+            generateButton.setImage(UIImage(systemName: "sparkles", withConfiguration: imgCfg), for: .normal)
+            generateTask = nil
+        }
     }
 
     private func showGenerateError(_ message: String) {
