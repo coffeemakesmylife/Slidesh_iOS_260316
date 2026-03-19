@@ -123,6 +123,24 @@ class OutlineViewController: UIViewController {
     }
     required init?(coder: NSCoder) { fatalError() }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // 导航栏改为透明背景，与 SettingsViewController 一致
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        navigationController?.navigationBar.standardAppearance   = appearance
+        navigationController?.navigationBar.scrollEdgeAppearance = appearance
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // 离开页面时恢复默认导航栏外观
+        let def = UINavigationBarAppearance()
+        def.configureWithDefaultBackground()
+        navigationController?.navigationBar.standardAppearance   = def
+        navigationController?.navigationBar.scrollEdgeAppearance = def
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "大纲生成"
@@ -148,8 +166,6 @@ class OutlineViewController: UIViewController {
     // MARK: - 布局
 
     private func setupStreamView() {
-        // 延伸到导航栏下方，与 SettingsViewController 保持一致
-        streamScrollView.contentInsetAdjustmentBehavior = .always
         streamScrollView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(streamScrollView)
 
@@ -169,7 +185,6 @@ class OutlineViewController: UIViewController {
         view.addSubview(spinnerLabel)
 
         NSLayoutConstraint.activate([
-            // 从 view.topAnchor 开始延伸到导航栏下，系统自动通过 adjustedContentInset 留出安全区
             streamScrollView.topAnchor.constraint(equalTo: view.topAnchor),
             streamScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             streamScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -302,7 +317,6 @@ class OutlineViewController: UIViewController {
         tableView.alpha          = 0
         tableView.backgroundColor = .systemGroupedBackground
         tableView.separatorStyle  = .none
-        tableView.contentInsetAdjustmentBehavior = .always
         tableView.register(OutlineHeaderCell.self,  forCellReuseIdentifier: OutlineHeaderCell.reuseID)
         tableView.register(OutlineBulletCell.self,  forCellReuseIdentifier: OutlineBulletCell.reuseID)
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -391,10 +405,10 @@ class OutlineViewController: UIViewController {
                 self.accumulatedMarkdown += chunk
                 print("📝 chunk(\(chunk.count)): \(chunk.prefix(60))")
                 self.streamLabel.attributedText = self.renderMarkdown(self.accumulatedMarkdown)
-                // 滚到底部跟随流式输出（需计入 adjustedContentInset，否则内容会跑到导航栏后面）
+                // 滚到底部跟随流式输出（计入 adjustedContentInset，避免内容滚到导航栏后面）
                 let sv = self.streamScrollView
-                let maxY = sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom
-                let y    = max(-sv.adjustedContentInset.top, maxY)
+                let y  = max(-sv.adjustedContentInset.top,
+                             sv.contentSize.height - sv.bounds.height + sv.adjustedContentInset.bottom)
                 sv.setContentOffset(CGPoint(x: 0, y: y), animated: false)
             },
             onComplete: { [weak self] fullMarkdown in

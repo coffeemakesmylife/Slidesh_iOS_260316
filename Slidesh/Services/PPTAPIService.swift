@@ -311,12 +311,10 @@ private class SSEDelegate: NSObject, URLSessionDataDelegate {
                 } else {
                     plainText = raw
                 }
-                // 去除服务端可能附在内容末尾的 [DONE] 标记（保留换行符，不能整体 trim）
-                let chunk = plainText.replacingOccurrences(of: "[DONE]", with: "")
-                guard !chunk.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+                guard !plainText.isEmpty else { continue }
 
-                accumulated += chunk
-                let copy = chunk
+                accumulated += plainText
+                let copy = plainText
                 DispatchQueue.main.async { self.onChunk(copy) }
             }
         }
