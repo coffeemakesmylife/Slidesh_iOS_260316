@@ -134,6 +134,7 @@ class OutlineViewController: UIViewController {
         setupBottomBar()  // 先布局底部栏，tableView 绑定其顶部
         setupStreamView()
         setupTableView()
+        setupKeyboardDismiss()
         startSSE()
     }
 
@@ -234,6 +235,9 @@ class OutlineViewController: UIViewController {
         templateBtn.layer.insertSublayer(grad, at: 0)
         templateGrad = grad
 
+        // 流式阶段不显示工具栏
+        bottomBar.isHidden = true
+
         NSLayoutConstraint.activate([
             bottomBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
@@ -293,8 +297,7 @@ class OutlineViewController: UIViewController {
         tableView.isHidden       = true
         tableView.alpha          = 0
         tableView.backgroundColor = .systemGroupedBackground
-        tableView.separatorStyle  = .singleLine
-        tableView.separatorInset  = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
+        tableView.separatorStyle  = .none
         tableView.register(OutlineHeaderCell.self,  forCellReuseIdentifier: OutlineHeaderCell.reuseID)
         tableView.register(OutlineBulletCell.self,  forCellReuseIdentifier: OutlineBulletCell.reuseID)
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -306,6 +309,18 @@ class OutlineViewController: UIViewController {
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
         ])
+    }
+
+    // MARK: - 收键盘
+
+    private func setupKeyboardDismiss() {
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 
     // MARK: - SSE 流式生成
@@ -363,24 +378,30 @@ class OutlineViewController: UIViewController {
             if t.hasPrefix("# ") {
                 lineAttr = taggedLine(tag: "主题", text: String(t.dropFirst(2)),
                                       tagFg: purple, tagBg: purpleBg,
-                                      textFont: .boldSystemFont(ofSize: 18))
+                                      textFont: .boldSystemFont(ofSize: 18), spacingBefore: 0)
             } else if t.hasPrefix("## ") {
                 lineAttr = taggedLine(tag: "章节", text: String(t.dropFirst(3)),
                                       tagFg: purple, tagBg: purpleBg,
-                                      textFont: .boldSystemFont(ofSize: 16))
+                                      textFont: .boldSystemFont(ofSize: 16), spacingBefore: 20)
             } else if t.hasPrefix("### ") {
                 lineAttr = plainLine("• " + String(t.dropFirst(4)),
-                                     font: .boldSystemFont(ofSize: 14), color: .label, indent: 0)
+                                     font: .boldSystemFont(ofSize: 14), color: .label,
+                                     indent: 0, spacingBefore: 10)
             } else if t.hasPrefix("#### ") {
                 lineAttr = plainLine("  ○ " + String(t.dropFirst(5)),
-                                     font: .systemFont(ofSize: 13), color: .label, indent: 16)
+                                     font: .systemFont(ofSize: 13), color: .label,
+                                     indent: 16, spacingBefore: 4)
             } else if t.hasPrefix("- ") || t.hasPrefix("* ") {
                 lineAttr = plainLine("• " + String(t.dropFirst(2)),
-                                     font: .systemFont(ofSize: 14), color: .label, indent: 0)
+                                     font: .systemFont(ofSize: 14), color: .label,
+                                     indent: 0, spacingBefore: 6)
             } else if t.isEmpty {
                 lineAttr = NSAttributedString(string: "")
             } else {
-                lineAttr = plainLine(t, font: .systemFont(ofSize: 12), color: .secondaryLabel, indent: 28)
+                // body 文本仅显示一行预览
+                let preview = t.count > 52 ? String(t.prefix(52)) + "..." : t
+                lineAttr = plainLine(preview, font: .systemFont(ofSize: 12),
+                                     color: .secondaryLabel, indent: 28, spacingBefore: 2)
             }
 
             result.append(lineAttr)
@@ -393,12 +414,15 @@ class OutlineViewController: UIViewController {
 
     private func taggedLine(tag: String, text: String,
                             tagFg: UIColor, tagBg: UIColor,
-                            textFont: UIFont) -> NSAttributedString {
-        let r = NSMutableAttributedString()
+                            textFont: UIFont, spacingBefore: CGFloat = 0) -> NSAttributedString {
+        let r  = NSMutableAttributedString()
+        let ps = NSMutableParagraphStyle()
+        ps.paragraphSpacingBefore = spacingBefore
         r.append(NSAttributedString(string: " \(tag) ", attributes: [
             .font:            UIFont.systemFont(ofSize: 11, weight: .semibold),
             .foregroundColor: tagFg,
             .backgroundColor: tagBg,
+            .paragraphStyle:  ps,
         ]))
         r.append(NSAttributedString(string: "  \(text)", attributes: [
             .font:            textFont,
@@ -407,14 +431,16 @@ class OutlineViewController: UIViewController {
         return r
     }
 
-    private func plainLine(_ text: String, font: UIFont, color: UIColor, indent: CGFloat) -> NSAttributedString {
+    private func plainLine(_ text: String, font: UIFont, color: UIColor,
+                           indent: CGFloat, spacingBefore: CGFloat = 0) -> NSAttributedString {
         let ps = NSMutableParagraphStyle()
-        ps.firstLineHeadIndent = indent
-        ps.headIndent          = indent
+        ps.firstLineHeadIndent    = indent
+        ps.headIndent             = indent
+        ps.paragraphSpacingBefore = spacingBefore
         return NSAttributedString(string: text, attributes: [
-            .font:           font,
+            .font:            font,
             .foregroundColor: color,
-            .paragraphStyle: ps,
+            .paragraphStyle:  ps,
         ])
     }
 
@@ -508,9 +534,9 @@ extension OutlineViewController: UITableViewDataSource, UITableViewDelegate {
 private class OutlineHeaderCell: UITableViewCell {
     static let reuseID = "OutlineHeaderCell"
 
-    private let badgeLabel = UILabel()
-    private let badgeBg    = UIView()
-    private let titleView  = UITextView()
+    private let badgeLabel              = UILabel()
+    private let badgeBg                 = UIView()
+    private var titleLabel: UILabel!   // 在 init 中赋值
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -527,14 +553,13 @@ private class OutlineHeaderCell: UITableViewCell {
         badgeLabel.translatesAutoresizingMaskIntoConstraints = false
         badgeBg.addSubview(badgeLabel)
 
-        // 可编辑标题
-        titleView.font                         = .systemFont(ofSize: 16, weight: .semibold)
-        titleView.isScrollEnabled              = false
-        titleView.textContainerInset           = .zero
-        titleView.textContainer.lineFragmentPadding = 0
-        titleView.backgroundColor              = .clear
-        titleView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(titleView)
+            // 标题（UILabel 精确居中，UITextView 内边距不可控）
+        let titleLabel = UILabel()
+        titleLabel.font         = .systemFont(ofSize: 16, weight: .semibold)
+        titleLabel.numberOfLines = 0
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(titleLabel)
+        self.titleLabel = titleLabel
 
         NSLayoutConstraint.activate([
             badgeLabel.topAnchor.constraint(equalTo: badgeBg.topAnchor, constant: 3),
@@ -542,14 +567,15 @@ private class OutlineHeaderCell: UITableViewCell {
             badgeLabel.leadingAnchor.constraint(equalTo: badgeBg.leadingAnchor, constant: 6),
             badgeLabel.trailingAnchor.constraint(equalTo: badgeBg.trailingAnchor, constant: -6),
 
+            // badge 左对齐，垂直对齐 titleLabel
             badgeBg.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            badgeBg.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-            badgeBg.topAnchor.constraint(greaterThanOrEqualTo: contentView.topAnchor, constant: 14),
+            badgeBg.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
 
-            titleView.leadingAnchor.constraint(equalTo: badgeBg.trailingAnchor, constant: 10),
-            titleView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            titleView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
-            titleView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
+            // titleLabel 决定 cell 高度
+            titleLabel.leadingAnchor.constraint(equalTo: badgeBg.trailingAnchor, constant: 10),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            titleLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 14),
+            titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -14),
         ])
     }
 
@@ -557,10 +583,10 @@ private class OutlineHeaderCell: UITableViewCell {
 
     func configure(tag: String, title: String) {
         badgeLabel.text = tag
-        titleView.text  = title
+        titleLabel.text = title
     }
 
-    func beginEditing() { titleView.becomeFirstResponder() }
+    func beginEditing() { titleLabel.becomeFirstResponder() }
 }
 
 // MARK: - OutlineBulletCell（可编辑子条目）
