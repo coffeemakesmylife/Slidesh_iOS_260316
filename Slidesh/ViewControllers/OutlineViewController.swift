@@ -235,8 +235,8 @@ class OutlineViewController: UIViewController {
         sep.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(sep)
 
-        // 绿色勾 + hint
-        let checkImg = UIImageView(image: UIImage(systemName: "checkmark.circle.fill"))
+        // edit-fill 图标 + hint
+        let checkImg = UIImageView(image: UIImage(named: "edit-fill")?.withRenderingMode(.alwaysTemplate))
         checkImg.tintColor = .systemGreen
         checkImg.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(checkImg)
@@ -248,9 +248,9 @@ class OutlineViewController: UIViewController {
         hintLbl.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(hintLbl)
 
-        // 换个大纲 & 下载大纲
-        let regenBtn = makeToolbarBtn(symbol: "arrow.clockwise", label: "换个大纲", action: #selector(regenerateTapped))
-        let dlBtn    = makeToolbarBtn(symbol: "arrow.down.to.line", label: "下载大纲", action: #selector(downloadTapped))
+        // 换个大纲 & 下载大纲（使用自定义图片，alwaysTemplate 保留当前颜色）
+        let regenBtn = makeToolbarBtn(image: UIImage(named: "refresh-line"),      label: "换个大纲", action: #selector(regenerateTapped))
+        let dlBtn    = makeToolbarBtn(image: UIImage(named: "file-download-line"), label: "下载大纲", action: #selector(downloadTapped))
 
         // 渐变"挑选PPT模板"按钮
         templateBtn.setTitle("挑选PPT模板  →", for: .normal)
@@ -311,10 +311,10 @@ class OutlineViewController: UIViewController {
     }
 
     @discardableResult
-    private func makeToolbarBtn(symbol: String, label: String, action: Selector) -> UIButton {
+    private func makeToolbarBtn(image: UIImage?, label: String, action: Selector) -> UIButton {
         let btn = UIButton(type: .system)
         var cfg = UIButton.Configuration.plain()
-        cfg.image           = UIImage(systemName: symbol)
+        cfg.image           = image?.withRenderingMode(.alwaysTemplate)
         cfg.title           = label
         cfg.imagePadding    = 6
         cfg.baseForegroundColor = .secondaryLabel
