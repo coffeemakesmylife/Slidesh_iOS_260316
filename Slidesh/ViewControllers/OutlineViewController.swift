@@ -111,6 +111,7 @@ class OutlineViewController: UIViewController {
     private let streamLabel      = UILabel()
     private let spinner          = UIActivityIndicatorView(style: .medium)
     private let spinnerLabel     = UILabel()
+    private let spinnerStack     = UIStackView()  // spinner + label 的容器，整体居中
 
     // 卡片编辑
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
@@ -194,20 +195,25 @@ class OutlineViewController: UIViewController {
 
         spinner.color = .secondaryLabel
         spinner.startAnimating()
-        spinner.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(spinner)
 
         spinnerLabel.text      = "大纲生成中，请不要退出..."
         spinnerLabel.font      = .systemFont(ofSize: 13)
         spinnerLabel.textColor = .secondaryLabel
-        spinnerLabel.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(spinnerLabel)
+
+        // 用 spinnerStack 让 spinner + label 作为整体居中，文案变化也不会偏移
+        spinnerStack.axis      = .horizontal
+        spinnerStack.spacing   = 8
+        spinnerStack.alignment = .center
+        spinnerStack.addArrangedSubview(spinner)
+        spinnerStack.addArrangedSubview(spinnerLabel)
+        spinnerStack.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(spinnerStack)
 
         NSLayoutConstraint.activate([
             streamScrollView.topAnchor.constraint(equalTo: view.topAnchor),
             streamScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             streamScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            streamScrollView.bottomAnchor.constraint(equalTo: spinner.topAnchor, constant: -12),
+            streamScrollView.bottomAnchor.constraint(equalTo: spinnerStack.topAnchor, constant: -12),
 
             // 内容标签撑开 contentSize
             streamLabel.topAnchor.constraint(equalTo: streamScrollView.contentLayoutGuide.topAnchor, constant: 16),
@@ -216,12 +222,9 @@ class OutlineViewController: UIViewController {
             streamLabel.bottomAnchor.constraint(equalTo: streamScrollView.contentLayoutGuide.bottomAnchor, constant: -16),
             streamLabel.widthAnchor.constraint(equalTo: streamScrollView.frameLayoutGuide.widthAnchor, constant: -32),
 
-            // spinner 固定在 safeArea 底部，不受 bottomBar 影响
-            spinner.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -48),
-            spinner.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
-
-            spinnerLabel.centerYAnchor.constraint(equalTo: spinner.centerYAnchor),
-            spinnerLabel.leadingAnchor.constraint(equalTo: spinner.trailingAnchor, constant: 8),
+            // spinnerStack 整体居中，固定在 safeArea 底部
+            spinnerStack.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            spinnerStack.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
         ])
     }
 
@@ -598,7 +601,6 @@ class OutlineViewController: UIViewController {
 
     private func transitionToEditable() {
         spinner.stopAnimating()
-        spinnerLabel.isHidden = true
 
         // 打印前300字符用于调试格式识别问题
         print("📄 markdown前300字符:\n\(accumulatedMarkdown.prefix(300))")
@@ -614,7 +616,7 @@ class OutlineViewController: UIViewController {
 
         UIView.animate(withDuration: 0.3) {
             self.streamScrollView.alpha = 0
-            self.spinner.alpha          = 0
+            self.spinnerStack.alpha     = 0
         } completion: { _ in
             self.streamScrollView.isHidden = true
             UIView.animate(withDuration: 0.3) {
@@ -637,16 +639,15 @@ class OutlineViewController: UIViewController {
         sections = []
 
         // 恢复流式阶段 UI
-        streamLabel.text       = nil
+        streamLabel.text          = nil
         streamScrollView.isHidden = false
         streamScrollView.alpha    = 1
-        spinner.alpha             = 1
+        spinnerStack.alpha        = 1
         spinner.startAnimating()
-        spinnerLabel.isHidden  = false
-        spinnerLabel.text      = "大纲生成中，请不要退出..."
-        tableView.isHidden     = true
-        tableView.alpha        = 0
-        bottomBar.isHidden     = true
+        spinnerLabel.isHidden     = false
+        tableView.isHidden        = true
+        tableView.alpha           = 0
+        bottomBar.isHidden        = true
 
         startSSE()
     }
@@ -716,7 +717,7 @@ private class OutlineHeaderCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
         // 卡片背景色（调整 alpha 可改变透明度）
-        backgroundColor = UIColor(white: 1, alpha: 0.85)
+        backgroundColor = UIColor(white: 1, alpha: 0.7)
 
         // Badge 背景
         badgeBg.backgroundColor    = .appPrimarySubtle
