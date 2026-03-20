@@ -181,6 +181,16 @@ class OutlineViewController: UIViewController {
         templateGrad?.frame = templateBtn.bounds
     }
 
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
+        // 深浅色切换时清除 badge 图片缓存，确保重新渲染时使用正确颜色
+        badgeImageCache.removeAllObjects()
+        if !streamScrollView.isHidden {
+            streamLabel.attributedText = renderMarkdown(accumulatedMarkdown)
+        }
+    }
+
     // MARK: - 布局
 
     private func setupStreamView() {
@@ -229,7 +239,7 @@ class OutlineViewController: UIViewController {
     }
 
     private func setupBottomBar() {
-        bottomBar.backgroundColor = .systemBackground
+        bottomBar.backgroundColor = .appCardBackground
         bottomBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bottomBar)
 
@@ -487,8 +497,9 @@ class OutlineViewController: UIViewController {
         // 去除服务端可能附在内容末尾的 [DONE]，不在数据积累层处理，避免副作用
         let source   = md.replacingOccurrences(of: "[DONE]", with: "")
         let result   = NSMutableAttributedString()
-        let purple   = UIColor.appPrimary
-        let purpleBg = UIColor.appPrimarySubtle
+        // 流式视图背景较深，使用 chip 专用色保证深色模式下 badge 可读
+        let purple   = UIColor.appChipUnselectedText
+        let purpleBg = UIColor.appChipUnselectedBackground
         var isFirst  = true
 
         for line in source.components(separatedBy: "\n") {
@@ -507,22 +518,22 @@ class OutlineViewController: UIViewController {
                                       textFont: .boldSystemFont(ofSize: 16), spacingBefore: 24)
             } else if t.hasPrefix("### ") {
                 lineAttr = plainLine("• " + String(t.dropFirst(4)),
-                                     font: .boldSystemFont(ofSize: 14), color: .label,
+                                     font: .boldSystemFont(ofSize: 14), color: .appTextPrimary,
                                      indent: 0, spacingBefore: 16, spacingAfter: 2)
             } else if t.hasPrefix("#### ") {
                 // 与卡片视图统一，使用 ○
                 lineAttr = plainLine("  ○ " + String(t.dropFirst(5)),
-                                     font: .systemFont(ofSize: 13), color: .label,
+                                     font: .systemFont(ofSize: 13), color: .appTextPrimary,
                                      indent: 16, spacingBefore: 10, spacingAfter: 0)
             } else if t.hasPrefix("- ") || t.hasPrefix("* ") {
                 lineAttr = plainLine("• " + String(t.dropFirst(2)),
-                                     font: .systemFont(ofSize: 14), color: .label,
+                                     font: .systemFont(ofSize: 14), color: .appTextPrimary,
                                      indent: 0, spacingBefore: 16, spacingAfter: 2)
             } else {
                 // body 文本限制一行：约 30 个汉字 ≈ 一屏行宽（indent=28 占用约 28pt）
                 let preview = t.count > 30 ? String(t.prefix(30)) + "..." : t
                 lineAttr = plainLine(preview, font: .systemFont(ofSize: 12),
-                                     color: .secondaryLabel, indent: 28, spacingBefore: 4, spacingAfter: 4)
+                                     color: .appTextSecondary, indent: 28, spacingBefore: 4, spacingAfter: 4)
             }
 
             if !isFirst { result.append(NSAttributedString(string: "\n")) }
@@ -576,7 +587,7 @@ class OutlineViewController: UIViewController {
 
         r.append(NSAttributedString(string: "  \(text)", attributes: [
             .font:            textFont,
-            .foregroundColor: UIColor.label,
+            .foregroundColor: UIColor.appTextPrimary,
             .paragraphStyle:  ps,
         ]))
         return r
@@ -716,17 +727,16 @@ private class OutlineHeaderCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
-        // 卡片背景色（调整 alpha 可改变透明度）
-        backgroundColor = UIColor(white: 1, alpha: 0.7)
+        backgroundColor = .appCardBackground.withAlphaComponent(0.7)
 
-        // Badge 背景
-        badgeBg.backgroundColor    = .appPrimarySubtle
+        // Badge 背景（chip 专用色，深浅色模式下均可读）
+        badgeBg.backgroundColor    = .appChipUnselectedBackground
         badgeBg.layer.cornerRadius = 4
         badgeBg.translatesAutoresizingMaskIntoConstraints = false
 
         // badge 文字永不被压缩，保证完整显示
         badgeLabel.font      = .systemFont(ofSize: 11, weight: .semibold)
-        badgeLabel.textColor = .appPrimary
+        badgeLabel.textColor = .appChipUnselectedText
         badgeLabel.numberOfLines = 1
         badgeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         badgeLabel.setContentHuggingPriority(.required, for: .horizontal)
@@ -782,8 +792,7 @@ private class OutlineBulletCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
-        // 卡片背景色（调整 alpha 可改变透明度）
-        backgroundColor = UIColor(white: 1, alpha: 0.7)
+        backgroundColor = .appCardBackground.withAlphaComponent(0.7)
 
         textView.isScrollEnabled              = false
         // textContainerInset top=8 作为 cell 内上边距，bottom=0 去除 UITextView 自带底部空白
@@ -819,9 +828,9 @@ private class OutlineBulletCell: UITableViewCell {
 
     private func style(for level: OutlineBullet.Level) -> (String, UIFont, UIColor, CGFloat) {
         switch level {
-        case .h3:   return ("• ",  .boldSystemFont(ofSize: 14),  .label,           0)
-        case .h4:   return ("○ ",  .systemFont(ofSize: 13),      .label,           16)
-        case .body: return ("",    .systemFont(ofSize: 12),      .secondaryLabel,  32)
+        case .h3:   return ("• ",  .boldSystemFont(ofSize: 14),  .appTextPrimary,   0)
+        case .h4:   return ("○ ",  .systemFont(ofSize: 13),      .appTextPrimary,   16)
+        case .body: return ("",    .systemFont(ofSize: 12),      .appTextSecondary, 32)
         }
     }
 }

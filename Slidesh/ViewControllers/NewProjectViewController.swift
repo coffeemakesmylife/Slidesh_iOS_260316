@@ -815,8 +815,8 @@ private class TopicSuggestionsView: UIView {
         btn.setTitleColor(.appTextPrimary, for: .normal)
         btn.backgroundColor           = .appCardBackground.withAlphaComponent(0.92)
         btn.layer.cornerRadius        = 16
-        btn.layer.borderColor         = UIColor.appSeparator.cgColor
-        btn.layer.borderWidth         = 1
+        btn.layer.borderColor         = UIColor.appCardBorder.resolvedColor(with: traitCollection).cgColor
+        btn.layer.borderWidth         = 1.5
         btn.contentEdgeInsets         = UIEdgeInsets(top: 10, left: 16, bottom: 10, right: 20)
 
         // alwaysOriginal 固定颜色，不受 tint 继承影响
@@ -834,6 +834,14 @@ private class TopicSuggestionsView: UIView {
     @objc private func chipTapped(_ sender: UIButton) {
         guard let title = sender.title(for: .normal) else { return }
         onSelect?(title)
+    }
+
+    // 深浅色切换时更新所有 chip 的 borderColor（cgColor 不自动响应）
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
+        let borderColor = UIColor.appCardBorder.resolvedColor(with: traitCollection).cgColor
+        stackView.arrangedSubviews.forEach { $0.layer.borderColor = borderColor }
     }
 }
 
