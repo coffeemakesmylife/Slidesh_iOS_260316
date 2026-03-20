@@ -149,6 +149,17 @@ class OutlineViewController: UIViewController {
         def.configureWithDefaultBackground()
         navigationController?.navigationBar.standardAppearance   = def
         navigationController?.navigationBar.scrollEdgeAppearance = def
+
+        // 用户返回时，用最新编辑内容更新已保存的大纲
+        if isMovingFromParent && !sections.isEmpty {
+            let updated = OutlineRecord(
+                id:       taskId,
+                subject:  subject,
+                markdown: reconstructMarkdown(),
+                savedAt:  Date()
+            )
+            WorksStore.shared.saveOutline(updated)
+        }
     }
 
     override func viewDidLoad() {
@@ -649,6 +660,15 @@ class OutlineViewController: UIViewController {
                 self.tableView.alpha = 1
             }
         }
+
+        // 大纲生成完毕后立即保存初稿
+        let record = OutlineRecord(
+            id:       taskId,
+            subject:  subject,
+            markdown: accumulatedMarkdown,
+            savedAt:  Date()
+        )
+        WorksStore.shared.saveOutline(record)
     }
 
     // MARK: - Actions
