@@ -591,6 +591,15 @@ class TemplateSelectorViewController: UIViewController {
         }
     }
 
+    // 从 markdown 提取主题标题（# 开头的第一行）
+    private func subjectFromMarkdown() -> String {
+        for line in markdown.components(separatedBy: "\n") {
+            let t = line.trimmingCharacters(in: .whitespaces)
+            if t.hasPrefix("# ") { return String(t.dropFirst(2)) }
+        }
+        return "未命名作品"
+    }
+
     private func setComposeLoading(_ loading: Bool) {
         composeBtn.isEnabled = !loading
         if loading {
@@ -619,6 +628,18 @@ class TemplateSelectorViewController: UIViewController {
             switch result {
             case .success(let info):
                 print("✅ loadPPT 成功，status=\(info.status ?? "-")，fileUrl=\(info.fileUrl ?? "-")")
+                // 自动保存 PPT 记录（fileUrl 非空时才有意义）
+                if let fileUrl = info.fileUrl, !fileUrl.isEmpty {
+                    let record = PPTRecord(
+                        id:       info.pptId,
+                        taskId:   info.taskId ?? taskId,
+                        subject:  info.subject ?? self.subjectFromMarkdown(),
+                        fileUrl:  fileUrl,
+                        coverUrl: info.coverUrl,
+                        savedAt:  Date()
+                    )
+                    WorksStore.shared.savePPT(record)
+                }
                 let previewVC = PPTPreviewViewController(pptInfo: info)
                 self.navigationController?.pushViewController(previewVC, animated: true)
             case .failure(let error):
