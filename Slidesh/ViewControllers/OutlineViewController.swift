@@ -698,6 +698,8 @@ private class OutlineHeaderCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
+        // 卡片背景色（调整 alpha 可改变透明度）
+        backgroundColor = UIColor(white: 1, alpha: 0.85)
 
         // Badge 背景
         badgeBg.backgroundColor    = .appPrimarySubtle
@@ -762,17 +764,20 @@ private class OutlineBulletCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
+        // 卡片背景色（调整 alpha 可改变透明度）
+        backgroundColor = UIColor(white: 1, alpha: 0.7)
 
         textView.isScrollEnabled              = false
-        textView.textContainerInset           = .zero
+        // textContainerInset top=8 作为 cell 内上边距，bottom=0 去除 UITextView 自带底部空白
+        textView.textContainerInset           = UIEdgeInsets(top: 8, left: 0, bottom: 0, right: 0)
         textView.textContainer.lineFragmentPadding = 0
         textView.backgroundColor              = .clear
         textView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(textView)
 
         NSLayoutConstraint.activate([
-            textView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
-            textView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            textView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            textView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -4),
             textView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
             textView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
         ])
