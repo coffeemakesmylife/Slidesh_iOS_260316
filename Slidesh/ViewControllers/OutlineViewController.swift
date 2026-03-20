@@ -35,6 +35,8 @@ struct OutlineBullet {
 enum MarkdownParser {
     /// 将 markdown 文本解析为大纲数据模型
     static func parse(_ md: String) -> [OutlineSection] {
+        // 去除服务端可能附在内容末尾的 [DONE]
+        let md = md.replacingOccurrences(of: "[DONE]", with: "")
         var sections:         [OutlineSection] = []
         var tocTitles:        [String]         = []
         var curChapterTitle   = ""
@@ -478,12 +480,14 @@ class OutlineViewController: UIViewController {
     //   h4(####)   spacingBefore=10  —— 二级子标题
     //   body       spacingBefore=4, spacingAfter=4  —— 正文前后各留一点
     private func renderMarkdown(_ md: String) -> NSAttributedString {
+        // 去除服务端可能附在内容末尾的 [DONE]，不在数据积累层处理，避免副作用
+        let source   = md.replacingOccurrences(of: "[DONE]", with: "")
         let result   = NSMutableAttributedString()
         let purple   = UIColor.appPrimary
         let purpleBg = UIColor.appPrimarySubtle
         var isFirst  = true
 
-        for line in md.components(separatedBy: "\n") {
+        for line in source.components(separatedBy: "\n") {
             let t = line.trimmingCharacters(in: .whitespaces)
             // 跳过空行，避免产生大段空白
             if t.isEmpty { continue }
@@ -594,6 +598,13 @@ class OutlineViewController: UIViewController {
     private func transitionToEditable() {
         spinner.stopAnimating()
         spinnerLabel.isHidden = true
+
+        // 打印前300字符用于调试格式识别问题
+        print("📄 markdown前300字符:\n\(accumulatedMarkdown.prefix(300))")
+        // 打印所有含 # 的行
+        for line in accumulatedMarkdown.components(separatedBy: "\n") {
+            if line.hasPrefix("#") { print("  ›› [\(line.prefix(80))]") }
+        }
 
         sections = MarkdownParser.parse(accumulatedMarkdown)
         tableView.reloadData()
