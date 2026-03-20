@@ -630,8 +630,24 @@ class OutlineViewController: UIViewController {
     }
 
     @objc private func regenerateTapped() {
+        // 取消当前请求，重置状态，重新启动流式生成
         sseTask?.cancel()
-        navigationController?.popViewController(animated: true)
+        accumulatedMarkdown = ""
+        sections = []
+
+        // 恢复流式阶段 UI
+        streamLabel.text       = nil
+        streamScrollView.isHidden = false
+        streamScrollView.alpha    = 1
+        spinner.alpha             = 1
+        spinner.startAnimating()
+        spinnerLabel.isHidden  = false
+        spinnerLabel.text      = "大纲生成中..."
+        tableView.isHidden     = true
+        tableView.alpha        = 0
+        bottomBar.isHidden     = true
+
+        startSSE()
     }
 
     @objc private func downloadTapped() {
