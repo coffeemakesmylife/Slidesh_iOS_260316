@@ -764,30 +764,37 @@ class OutlineViewController: UIViewController {
         let hasEdits        = currentMarkdown != accumulatedMarkdown
         print("📋 templateTapped: hasEdits=\(hasEdits), markdownLen=\(currentMarkdown.count)")
 
-        if hasEdits {
-            print("🔄 调用 updateContent 同步大纲编辑，taskId=\(taskId)")
-        } else {
-            print("⏭️ 跳过 updateContent（大纲未修改），直接弹出模板选择器")
-        }
-
         setTemplateBtnLoading(true)
 
-        // 先将当前编辑同步到服务端，再弹出模板选择器
-        updateTask = PPTAPIService.shared.updateContent(
-            taskId:   taskId,
-            markdown: currentMarkdown
-        ) { [weak self] updatedMarkdown in
-            guard let self else { return }
-            print("✅ updateContent 成功，返回 markdownLen=\(updatedMarkdown.count)")
-            self.accumulatedMarkdown = updatedMarkdown
-            self.setTemplateBtnLoading(false)
-            self.presentTemplateSelector()
-        } onError: { [weak self] error in
-            // 同步失败不阻断用户流程，使用本地 markdown
-            guard let self else { return }
-            print("❌ updateContent 失败：\(error.localizedDescription)，使用本地 markdown 继续")
-            self.setTemplateBtnLoading(false)
-            self.presentTemplateSelector()
+        if hasEdits {
+            print("🔄 调用 updateContent 同步大纲编辑，taskId=\(taskId)")
+            // 有编辑：先同步到服务端，再弹出选择器
+            updateTask = PPTAPIService.shared.updateContent(
+                taskId:   taskId,
+                markdown: currentMarkdown
+            ) { [weak self] updatedMarkdown in
+                guard let self else { return }
+                print("✅ updateContent 成功，返回 markdownLen=\(updatedMarkdown.count)")
+                // 服务端返回有效内容才覆盖，避免空结果导致 generatePptx 失败
+                if !updatedMarkdown.isEmpty {
+                    self.accumulatedMarkdown = updatedMarkdown
+                } else {
+                    self.accumulatedMarkdown = currentMarkdown
+                }
+                self.setTemplateBtnLoading(false)
+                self.presentTemplateSelector()
+            } onError: { [weak self] error in
+                // 同步失败不阻断流程，使用本地编辑版本
+                guard let self else { return }
+                print("❌ updateContent 失败：\(error.localizedDescription)，使用本地 markdown 继续")
+                self.accumulatedMarkdown = currentMarkdown
+                self.setTemplateBtnLoading(false)
+                self.presentTemplateSelector()
+            }
+        } else {
+            print("⏭️ 跳过 updateContent（大纲未修改），直接弹出模板选择器")
+            setTemplateBtnLoading(false)
+            presentTemplateSelector()
         }
     }
 
