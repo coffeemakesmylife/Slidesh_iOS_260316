@@ -574,16 +574,12 @@ class TemplateSelectorViewController: UIViewController {
             markdown:   markdown
         ) { [weak self] result in
             guard let self else { return }
-            self.setComposeLoading(false)
             switch result {
             case .success(let pptId):
-                let msg   = pptId.isEmpty ? "PPT 已生成" : "PPT 已生成\nID: \(pptId)"
-                let alert = UIAlertController(title: "合成成功", message: msg, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "确定", style: .default) { [weak self] _ in
-                    self?.dismiss(animated: true)
-                })
-                self.present(alert, animated: true)
+                print("✅ generatePptx 成功，pptId=\(pptId)，正在加载详情...")
+                self.loadAndShowPPT(pptId: pptId)
             case .failure(let error):
+                self.setComposeLoading(false)
                 let alert = UIAlertController(title: "合成失败",
                                               message: error.localizedDescription,
                                               preferredStyle: .alert)
@@ -610,6 +606,27 @@ class TemplateSelectorViewController: UIViewController {
         } else {
             composeBtn.subviews.first(where: { $0.tag == 888 })?.removeFromSuperview()
             composeBtn.setTitle("合成PPT", for: .normal)
+        }
+    }
+
+    /// generatePptx 成功后调用：加载 PPT 详情并跳转预览页
+    private func loadAndShowPPT(pptId: String) {
+        PPTAPIService.shared.loadPPT(pptId: pptId) { [weak self] result in
+            guard let self else { return }
+            self.setComposeLoading(false)
+            switch result {
+            case .success(let info):
+                print("✅ loadPPT 成功，status=\(info.status ?? "-")，fileUrl=\(info.fileUrl ?? "-")")
+                let previewVC = PPTPreviewViewController(pptInfo: info)
+                self.navigationController?.pushViewController(previewVC, animated: true)
+            case .failure(let error):
+                print("❌ loadPPT 失败：\(error.localizedDescription)")
+                // loadPPT 失败时仍展示预览页（用空 fileUrl，提示用户）
+                let stub = PPTInfo(pptId: pptId, taskId: nil, subject: nil,
+                                   fileUrl: nil, coverUrl: nil, status: nil, total: nil)
+                let previewVC = PPTPreviewViewController(pptInfo: stub)
+                self.navigationController?.pushViewController(previewVC, animated: true)
+            }
         }
     }
 }

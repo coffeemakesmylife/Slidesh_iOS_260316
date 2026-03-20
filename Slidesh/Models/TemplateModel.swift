@@ -33,6 +33,17 @@ struct PPTTemplate {
     }
 }
 
+/// 已生成的 PPT 详情（来自 /v1/api/ai/ppt/load/{pptId} 接口）
+struct PPTInfo {
+    let pptId:    String
+    let taskId:   String?
+    let subject:  String?
+    let fileUrl:  String?
+    let coverUrl: String?
+    let status:   String?   // NOT_START / SUBMITTED / IN_PROGRESS / FAILURE / SUCCESS
+    let total:    Int?
+}
+
 /// 筛选选项（来自 /v1/api/ai/ppt/templates-options 接口）
 struct PPTOption {
     let name: String    // 显示名称

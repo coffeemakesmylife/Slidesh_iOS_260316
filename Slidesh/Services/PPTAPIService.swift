@@ -169,6 +169,25 @@ class PPTAPIService {
         }
     }
 
+    /// 加载已生成 PPT 的详情（fileUrl / status 等），回调在主线程
+    func loadPPT(pptId: String, completion: @escaping (Result<PPTInfo, Error>) -> Void) {
+        let uuid = AppDelegate.getCurrentUserId() ?? "temp"
+        post(path: "/v1/api/ai/ppt/load/\(pptId)",
+             params: ["appId": appId, "uuid": uuid]) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success(let raw):
+                if let info = self.parsePPTInfo(raw) {
+                    completion(.success(info))
+                } else {
+                    completion(.failure(APIError.noData))
+                }
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
     /// 获取筛选选项（分类 / 风格 / 颜色），回调在主线程
     func fetchOptions(completion: @escaping (Result<[PPTOption], Error>) -> Void) {
         post(path: "/v1/api/ai/ppt/templates-options",
@@ -345,6 +364,20 @@ class PPTAPIService {
             }
         }
         return options
+    }
+
+    private func parsePPTInfo(_ raw: Any) -> PPTInfo? {
+        guard let dict = raw as? [String: Any],
+              let pptId = dict["pptId"] as? String else { return nil }
+        return PPTInfo(
+            pptId:    pptId,
+            taskId:   dict["taskId"]  as? String,
+            subject:  dict["subject"] as? String,
+            fileUrl:  dict["fileUrl"] as? String,
+            coverUrl: dict["coverUrl"] as? String,
+            status:   dict["status"]  as? String,
+            total:    dict["total"]   as? Int
+        )
     }
 
     private func parseTemplates(_ raw: Any) -> [PPTTemplate] {
