@@ -892,7 +892,10 @@ private class OutlineHeaderCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
-        backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        // backgroundConfiguration 正确集成 insetGrouped 系统圆角机制，避免直接赋值 backgroundColor 导致圆角不一致
+        var bgConfig = UIBackgroundConfiguration.listGroupedCell()
+        bgConfig.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        backgroundConfiguration = bgConfig
         titleView.delegate = self
 
         // Badge 背景（chip 专用色，深浅色模式下均可读）
@@ -968,12 +971,15 @@ private class OutlineBulletCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
-        backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        // 使用 backgroundConfiguration 避免干扰 insetGrouped 圆角机制
+        var bgConfig = UIBackgroundConfiguration.listGroupedCell()
+        bgConfig.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        backgroundConfiguration = bgConfig
         textView.delegate = self
 
         textView.isScrollEnabled              = false
-        // textContainerInset top=8 作为 cell 内上边距，bottom=0 去除 UITextView 自带底部空白
-        textView.textContainerInset           = UIEdgeInsets(top: 8, left: 0, bottom: 0, right: 0)
+        // top=8 上边距；bottom=4 配合 bottomAnchor -4 实现上下对称 8pt 间距
+        textView.textContainerInset           = UIEdgeInsets(top: 8, left: 0, bottom: 4, right: 0)
         textView.textContainer.lineFragmentPadding = 0
         textView.backgroundColor              = .clear
         textView.translatesAutoresizingMaskIntoConstraints = false

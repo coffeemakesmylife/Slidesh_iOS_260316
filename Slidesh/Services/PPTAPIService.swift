@@ -240,6 +240,11 @@ class PPTAPIService {
                 DispatchQueue.main.async { completion(.failure(APIError.noData)) }
                 return
             }
+            // 先检查业务错误码，透传服务端错误信息
+            if let serverErr = Self.extractServerError(data) {
+                DispatchQueue.main.async { completion(.failure(serverErr)) }
+                return
+            }
             if let decrypted = self.decryptResponse(data) {
                 DispatchQueue.main.async { completion(.success(decrypted)) }
             } else {
@@ -275,12 +280,27 @@ class PPTAPIService {
                 DispatchQueue.main.async { completion(.failure(APIError.noData)) }
                 return
             }
+            // 先检查业务错误码，透传服务端错误信息
+            if let serverErr = Self.extractServerError(data) {
+                DispatchQueue.main.async { completion(.failure(serverErr)) }
+                return
+            }
             if let decrypted = self.decryptResponse(data) {
                 DispatchQueue.main.async { completion(.success(decrypted)) }
             } else {
                 DispatchQueue.main.async { completion(.failure(APIError.decryptFailed)) }
             }
         }.resume()
+    }
+
+    /// 解析响应中的业务错误码，返回包含 msg 的错误；code==0/200（成功）或解析失败返回 nil
+    private static func extractServerError(_ data: Data) -> APIError? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let code = json["code"] as? Int,
+              code != 0 && code != 200 else { return nil }
+        let msg = json["msg"] as? String ?? "服务器错误（code: \(code)）"
+        print("❌ 服务端错误 code=\(code)：\(msg)")
+        return .serverError(msg)
     }
 
     // MARK: - 私有：RSA 解密
@@ -356,13 +376,15 @@ enum APIError: LocalizedError {
     case noData
     case decryptFailed
     case parseTaskIdFailed
+    case serverError(String)  // 服务端返回 code != 0
 
     var errorDescription: String? {
         switch self {
-        case .invalidURL:        return "无效的请求地址"
-        case .noData:            return "服务器无响应"
-        case .decryptFailed:     return "数据解密失败"
-        case .parseTaskIdFailed: return "任务创建失败，无法获取 taskId"
+        case .invalidURL:           return "无效的请求地址"
+        case .noData:               return "服务器无响应"
+        case .decryptFailed:        return "数据解密失败"
+        case .parseTaskIdFailed:    return "任务创建失败，无法获取 taskId"
+        case .serverError(let msg): return msg
         }
     }
 }
