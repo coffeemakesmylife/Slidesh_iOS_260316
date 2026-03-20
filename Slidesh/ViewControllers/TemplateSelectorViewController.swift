@@ -33,13 +33,9 @@ class TemplateSelectorViewController: UIViewController {
     private var styleOptions:    [(name: String, value: String)] = [("全部风格", "")]
     private var colorOptions:    [(name: String, value: String)] = [("全部颜色", "")]
 
-    // MARK: - Tab 栏
+    // MARK: - Segment 控件（系统 UISegmentedControl）
 
-    private let tabBar       = UIView()
-    private let tabCenter    = UIButton(type: .system)
-    private let tabRecent    = UIButton(type: .system)
-    private let tabIndicator = UIView()
-    private var indicatorCenterX: NSLayoutConstraint!
+    private let segmentControl = UISegmentedControl(items: ["模板中心", "最近使用"])
 
     // MARK: - 分类 + 筛选（使用与 TemplatesViewController 统一的 FilterChipButton）
 
@@ -53,10 +49,6 @@ class TemplateSelectorViewController: UIViewController {
 
     private var collectionView: UICollectionView!
     private weak var footerView: SelectorFooterView?
-
-    // MARK: - 浮动关闭按钮（替代 nav bar 的 X）
-
-    private let closeBtn = UIButton(type: .system)
 
     // MARK: - 底部合成PPT栏
 
@@ -86,7 +78,6 @@ class TemplateSelectorViewController: UIViewController {
         view.backgroundColor = .appBackgroundPrimary
         addMeshGradientBackground()
         setupNavBar()
-        setupTabBar()
         setupCategoryView()
         setupFilterView()
         setupCollectionView()
@@ -94,18 +85,6 @@ class TemplateSelectorViewController: UIViewController {
         setupEmptyLabel()
         loadFilterOptions()
         loadTemplates(reset: true)
-    }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // 隐藏 nav bar，让 tab 栏紧贴状态栏，最大化可滑动区域
-        navigationController?.setNavigationBarHidden(true, animated: animated)
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        // push 到预览页时恢复 nav bar
-        navigationController?.setNavigationBarHidden(false, animated: animated)
     }
 
     override func viewDidLayoutSubviews() {
@@ -117,86 +96,27 @@ class TemplateSelectorViewController: UIViewController {
     // MARK: - 导航栏
 
     private func setupNavBar() {
-        // 浮动关闭按钮：圆形背景 + xmark，叠加在 tab 栏左侧
-        closeBtn.setImage(UIImage(systemName: "xmark"), for: .normal)
-        closeBtn.tintColor       = .appTextPrimary
-        closeBtn.backgroundColor = UIColor.appCardBackground.withAlphaComponent(0.85)
-        closeBtn.layer.cornerRadius = 18
-        closeBtn.clipsToBounds   = true
-        closeBtn.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
-        closeBtn.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(closeBtn)
-        NSLayoutConstraint.activate([
-            closeBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            closeBtn.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
-            closeBtn.widthAnchor.constraint(equalToConstant: 36),
-            closeBtn.heightAnchor.constraint(equalToConstant: 36),
-        ])
+        // 系统 chevron.left 关闭按钮（dismiss 整个模态流程）
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            image: UIImage(systemName: "chevron.left"),
+            style: .plain, target: self, action: #selector(closeTapped))
+        navigationItem.leftBarButtonItem?.tintColor = .appTextPrimary
+
+        // UISegmentedControl 作为 titleView，系统原生样式
+        segmentControl.selectedSegmentIndex = 0
+        segmentControl.addTarget(self, action: #selector(segmentChanged(_:)), for: .valueChanged)
+        navigationItem.titleView = segmentControl
+
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithTransparentBackground()
+        navigationController?.navigationBar.standardAppearance   = appearance
+        navigationController?.navigationBar.scrollEdgeAppearance = appearance
     }
 
     @objc private func closeTapped() { dismiss(animated: true) }
 
-    // MARK: - Tab 栏
-
-    private func setupTabBar() {
-        tabBar.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(tabBar)
-
-        [tabCenter, tabRecent].forEach {
-            $0.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-            $0.translatesAutoresizingMaskIntoConstraints = false
-            tabBar.addSubview($0)
-        }
-        tabCenter.setTitle("模板中心", for: .normal)
-        tabCenter.setTitleColor(.appPrimary, for: .normal)
-        tabCenter.addTarget(self, action: #selector(switchTab(_:)), for: .touchUpInside)
-        tabCenter.tag = 0
-
-        tabRecent.setTitle("最近使用", for: .normal)
-        tabRecent.setTitleColor(.appTextSecondary, for: .normal)
-        tabRecent.addTarget(self, action: #selector(switchTab(_:)), for: .touchUpInside)
-        tabRecent.tag = 1
-
-        tabIndicator.backgroundColor    = .appPrimary
-        tabIndicator.layer.cornerRadius = 1.5
-        tabIndicator.translatesAutoresizingMaskIntoConstraints = false
-        tabBar.addSubview(tabIndicator)
-
-        indicatorCenterX = tabIndicator.centerXAnchor.constraint(equalTo: tabCenter.centerXAnchor)
-        NSLayoutConstraint.activate([
-            tabBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            tabBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tabBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tabBar.heightAnchor.constraint(equalToConstant: 44),
-
-            tabCenter.topAnchor.constraint(equalTo: tabBar.topAnchor),
-            tabCenter.bottomAnchor.constraint(equalTo: tabBar.bottomAnchor),
-            tabCenter.leadingAnchor.constraint(equalTo: tabBar.leadingAnchor),
-            tabCenter.widthAnchor.constraint(equalTo: tabBar.widthAnchor, multiplier: 0.5),
-
-            tabRecent.topAnchor.constraint(equalTo: tabBar.topAnchor),
-            tabRecent.bottomAnchor.constraint(equalTo: tabBar.bottomAnchor),
-            tabRecent.trailingAnchor.constraint(equalTo: tabBar.trailingAnchor),
-            tabRecent.widthAnchor.constraint(equalTo: tabBar.widthAnchor, multiplier: 0.5),
-
-            tabIndicator.bottomAnchor.constraint(equalTo: tabBar.bottomAnchor),
-            indicatorCenterX,
-            tabIndicator.widthAnchor.constraint(equalToConstant: 28),
-            tabIndicator.heightAnchor.constraint(equalToConstant: 3),
-        ])
-    }
-
-    @objc private func switchTab(_ sender: UIButton) {
-        let isCenter = sender.tag == 0
-        tabCenter.setTitleColor(isCenter ? .appPrimary : .appTextSecondary, for: .normal)
-        tabRecent.setTitleColor(isCenter ? .appTextSecondary : .appPrimary, for: .normal)
-
-        indicatorCenterX.isActive = false
-        indicatorCenterX = tabIndicator.centerXAnchor.constraint(
-            equalTo: isCenter ? tabCenter.centerXAnchor : tabRecent.centerXAnchor)
-        indicatorCenterX.isActive = true
-        UIView.animate(withDuration: 0.2) { self.view.layoutIfNeeded() }
-
+    @objc private func segmentChanged(_ sender: UISegmentedControl) {
+        let isCenter = sender.selectedSegmentIndex == 0
         collectionView.isHidden = !isCenter
         emptyLabel.isHidden     = isCenter
     }
@@ -211,7 +131,7 @@ class TemplateSelectorViewController: UIViewController {
             self?.loadTemplates(reset: true)
         }
         NSLayoutConstraint.activate([
-            categoryView.topAnchor.constraint(equalTo: tabBar.bottomAnchor, constant: 10),
+            categoryView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 10),
             categoryView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             categoryView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             categoryView.heightAnchor.constraint(equalToConstant: 40),
