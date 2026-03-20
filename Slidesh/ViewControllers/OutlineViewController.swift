@@ -693,19 +693,11 @@ class OutlineViewController: UIViewController {
     // MARK: - 下载大纲
 
     @objc private func downloadTapped() {
-        let sheet = UIAlertController(title: "下载大纲", message: "选择导出格式", preferredStyle: .actionSheet)
-        sheet.addAction(UIAlertAction(title: "Markdown 格式 (.md)", style: .default) { [weak self] _ in
-            self?.exportMarkdown()
-        })
-        sheet.addAction(UIAlertAction(title: "纯文本格式 (.txt)", style: .default) { [weak self] _ in
-            self?.exportPlainText()
-        })
-        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
-        // iPad 必须设置 sourceView，否则 ActionSheet 崩溃
-        if let popover = sheet.popoverPresentationController {
-            popover.sourceView = bottomBar
-            popover.sourceRect = bottomBar.bounds
-        }
+        let sheet = DownloadFormatSheet()
+        sheet.onMarkdown  = { [weak self] in self?.exportMarkdown() }
+        sheet.onPlainText = { [weak self] in self?.exportPlainText() }
+        sheet.modalPresentationStyle = .overFullScreen
+        sheet.modalTransitionStyle   = .crossDissolve
         present(sheet, animated: true)
     }
 
@@ -1024,5 +1016,127 @@ extension OutlineBulletCell: UITextViewDelegate {
         let text     = textView.text ?? ""
         let stripped = text.hasPrefix(prefix) ? String(text.dropFirst(prefix.count)) : text
         onTextChanged?(stripped)
+    }
+}
+
+// MARK: - 下载格式选择 Bottom Sheet
+
+/// 自定义底部弹出视图，符合 App 设计语言（圆角卡片 + 渐变背景 + 语义色）
+private class DownloadFormatSheet: UIViewController {
+
+    var onMarkdown:  (() -> Void)?
+    var onPlainText: (() -> Void)?
+
+    private let card       = UIView()
+    private let dimView    = UIView()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = .clear
+        setupDim()
+        setupCard()
+    }
+
+    private func setupDim() {
+        dimView.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+        dimView.alpha = 0
+        dimView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(dimView)
+        NSLayoutConstraint.activate([
+            dimView.topAnchor.constraint(equalTo: view.topAnchor),
+            dimView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            dimView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            dimView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+        // 点击空白区域关闭
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dimTapped))
+        dimView.addGestureRecognizer(tap)
+    }
+
+    private func setupCard() {
+        card.backgroundColor    = .appCardBackground
+        card.layer.cornerRadius = 20
+        card.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+        card.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(card)
+
+        // 标题
+        let titleLabel = UILabel()
+        titleLabel.text      = "下载大纲"
+        titleLabel.font      = .systemFont(ofSize: 18, weight: .semibold)
+        titleLabel.textColor = .appTextPrimary
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(titleLabel)
+
+        // 副标题
+        let subtitleLabel = UILabel()
+        subtitleLabel.text      = "选择导出格式"
+        subtitleLabel.font      = .systemFont(ofSize: 14)
+        subtitleLabel.textColor = .appTextSecondary
+        subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(subtitleLabel)
+
+        // 两个选项按钮
+        let mdBtn  = makeOptionBtn(title: "Markdown 格式 (.md)",  action: #selector(mdTapped))
+        let txtBtn = makeOptionBtn(title: "纯文本格式 (.txt)",     action: #selector(txtTapped))
+
+        NSLayoutConstraint.activate([
+            card.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            card.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            titleLabel.topAnchor.constraint(equalTo: card.topAnchor, constant: 24),
+            titleLabel.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+
+            subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            subtitleLabel.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+
+            mdBtn.topAnchor.constraint(equalTo: subtitleLabel.bottomAnchor, constant: 20),
+            mdBtn.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            mdBtn.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
+            mdBtn.heightAnchor.constraint(equalToConstant: 52),
+
+            txtBtn.topAnchor.constraint(equalTo: mdBtn.bottomAnchor, constant: 12),
+            txtBtn.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 20),
+            txtBtn.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -20),
+            txtBtn.heightAnchor.constraint(equalToConstant: 52),
+            txtBtn.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+        ])
+    }
+
+    private func makeOptionBtn(title: String, action: Selector) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.setTitle(title, for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
+        btn.setTitleColor(.appTextPrimary, for: .normal)
+        btn.backgroundColor    = .appChipUnselectedBackground
+        btn.layer.cornerRadius = 14
+        btn.addTarget(self, action: action, for: .touchUpInside)
+        btn.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(btn)
+        return btn
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        UIView.animate(withDuration: 0.2) { self.dimView.alpha = 1 }
+    }
+
+    @objc private func dimTapped() { dismissSheet() }
+
+    @objc private func mdTapped() {
+        dismissSheet { self.onMarkdown?() }
+    }
+
+    @objc private func txtTapped() {
+        dismissSheet { self.onPlainText?() }
+    }
+
+    private func dismissSheet(completion: (() -> Void)? = nil) {
+        UIView.animate(withDuration: 0.2, animations: {
+            self.dimView.alpha = 0
+        }) { _ in
+            self.dismiss(animated: true, completion: completion)
+        }
     }
 }

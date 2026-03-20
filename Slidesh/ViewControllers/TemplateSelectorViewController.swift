@@ -19,7 +19,7 @@ class TemplateSelectorViewController: UIViewController {
 
     private var selectedTemplate:  PPTTemplate?
     private var allTemplates:      [PPTTemplate] = []  // 分页原始数据
-    private var filteredTemplates: [PPTTemplate] = []  // 搜索过滤后展示
+    private var filteredTemplates: [PPTTemplate] = []  // 筛选/排序后展示
     private var currentPage    = 1
     private var isLoading      = false
     private var hasMore        = true
@@ -27,7 +27,6 @@ class TemplateSelectorViewController: UIViewController {
     private var selectedCategory: String = ""
     private var selectedStyle:    String = ""
     private var selectedColor:    String = ""
-    private var searchKeyword:    String = ""
     private var themeFirst:       Bool   = false
 
     private var categoryOptions: [(name: String, value: String)] = [("全部场景", "")]
@@ -42,32 +41,26 @@ class TemplateSelectorViewController: UIViewController {
     private let tabIndicator = UIView()
     private var indicatorCenterX: NSLayoutConstraint!
 
-    // MARK: - 搜索栏
+    // MARK: - 分类 + 筛选（使用与 TemplatesViewController 统一的 FilterChipButton）
 
-    private let searchContainer = UIView()
-    private let searchField     = UITextField()
-    private let searchBtn       = UIButton(type: .system)
-
-    // MARK: - 分类 + 筛选
-
-    private let categoryView = CategorySelectorView()
-    private let filterView   = UIView()
-    private let styleBtn     = UIButton(type: .system)
-    private let colorBtn     = UIButton(type: .system)
-    private let themeBtn     = UIButton(type: .system)
+    private let categoryView   = CategorySelectorView()
+    private let filterView     = UIView()
+    private let styleFilterBtn = FilterChipButton(title: "风格")
+    private let colorFilterBtn = FilterChipButton(title: "颜色")
+    private let themeFilterBtn = FilterChipButton(title: "贴合主题")
 
     // MARK: - 模板网格
 
     private var collectionView: UICollectionView!
     private weak var footerView: SelectorFooterView?
 
-    // MARK: - 底部合成按钮
+    // MARK: - 底部合成PPT栏
 
     private let bottomBar  = UIView()
     private let composeBtn = UIButton(type: .custom)
     private var composeGrad: CAGradientLayer?
 
-    // MARK: - 空状态
+    // MARK: - 空状态（"最近使用" tab）
 
     private let emptyLabel = UILabel()
 
@@ -89,7 +82,6 @@ class TemplateSelectorViewController: UIViewController {
         addMeshGradientBackground()
         setupNavBar()
         setupTabBar()
-        setupSearchBar()
         setupCategoryView()
         setupFilterView()
         setupCollectionView()
@@ -102,13 +94,6 @@ class TemplateSelectorViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         composeGrad?.frame = composeBtn.bounds
-    }
-
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
-        // 刷新 CGColor 属性，使其跟随深浅色切换
-        searchContainer.layer.borderColor = UIColor.appCardBorder.resolvedColor(with: traitCollection).cgColor
     }
 
     // MARK: - 导航栏
@@ -124,9 +109,7 @@ class TemplateSelectorViewController: UIViewController {
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
     }
 
-    @objc private func closeTapped() {
-        dismiss(animated: true)
-    }
+    @objc private func closeTapped() { dismiss(animated: true) }
 
     // MARK: - Tab 栏
 
@@ -154,9 +137,7 @@ class TemplateSelectorViewController: UIViewController {
         tabIndicator.translatesAutoresizingMaskIntoConstraints = false
         tabBar.addSubview(tabIndicator)
 
-        // indicatorCenterX 需要动态更新以实现 tab 切换动画
         indicatorCenterX = tabIndicator.centerXAnchor.constraint(equalTo: tabCenter.centerXAnchor)
-
         NSLayoutConstraint.activate([
             tabBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tabBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -191,66 +172,8 @@ class TemplateSelectorViewController: UIViewController {
         indicatorCenterX.isActive = true
         UIView.animate(withDuration: 0.2) { self.view.layoutIfNeeded() }
 
-        // "最近使用"暂无本地存储，只显示空态
         collectionView.isHidden = !isCenter
         emptyLabel.isHidden     = isCenter
-    }
-
-    // MARK: - 搜索栏
-
-    private func setupSearchBar() {
-        searchContainer.backgroundColor    = .appCardBackground
-        searchContainer.layer.cornerRadius = 22
-        searchContainer.layer.borderColor  = UIColor.appCardBorder.resolvedColor(with: traitCollection).cgColor
-        searchContainer.layer.borderWidth  = 1
-        searchContainer.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(searchContainer)
-
-        let magnifier = UIImageView(image: UIImage(systemName: "magnifyingglass"))
-        magnifier.tintColor = .appTextTertiary
-        magnifier.translatesAutoresizingMaskIntoConstraints = false
-        searchContainer.addSubview(magnifier)
-
-        searchField.placeholder   = "请输入模板关键词"
-        searchField.font          = .systemFont(ofSize: 14)
-        searchField.textColor     = .appTextPrimary
-        searchField.backgroundColor = .clear
-        searchField.returnKeyType = .search
-        searchField.delegate      = self
-        searchField.translatesAutoresizingMaskIntoConstraints = false
-        searchContainer.addSubview(searchField)
-
-        searchBtn.setTitle("搜索", for: .normal)
-        searchBtn.setTitleColor(.appPrimary, for: .normal)
-        searchBtn.titleLabel?.font = .systemFont(ofSize: 14, weight: .medium)
-        searchBtn.addTarget(self, action: #selector(searchTapped), for: .touchUpInside)
-        searchBtn.translatesAutoresizingMaskIntoConstraints = false
-        searchContainer.addSubview(searchBtn)
-
-        NSLayoutConstraint.activate([
-            searchContainer.topAnchor.constraint(equalTo: tabBar.bottomAnchor, constant: 12),
-            searchContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            searchContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            searchContainer.heightAnchor.constraint(equalToConstant: 44),
-
-            magnifier.leadingAnchor.constraint(equalTo: searchContainer.leadingAnchor, constant: 12),
-            magnifier.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
-            magnifier.widthAnchor.constraint(equalToConstant: 16),
-            magnifier.heightAnchor.constraint(equalToConstant: 16),
-
-            searchBtn.trailingAnchor.constraint(equalTo: searchContainer.trailingAnchor, constant: -12),
-            searchBtn.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
-
-            searchField.leadingAnchor.constraint(equalTo: magnifier.trailingAnchor, constant: 8),
-            searchField.trailingAnchor.constraint(equalTo: searchBtn.leadingAnchor, constant: -8),
-            searchField.centerYAnchor.constraint(equalTo: searchContainer.centerYAnchor),
-        ])
-    }
-
-    @objc private func searchTapped() {
-        searchKeyword = searchField.text?.trimmingCharacters(in: .whitespaces) ?? ""
-        view.endEditing(true)
-        applySearch()
     }
 
     // MARK: - 分类视图
@@ -263,39 +186,26 @@ class TemplateSelectorViewController: UIViewController {
             self?.loadTemplates(reset: true)
         }
         NSLayoutConstraint.activate([
-            categoryView.topAnchor.constraint(equalTo: searchContainer.bottomAnchor, constant: 10),
+            categoryView.topAnchor.constraint(equalTo: tabBar.bottomAnchor, constant: 10),
             categoryView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             categoryView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             categoryView.heightAnchor.constraint(equalToConstant: 40),
         ])
     }
 
-    // MARK: - 筛选栏
+    // MARK: - 筛选栏（FilterChipButton 样式与 TemplatesViewController 统一）
 
     private func setupFilterView() {
         filterView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(filterView)
 
-        styleBtn.setTitle("风格  ▾", for: .normal)
-        styleBtn.setTitleColor(.appTextSecondary, for: .normal)
-        styleBtn.titleLabel?.font = .systemFont(ofSize: 13)
-        styleBtn.addTarget(self, action: #selector(styleBtnTapped), for: .touchUpInside)
-        styleBtn.translatesAutoresizingMaskIntoConstraints = false
-        filterView.addSubview(styleBtn)
-
-        colorBtn.setTitle("颜色  ▾", for: .normal)
-        colorBtn.setTitleColor(.appTextSecondary, for: .normal)
-        colorBtn.titleLabel?.font = .systemFont(ofSize: 13)
-        colorBtn.addTarget(self, action: #selector(colorBtnTapped), for: .touchUpInside)
-        colorBtn.translatesAutoresizingMaskIntoConstraints = false
-        filterView.addSubview(colorBtn)
-
-        themeBtn.setTitle("贴合主题  ▾", for: .normal)
-        themeBtn.setTitleColor(.appTextSecondary, for: .normal)
-        themeBtn.titleLabel?.font = .systemFont(ofSize: 13)
-        themeBtn.addTarget(self, action: #selector(themeBtnTapped), for: .touchUpInside)
-        themeBtn.translatesAutoresizingMaskIntoConstraints = false
-        filterView.addSubview(themeBtn)
+        [styleFilterBtn, colorFilterBtn, themeFilterBtn].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            filterView.addSubview($0)
+        }
+        styleFilterBtn.addTarget(self, action: #selector(styleBtnTapped), for: .touchUpInside)
+        colorFilterBtn.addTarget(self, action: #selector(colorBtnTapped), for: .touchUpInside)
+        themeFilterBtn.addTarget(self, action: #selector(themeBtnTapped), for: .touchUpInside)
 
         NSLayoutConstraint.activate([
             filterView.topAnchor.constraint(equalTo: categoryView.bottomAnchor, constant: 4),
@@ -303,14 +213,14 @@ class TemplateSelectorViewController: UIViewController {
             filterView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             filterView.heightAnchor.constraint(equalToConstant: 44),
 
-            styleBtn.leadingAnchor.constraint(equalTo: filterView.leadingAnchor, constant: 16),
-            styleBtn.centerYAnchor.constraint(equalTo: filterView.centerYAnchor),
+            styleFilterBtn.leadingAnchor.constraint(equalTo: filterView.leadingAnchor, constant: 16),
+            styleFilterBtn.centerYAnchor.constraint(equalTo: filterView.centerYAnchor),
 
-            colorBtn.leadingAnchor.constraint(equalTo: styleBtn.trailingAnchor, constant: 12),
-            colorBtn.centerYAnchor.constraint(equalTo: filterView.centerYAnchor),
+            colorFilterBtn.leadingAnchor.constraint(equalTo: styleFilterBtn.trailingAnchor, constant: 8),
+            colorFilterBtn.centerYAnchor.constraint(equalTo: filterView.centerYAnchor),
 
-            themeBtn.trailingAnchor.constraint(equalTo: filterView.trailingAnchor, constant: -16),
-            themeBtn.centerYAnchor.constraint(equalTo: filterView.centerYAnchor),
+            themeFilterBtn.trailingAnchor.constraint(equalTo: filterView.trailingAnchor, constant: -16),
+            themeFilterBtn.centerYAnchor.constraint(equalTo: filterView.centerYAnchor),
         ])
     }
 
@@ -373,10 +283,10 @@ class TemplateSelectorViewController: UIViewController {
         sep.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(sep)
 
-        composeBtn.setTitle("合成PPT  →", for: .normal)
-        composeBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        composeBtn.setTitle("合成PPT", for: .normal)
+        composeBtn.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         composeBtn.setTitleColor(.white, for: .normal)
-        composeBtn.layer.cornerRadius = 22
+        composeBtn.layer.cornerRadius = 26
         composeBtn.clipsToBounds      = true
         composeBtn.addTarget(self, action: #selector(composeTapped), for: .touchUpInside)
         composeBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -405,12 +315,12 @@ class TemplateSelectorViewController: UIViewController {
             composeBtn.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
             composeBtn.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
             composeBtn.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16),
-            composeBtn.heightAnchor.constraint(equalToConstant: 50),
+            composeBtn.heightAnchor.constraint(equalToConstant: 56),
             composeBtn.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
         ])
     }
 
-    // MARK: - 空状态标签（"最近使用"tab）
+    // MARK: - 空状态标签（"最近使用" tab）
 
     private func setupEmptyLabel() {
         emptyLabel.text          = "暂无最近使用的模板"
@@ -470,19 +380,16 @@ class TemplateSelectorViewController: UIViewController {
                 self.allTemplates.append(contentsOf: newTemplates)
                 self.hasMore     = newTemplates.count >= 20
                 self.currentPage += 1
-                self.applySearch()
+                self.applySort()
             }
         }
     }
 
-    /// 对 allTemplates 应用搜索关键词和贴合主题排序，结果写入 filteredTemplates
-    private func applySearch() {
+    /// 对 allTemplates 应用"贴合主题"客户端排序（不需要 API）
+    private func applySort() {
         var result = allTemplates
-        if !searchKeyword.isEmpty {
-            result = result.filter { $0.subject.localizedCaseInsensitiveContains(searchKeyword) }
-        }
         if themeFirst {
-            // 从 markdown 第一行 "# 主题" 提取主题词
+            // 从 markdown 首行 "# 主题文字" 提取关键词，将匹配的模板排到前面
             let theme = markdown.components(separatedBy: "\n")
                 .first { $0.hasPrefix("# ") }
                 .map { String($0.dropFirst(2)).trimmingCharacters(in: .whitespaces) } ?? ""
@@ -505,7 +412,7 @@ class TemplateSelectorViewController: UIViewController {
         collectionView.hideSkeleton(reloadDataAfter: false, transition: .crossDissolve(0.25))
     }
 
-    // MARK: - 筛选器 Actions
+    // MARK: - 筛选 Actions
 
     @objc private func styleBtnTapped() {
         let options = styleOptions.map { $0.name }
@@ -515,9 +422,7 @@ class TemplateSelectorViewController: UIViewController {
             guard let self, index < self.styleOptions.count else { return }
             let sel = self.styleOptions[index]
             self.selectedStyle = sel.value
-            let title = sel.value.isEmpty ? "风格  ▾" : "\(sel.name)  ▾"
-            self.styleBtn.setTitle(title, for: .normal)
-            self.styleBtn.setTitleColor(sel.value.isEmpty ? .appTextSecondary : .appPrimary, for: .normal)
+            self.styleFilterBtn.setFilterTitle(sel.name, active: !sel.value.isEmpty)
             self.loadTemplates(reset: true)
         }
         present(picker, animated: false)
@@ -533,20 +438,17 @@ class TemplateSelectorViewController: UIViewController {
             guard let self, index < self.colorOptions.count else { return }
             let sel = self.colorOptions[index]
             self.selectedColor = sel.value
-            let title = sel.value.isEmpty ? "颜色  ▾" : "\(sel.name)  ▾"
-            self.colorBtn.setTitle(title, for: .normal)
-            self.colorBtn.setTitleColor(sel.value.isEmpty ? .appTextSecondary : .appPrimary, for: .normal)
+            self.colorFilterBtn.setFilterTitle(sel.name, active: !sel.value.isEmpty)
             self.loadTemplates(reset: true)
         }
         present(picker, animated: false)
     }
 
+    /// 贴合主题：纯客户端排序，将 subject 包含大纲主题词的模板排到前面
     @objc private func themeBtnTapped() {
         themeFirst.toggle()
-        let title = themeFirst ? "贴合主题  ✓" : "贴合主题  ▾"
-        themeBtn.setTitle(title, for: .normal)
-        themeBtn.setTitleColor(themeFirst ? .appPrimary : .appTextSecondary, for: .normal)
-        applySearch()
+        themeFilterBtn.setFilterTitle("贴合主题", active: themeFirst)
+        applySort()
     }
 
     // MARK: - 合成PPT
@@ -604,7 +506,7 @@ class TemplateSelectorViewController: UIViewController {
             ])
         } else {
             composeBtn.subviews.first(where: { $0.tag == 888 })?.removeFromSuperview()
-            composeBtn.setTitle("合成PPT  →", for: .normal)
+            composeBtn.setTitle("合成PPT", for: .normal)
         }
     }
 }
@@ -655,11 +557,9 @@ extension TemplateSelectorViewController: UICollectionViewDelegate {
 
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
-        let prev     = selectedTemplate
-        let tapped   = filteredTemplates[indexPath.item]
-        selectedTemplate = tapped
+        let prev   = selectedTemplate
+        selectedTemplate = filteredTemplates[indexPath.item]
 
-        // 仅刷新受影响的两个 cell，避免全量 reloadData 闪烁
         var paths = [indexPath]
         if let prevId  = prev?.id,
            let prevIdx = filteredTemplates.firstIndex(where: { $0.id == prevId }) {
@@ -676,21 +576,12 @@ extension TemplateSelectorViewController: UICollectionViewDelegate {
     }
 }
 
-// MARK: - UITextFieldDelegate
-
-extension TemplateSelectorViewController: UITextFieldDelegate {
-    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-        searchTapped(); return true
-    }
-}
-
 // MARK: - Footer
 
 private class SelectorFooterView: UICollectionReusableView {
 
     static let reuseID = "SelectorFooterView"
-
-    private let label = UILabel()
+    private let label  = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -706,6 +597,5 @@ private class SelectorFooterView: UICollectionReusableView {
     }
 
     required init?(coder: NSCoder) { fatalError() }
-
     func configure(showEnd: Bool) { label.text = showEnd ? "— 到底了 —" : nil }
 }
