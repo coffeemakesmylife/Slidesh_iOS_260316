@@ -21,6 +21,8 @@ class PPTPreviewViewController: UIViewController {
     private let bottomBar  = UIView()
     private let shareBtn   = UIButton(type: .custom)
     private var shareGrad: CAGradientLayer?
+    private var downloadTask: URLSessionDownloadTask?
+    private let downloadIndicator = UIActivityIndicatorView(style: .medium)
 
     // MARK: - Init
 
@@ -115,6 +117,16 @@ class PPTPreviewViewController: UIViewController {
         grad.cornerRadius = 26
         shareBtn.layer.insertSublayer(grad, at: 0)
         shareGrad = grad
+
+        // 下载 loading 指示器，叠加在按钮中央
+        downloadIndicator.color = .white
+        downloadIndicator.hidesWhenStopped = true
+        downloadIndicator.translatesAutoresizingMaskIntoConstraints = false
+        bottomBar.addSubview(downloadIndicator)
+        NSLayoutConstraint.activate([
+            downloadIndicator.centerXAnchor.constraint(equalTo: shareBtn.centerXAnchor),
+            downloadIndicator.centerYAnchor.constraint(equalTo: shareBtn.centerYAnchor),
+        ])
     }
 
     // MARK: - WebView
@@ -215,9 +227,45 @@ class PPTPreviewViewController: UIViewController {
     @objc private func shareTapped() {
         guard let rawUrl = pptInfo.fileUrl, !rawUrl.isEmpty,
               let url = URL(string: rawUrl) else { return }
-        let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
-        vc.popoverPresentationController?.sourceView = shareBtn
-        present(vc, animated: true)
+        // 已在下载中则忽略重复点击
+        guard downloadTask == nil else { return }
+
+        shareBtn.setTitle("", for: .normal)
+        downloadIndicator.startAnimating()
+        shareBtn.isEnabled = false
+
+        downloadTask = URLSession.shared.downloadTask(with: url) { [weak self] tempUrl, _, error in
+            guard let self else { return }
+            DispatchQueue.main.async {
+                self.downloadTask = nil
+                self.downloadIndicator.stopAnimating()
+                self.shareBtn.setTitle("下载 / 分享", for: .normal)
+                self.shareBtn.isEnabled = true
+            }
+            if let error {
+                DispatchQueue.main.async {
+                    let alert = UIAlertController(title: "下载失败",
+                                                  message: error.localizedDescription,
+                                                  preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: "确定", style: .default))
+                    self.present(alert, animated: true)
+                }
+                return
+            }
+            guard let tempUrl else { return }
+            // 将临时文件移动到 Documents，保留原始文件名
+            let fileName = url.lastPathComponent.isEmpty ? "presentation.pptx" : url.lastPathComponent
+            let destUrl  = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+                .appendingPathComponent(fileName)
+            try? FileManager.default.removeItem(at: destUrl)
+            try? FileManager.default.moveItem(at: tempUrl, to: destUrl)
+            DispatchQueue.main.async {
+                let vc = UIActivityViewController(activityItems: [destUrl], applicationActivities: nil)
+                vc.popoverPresentationController?.sourceView = self.shareBtn
+                self.present(vc, animated: true)
+            }
+        }
+        downloadTask?.resume()
     }
 }
 
