@@ -152,6 +152,7 @@ class OutlineViewController: UIViewController {
         super.viewDidLoad()
         title = "大纲生成"
         view.backgroundColor = .systemGroupedBackground
+        addMeshGradientBackground()
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "chevron.left"), style: .plain,
             target: self, action: #selector(backTapped))
@@ -196,7 +197,7 @@ class OutlineViewController: UIViewController {
         spinner.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(spinner)
 
-        spinnerLabel.text      = "大纲生成中..."
+        spinnerLabel.text      = "大纲生成中，请不要退出..."
         spinnerLabel.font      = .systemFont(ofSize: 13)
         spinnerLabel.textColor = .secondaryLabel
         spinnerLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -333,7 +334,7 @@ class OutlineViewController: UIViewController {
         tableView.delegate       = self
         tableView.isHidden       = true
         tableView.alpha          = 0
-        tableView.backgroundColor = .systemGroupedBackground
+        tableView.backgroundColor = .clear
         tableView.separatorStyle  = .none
         tableView.register(OutlineHeaderCell.self,  forCellReuseIdentifier: OutlineHeaderCell.reuseID)
         tableView.register(OutlineBulletCell.self,  forCellReuseIdentifier: OutlineBulletCell.reuseID)
@@ -642,7 +643,7 @@ class OutlineViewController: UIViewController {
         spinner.alpha             = 1
         spinner.startAnimating()
         spinnerLabel.isHidden  = false
-        spinnerLabel.text      = "大纲生成中..."
+        spinnerLabel.text      = "大纲生成中，请不要退出..."
         tableView.isHidden     = true
         tableView.alpha        = 0
         bottomBar.isHidden     = true
