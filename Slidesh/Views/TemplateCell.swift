@@ -114,6 +114,14 @@ class TemplateCell: UICollectionViewCell {
 
     // MARK: - 公开接口
 
+    /// 控制选中边框高亮，供 TemplateSelectorViewController 在 didSelectItem 时调用
+    func setSelectedState(_ selected: Bool) {
+        contentView.layer.borderColor = selected
+            ? UIColor.appPrimary.cgColor
+            : UIColor.clear.cgColor
+        contentView.layer.borderWidth = selected ? 2 : 0
+    }
+
     func configure(with model: PPTTemplate, mode: LayoutMode) {
         nameLabel.text = model.subject
         descLabel.text = "\(model.num) 页"
@@ -142,6 +150,7 @@ class TemplateCell: UICollectionViewCell {
         previewImageView.hideSkeleton()
         previewImageView.image = nil
         applyMode(.grid)
+        setSelectedState(false)
     }
 
     // MARK: - 模式切换

@@ -99,6 +99,76 @@ class PPTAPIService {
         return task
     }
 
+    /// 同步用户编辑后的大纲到服务端（SSE），onComplete 返回完整 markdown，回调在主线程
+    @discardableResult
+    func updateContent(
+        taskId:     String,
+        markdown:   String,
+        question:   String?  = nil,
+        onComplete: @escaping (String) -> Void,
+        onError:    @escaping (Error)  -> Void
+    ) -> URLSessionDataTask {
+        let uuid = AppDelegate.getCurrentUserId() ?? "temp"
+        var body: [String: Any] = [
+            "taskId":   taskId,
+            "markdown": markdown,
+            "appId":    appId,
+            "uuid":     uuid,
+        ]
+        if let q = question, !q.isEmpty { body["question"] = q }
+
+        guard let url      = URL(string: baseURL + "/v1/api/ai/ppt/v2/updateContent"),
+              let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            DispatchQueue.main.async { onError(APIError.invalidURL) }
+            return URLSession.shared.dataTask(with: URLRequest(url: URL(string: "about:blank")!))
+        }
+        var request = URLRequest(url: url, timeoutInterval: 120)
+        request.httpMethod = "POST"
+        request.setValue("application/json",  forHTTPHeaderField: "Content-Type")
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+        request.httpBody = bodyData
+
+        let decrypt: (String) -> String? = { [weak self] encrypted in
+            guard let self else { return nil }
+            let decoded = encrypted.removingPercentEncoding ?? encrypted
+            return RSAHelper.decryptString(decoded, publicKey: self.publicKey)
+        }
+        // chunk 丢弃，仅关注完成事件
+        let delegate = SSEDelegate(decrypt: decrypt, onChunk: { _ in }, onComplete: onComplete, onError: onError)
+        let session  = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+        let task     = session.dataTask(with: request)
+        task.resume()
+        return task
+    }
+
+    /// 生成 PPT 文件，taskId + templateId + markdown → pptId，回调在主线程
+    func generatePptx(
+        taskId:     String,
+        templateId: String,
+        markdown:   String,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        let uuid = AppDelegate.getCurrentUserId() ?? "temp"
+        let body: [String: Any] = [
+            "taskId":     taskId,
+            "templateId": templateId,
+            "markdown":   markdown,
+            "appId":      appId,
+            "uuid":       uuid,
+        ]
+        postJSON(path: "/v1/api/ai/ppt/v2/generatePptx", body: body) { result in
+            switch result {
+            case .success(let raw):
+                let pptId = (raw as? String)
+                    ?? ((raw as? [String: Any])?["pptId"] as? String)
+                    ?? ""
+                completion(.success(pptId))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
     /// 获取筛选选项（分类 / 风格 / 颜色），回调在主线程
     func fetchOptions(completion: @escaping (Result<[PPTOption], Error>) -> Void) {
         post(path: "/v1/api/ai/ppt/templates-options",
@@ -160,6 +230,41 @@ class PPTAPIService {
             .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? $0.value)" }
             .joined(separator: "&")
             .data(using: .utf8)
+
+        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
+            if let error {
+                DispatchQueue.main.async { completion(.failure(error)) }
+                return
+            }
+            guard let data, let self else {
+                DispatchQueue.main.async { completion(.failure(APIError.noData)) }
+                return
+            }
+            if let decrypted = self.decryptResponse(data) {
+                DispatchQueue.main.async { completion(.success(decrypted)) }
+            } else {
+                DispatchQueue.main.async { completion(.failure(APIError.decryptFailed)) }
+            }
+        }.resume()
+    }
+
+    // MARK: - 私有：JSON body POST
+
+    /// JSON body 的通用 POST，解密逻辑与 post() 一致
+    private func postJSON(
+        path:       String,
+        body:       [String: Any],
+        completion: @escaping (Result<Any, Error>) -> Void
+    ) {
+        guard let url      = URL(string: baseURL + path),
+              let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
+            DispatchQueue.main.async { completion(.failure(APIError.invalidURL)) }
+            return
+        }
+        var request = URLRequest(url: url, timeoutInterval: 60)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = bodyData
 
         URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
             if let error {

@@ -97,7 +97,8 @@ class OutlineViewController: UIViewController {
 
     // 状态
     private var accumulatedMarkdown = ""
-    private var sseTask: URLSessionDataTask?
+    private var sseTask:    URLSessionDataTask?
+    private var updateTask: URLSessionDataTask?  // updateContent SSE 任务句柄
     private var sections: [OutlineSection] = []
     private var activeIndexPath: IndexPath?   // 当前正在编辑的 cell 位置（用于键盘滚动）
 
@@ -663,12 +664,158 @@ class OutlineViewController: UIViewController {
         startSSE()
     }
 
-    @objc private func downloadTapped() {
-        // TODO: 下载大纲功能
+    // MARK: - 从 sections 重建 markdown
+
+    /// 提交当前编辑，并从 sections 重建 markdown（跳过 .toc，由 AI 自动生成）
+    func reconstructMarkdown() -> String {
+        view.endEditing(true)
+        var md = ""
+        for section in sections {
+            switch section.kind {
+            case .toc: continue
+            case .theme:
+                md += "# \(section.title)\n\n"
+            case .chapter:
+                md += "## \(section.title)\n"
+                for bullet in section.bullets {
+                    switch bullet.level {
+                    case .h3:   md += "### \(bullet.text)\n"
+                    case .h4:   md += "#### \(bullet.text)\n"
+                    case .body: md += "\(bullet.text)\n"
+                    }
+                }
+                md += "\n"
+            }
+        }
+        return md
     }
 
+    // MARK: - 下载大纲
+
+    @objc private func downloadTapped() {
+        let sheet = UIAlertController(title: "下载大纲", message: "选择导出格式", preferredStyle: .actionSheet)
+        sheet.addAction(UIAlertAction(title: "Markdown 格式 (.md)", style: .default) { [weak self] _ in
+            self?.exportMarkdown()
+        })
+        sheet.addAction(UIAlertAction(title: "纯文本格式 (.txt)", style: .default) { [weak self] _ in
+            self?.exportPlainText()
+        })
+        sheet.addAction(UIAlertAction(title: "取消", style: .cancel))
+        // iPad 必须设置 sourceView，否则 ActionSheet 崩溃
+        if let popover = sheet.popoverPresentationController {
+            popover.sourceView = bottomBar
+            popover.sourceRect = bottomBar.bounds
+        }
+        present(sheet, animated: true)
+    }
+
+    private func exportMarkdown() {
+        let md       = reconstructMarkdown()
+        let fileName = "outline_\(taskId).md"
+        let tmpURL   = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try md.write(to: tmpURL, atomically: true, encoding: .utf8)
+        } catch {
+            showExportError(error); return
+        }
+        let vc = UIActivityViewController(activityItems: [tmpURL], applicationActivities: nil)
+        vc.popoverPresentationController?.sourceView = bottomBar
+        present(vc, animated: true)
+    }
+
+    private func exportPlainText() {
+        var lines: [String] = []
+        for section in sections {
+            switch section.kind {
+            case .theme:
+                lines.append("【\(section.title)】\n")
+            case .toc:
+                lines.append("目录：")
+                section.bullets.forEach { lines.append("  \($0.text)") }
+                lines.append("")
+            case .chapter:
+                lines.append("\n▌ \(section.title)")
+                for bullet in section.bullets {
+                    switch bullet.level {
+                    case .h3:   lines.append("  • \(bullet.text)")
+                    case .h4:   lines.append("    ○ \(bullet.text)")
+                    case .body: lines.append("      \(bullet.text)")
+                    }
+                }
+            }
+        }
+        let text     = lines.joined(separator: "\n")
+        let fileName = "outline_\(taskId).txt"
+        let tmpURL   = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try text.write(to: tmpURL, atomically: true, encoding: .utf8)
+        } catch {
+            showExportError(error); return
+        }
+        let vc = UIActivityViewController(activityItems: [tmpURL], applicationActivities: nil)
+        vc.popoverPresentationController?.sourceView = bottomBar
+        present(vc, animated: true)
+    }
+
+    private func showExportError(_ error: Error) {
+        let alert = UIAlertController(title: "导出失败", message: error.localizedDescription, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        present(alert, animated: true)
+    }
+
+    // MARK: - 挑选 PPT 模板
+
     @objc private func templateTapped() {
-        // TODO: 跳转模板选择页
+        guard !sections.isEmpty else { return }
+
+        let currentMarkdown = reconstructMarkdown()
+        setTemplateBtnLoading(true)
+
+        // 先将当前编辑同步到服务端，再弹出模板选择器
+        updateTask = PPTAPIService.shared.updateContent(
+            taskId:   taskId,
+            markdown: currentMarkdown
+        ) { [weak self] updatedMarkdown in
+            guard let self else { return }
+            self.accumulatedMarkdown = updatedMarkdown
+            self.setTemplateBtnLoading(false)
+            self.presentTemplateSelector()
+        } onError: { [weak self] _ in
+            // 同步失败不阻断用户流程，使用本地 markdown
+            guard let self else { return }
+            self.setTemplateBtnLoading(false)
+            self.presentTemplateSelector()
+        }
+    }
+
+    private func setTemplateBtnLoading(_ loading: Bool) {
+        templateBtn.isEnabled = !loading
+        if loading {
+            templateBtn.setTitle("", for: .normal)
+            let s = UIActivityIndicatorView(style: .medium)
+            s.color = .white
+            s.tag   = 999
+            s.startAnimating()
+            s.translatesAutoresizingMaskIntoConstraints = false
+            templateBtn.addSubview(s)
+            NSLayoutConstraint.activate([
+                s.centerXAnchor.constraint(equalTo: templateBtn.centerXAnchor),
+                s.centerYAnchor.constraint(equalTo: templateBtn.centerYAnchor),
+            ])
+        } else {
+            templateBtn.subviews.first(where: { $0.tag == 999 })?.removeFromSuperview()
+            templateBtn.setTitle("挑选PPT模板  →", for: .normal)
+        }
+    }
+
+    private func presentTemplateSelector() {
+        let selector = TemplateSelectorViewController(
+            taskId:   taskId,
+            markdown: accumulatedMarkdown
+        )
+        let nav = UINavigationController(rootViewController: selector)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
     }
 }
 
@@ -689,12 +836,25 @@ extension OutlineViewController: UITableViewDataSource, UITableViewDelegate {
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: OutlineHeaderCell.reuseID, for: indexPath) as! OutlineHeaderCell
             cell.configure(tag: sec.tagLabel, title: sec.title)
+            // 将标题编辑写回 sections
+            cell.onTitleChanged = { [weak self] text in
+                guard let self, indexPath.section < self.sections.count else { return }
+                self.sections[indexPath.section].title = text
+            }
             return cell
         }
         let bullet = sec.bullets[indexPath.row - 1]
         let cell = tableView.dequeueReusableCell(
             withIdentifier: OutlineBulletCell.reuseID, for: indexPath) as! OutlineBulletCell
         cell.configure(with: bullet)
+        // 将条目编辑写回 sections（回调已去除前缀）
+        cell.onTextChanged = { [weak self] text in
+            guard let self,
+                  indexPath.section < self.sections.count,
+                  indexPath.row - 1 < self.sections[indexPath.section].bullets.count
+            else { return }
+            self.sections[indexPath.section].bullets[indexPath.row - 1].text = text
+        }
         return cell
     }
 
@@ -720,6 +880,8 @@ extension OutlineViewController: UITableViewDataSource, UITableViewDelegate {
 private class OutlineHeaderCell: UITableViewCell {
     static let reuseID = "OutlineHeaderCell"
 
+    var onTitleChanged: ((String) -> Void)?  // 标题编辑回调
+
     private let badgeLabel = UILabel()
     private let badgeBg    = UIView()
     private let titleView  = UITextView()
@@ -728,6 +890,7 @@ private class OutlineHeaderCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
         backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        titleView.delegate = self
 
         // Badge 背景（chip 专用色，深浅色模式下均可读）
         badgeBg.backgroundColor    = .appChipUnselectedBackground
@@ -775,6 +938,7 @@ private class OutlineHeaderCell: UITableViewCell {
     required init?(coder: NSCoder) { fatalError() }
 
     func configure(tag: String, title: String) {
+        onTitleChanged = nil
         badgeLabel.text = tag
         titleView.text  = title
     }
@@ -782,10 +946,19 @@ private class OutlineHeaderCell: UITableViewCell {
     func beginEditing() { titleView.becomeFirstResponder() }
 }
 
+extension OutlineHeaderCell: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        onTitleChanged?(textView.text ?? "")
+    }
+}
+
 // MARK: - OutlineBulletCell（可编辑子条目）
 
 private class OutlineBulletCell: UITableViewCell {
     static let reuseID = "OutlineBulletCell"
+
+    var onTextChanged: ((String) -> Void)?  // 条目编辑回调（已去除前缀）
+    private var currentLevel: OutlineBullet.Level = .h3
 
     private let textView = UITextView()
 
@@ -793,6 +966,7 @@ private class OutlineBulletCell: UITableViewCell {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
         backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+        textView.delegate = self
 
         textView.isScrollEnabled              = false
         // textContainerInset top=8 作为 cell 内上边距，bottom=0 去除 UITextView 自带底部空白
@@ -813,6 +987,8 @@ private class OutlineBulletCell: UITableViewCell {
     required init?(coder: NSCoder) { fatalError() }
 
     func configure(with bullet: OutlineBullet) {
+        onTextChanged  = nil
+        currentLevel   = bullet.level
         let (prefix, font, color, indent) = style(for: bullet.level)
         let ps = NSMutableParagraphStyle()
         ps.firstLineHeadIndent = indent
@@ -827,10 +1003,26 @@ private class OutlineBulletCell: UITableViewCell {
     func beginEditing() { textView.becomeFirstResponder() }
 
     private func style(for level: OutlineBullet.Level) -> (String, UIFont, UIColor, CGFloat) {
+        // 注意：此处同时是前缀去除的依据，修改前缀需同步更新 textViewDidChange
         switch level {
         case .h3:   return ("• ",  .boldSystemFont(ofSize: 14),  .appTextPrimary,   0)
         case .h4:   return ("○ ",  .systemFont(ofSize: 13),      .appTextPrimary,   16)
         case .body: return ("",    .systemFont(ofSize: 12),      .appTextSecondary, 32)
         }
+    }
+}
+
+extension OutlineBulletCell: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        // 去除 configure 时附加的前缀，只回传纯内容
+        let prefix: String
+        switch currentLevel {
+        case .h3:   prefix = "• "
+        case .h4:   prefix = "○ "
+        case .body: prefix = ""
+        }
+        let text     = textView.text ?? ""
+        let stripped = text.hasPrefix(prefix) ? String(text.dropFirst(prefix.count)) : text
+        onTextChanged?(stripped)
     }
 }

@@ -401,7 +401,7 @@ class TemplatesViewController: UIViewController {
     }
 
     /// 根据 API 返回的颜色 value 值映射为 UIColor，空字符串（全部）返回 nil
-    private static func uiColor(forValue value: String) -> UIColor? {
+    static func uiColor(forValue value: String) -> UIColor? {
         switch value.lowercased() {
         case "":        return nil
         case "orange":  return UIColor(red: 0.98, green: 0.55, blue: 0.12, alpha: 1)
