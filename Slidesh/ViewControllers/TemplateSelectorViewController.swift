@@ -33,9 +33,12 @@ class TemplateSelectorViewController: UIViewController {
     private var styleOptions:    [(name: String, value: String)] = [("全部风格", "")]
     private var colorOptions:    [(name: String, value: String)] = [("全部颜色", "")]
 
-    // MARK: - Segment 控件（系统 UISegmentedControl）
+    // MARK: - 导航栏自定义 Tab（下划线样式，嵌入 titleView）
 
-    private let segmentControl = UISegmentedControl(items: ["模板中心", "最近使用"])
+    private let tabCenter    = UIButton(type: .system)
+    private let tabRecent    = UIButton(type: .system)
+    private let tabIndicator = UIView()
+    private var indicatorCenterX: NSLayoutConstraint!
 
     // MARK: - 分类 + 筛选（使用与 TemplatesViewController 统一的 FilterChipButton）
 
@@ -96,16 +99,58 @@ class TemplateSelectorViewController: UIViewController {
     // MARK: - 导航栏
 
     private func setupNavBar() {
-        // 系统 chevron.left 关闭按钮（dismiss 整个模态流程）
+        // 系统 chevron.left 关闭按钮
         navigationItem.leftBarButtonItem = UIBarButtonItem(
             image: UIImage(systemName: "chevron.left"),
             style: .plain, target: self, action: #selector(closeTapped))
         navigationItem.leftBarButtonItem?.tintColor = .appTextPrimary
 
-        // UISegmentedControl 作为 titleView，系统原生样式
-        segmentControl.selectedSegmentIndex = 0
-        segmentControl.addTarget(self, action: #selector(segmentChanged(_:)), for: .valueChanged)
-        navigationItem.titleView = segmentControl
+        // 自定义 titleView：两个 tab 按钮 + 下划线指示器
+        let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        [tabCenter, tabRecent].forEach {
+            $0.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview($0)
+        }
+        tabCenter.setTitle("模板中心", for: .normal)
+        tabCenter.setTitleColor(.appPrimary, for: .normal)
+        tabCenter.addTarget(self, action: #selector(tabTapped(_:)), for: .touchUpInside)
+        tabCenter.tag = 0
+
+        tabRecent.setTitle("最近使用", for: .normal)
+        tabRecent.setTitleColor(.appTextSecondary, for: .normal)
+        tabRecent.addTarget(self, action: #selector(tabTapped(_:)), for: .touchUpInside)
+        tabRecent.tag = 1
+
+        tabIndicator.backgroundColor    = .appPrimary
+        tabIndicator.layer.cornerRadius = 1.5
+        tabIndicator.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(tabIndicator)
+
+        indicatorCenterX = tabIndicator.centerXAnchor.constraint(equalTo: tabCenter.centerXAnchor)
+        NSLayoutConstraint.activate([
+            container.widthAnchor.constraint(equalToConstant: 200),
+            container.heightAnchor.constraint(equalToConstant: 36),
+
+            tabCenter.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            tabCenter.topAnchor.constraint(equalTo: container.topAnchor),
+            tabCenter.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            tabCenter.widthAnchor.constraint(equalToConstant: 96),
+
+            tabRecent.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            tabRecent.topAnchor.constraint(equalTo: container.topAnchor),
+            tabRecent.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            tabRecent.widthAnchor.constraint(equalToConstant: 96),
+
+            tabIndicator.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            indicatorCenterX,
+            tabIndicator.widthAnchor.constraint(equalToConstant: 28),
+            tabIndicator.heightAnchor.constraint(equalToConstant: 3),
+        ])
+
+        navigationItem.titleView = container
 
         let appearance = UINavigationBarAppearance()
         appearance.configureWithTransparentBackground()
@@ -115,8 +160,17 @@ class TemplateSelectorViewController: UIViewController {
 
     @objc private func closeTapped() { dismiss(animated: true) }
 
-    @objc private func segmentChanged(_ sender: UISegmentedControl) {
-        let isCenter = sender.selectedSegmentIndex == 0
+    @objc private func tabTapped(_ sender: UIButton) {
+        let isCenter = sender.tag == 0
+        tabCenter.setTitleColor(isCenter ? .appPrimary : .appTextSecondary, for: .normal)
+        tabRecent.setTitleColor(isCenter ? .appTextSecondary : .appPrimary, for: .normal)
+
+        indicatorCenterX.isActive = false
+        indicatorCenterX = tabIndicator.centerXAnchor.constraint(
+            equalTo: isCenter ? tabCenter.centerXAnchor : tabRecent.centerXAnchor)
+        indicatorCenterX.isActive = true
+        UIView.animate(withDuration: 0.2) { self.navigationItem.titleView?.layoutIfNeeded() }
+
         collectionView.isHidden = !isCenter
         emptyLabel.isHidden     = isCenter
     }
