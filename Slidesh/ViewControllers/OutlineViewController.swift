@@ -118,9 +118,10 @@ class OutlineViewController: UIViewController {
     private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     // 底部工具栏
-    private let bottomBar   = UIView()
-    private let templateBtn = UIButton(type: .custom)
+    private let bottomBar    = UIView()
+    private let templateBtn  = UIButton(type: .custom)
     private var templateGrad: CAGradientLayer?
+    private var bottomGradLayer: CAGradientLayer?  // 渐变淡入遮罩
 
     init(taskId:   String, subject:  String,
          language: String, length:   String,
@@ -160,9 +161,11 @@ class OutlineViewController: UIViewController {
             target: self, action: #selector(backTapped))
         hidesBottomBarWhenPushed = true
 
-        setupBottomBar()  // 先布局底部栏，tableView 绑定其顶部
+        setupBottomBar()
         setupStreamView()
         setupTableView()
+        // bottomBar 渐变叠加在 tableView/streamScrollView 上方，需要最后提升 z-order
+        view.bringSubviewToFront(bottomBar)
         setupKeyboardDismiss()
         setupKeyboardHandling()
         startSSE()
@@ -179,7 +182,8 @@ class OutlineViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        templateGrad?.frame = templateBtn.bounds
+        templateGrad?.frame   = templateBtn.bounds
+        bottomGradLayer?.frame = bottomBar.bounds
     }
 
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -190,6 +194,8 @@ class OutlineViewController: UIViewController {
         if !streamScrollView.isHidden {
             streamLabel.attributedText = renderMarkdown(accumulatedMarkdown)
         }
+        // CAGradientLayer 的 cgColor 不自动跟随 trait，需手动刷新
+        updateBottomGradColors()
     }
 
     // MARK: - 布局
@@ -240,15 +246,17 @@ class OutlineViewController: UIViewController {
     }
 
     private func setupBottomBar() {
-        bottomBar.backgroundColor = .appCardBackground
+        // 透明容器，通过渐变层实现自然淡入效果，无实体背景和分割线
+        bottomBar.backgroundColor = .clear
         bottomBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bottomBar)
 
-        // 顶部分割线
-        let sep = UIView()
-        sep.backgroundColor = .separator
-        sep.translatesAutoresizingMaskIntoConstraints = false
-        bottomBar.addSubview(sep)
+        let gradBg = CAGradientLayer()
+        gradBg.startPoint = CGPoint(x: 0.5, y: 0)
+        gradBg.endPoint   = CGPoint(x: 0.5, y: 1)
+        bottomBar.layer.insertSublayer(gradBg, at: 0)
+        bottomGradLayer = gradBg
+        updateBottomGradColors()
 
         // edit-fill 图标 + hint
         let checkImg = UIImageView(image: UIImage(named: "edit-fill")?.withRenderingMode(.alwaysTemplate))
@@ -295,11 +303,6 @@ class OutlineViewController: UIViewController {
             bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            sep.topAnchor.constraint(equalTo: bottomBar.topAnchor),
-            sep.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor),
-            sep.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor),
-            sep.heightAnchor.constraint(equalToConstant: 0.5),
-
             checkImg.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 10),
             checkImg.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
             checkImg.widthAnchor.constraint(equalToConstant: 14),
@@ -323,6 +326,15 @@ class OutlineViewController: UIViewController {
             templateBtn.leadingAnchor.constraint(greaterThanOrEqualTo: dlBtn.trailingAnchor, constant: 12),
             templateBtn.widthAnchor.constraint(greaterThanOrEqualToConstant: 150),
         ])
+    }
+
+    /// 根据当前 trait 更新渐变遮罩颜色（深浅色模式切换时调用）
+    private func updateBottomGradColors() {
+        let bg = UIColor.systemGroupedBackground
+        bottomGradLayer?.colors   = [bg.withAlphaComponent(0).cgColor,
+                                     bg.withAlphaComponent(0.92).cgColor,
+                                     bg.cgColor]
+        bottomGradLayer?.locations = [0, 0.45, 1]
     }
 
     @discardableResult
@@ -355,11 +367,13 @@ class OutlineViewController: UIViewController {
         tableView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(tableView)
 
+        // 延伸到屏幕底部，bottomBar 以透明渐变叠加其上
+        tableView.contentInset.bottom = 120
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 
