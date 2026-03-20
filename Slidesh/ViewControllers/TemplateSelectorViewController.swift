@@ -336,22 +336,51 @@ class TemplateSelectorViewController: UIViewController {
         ])
     }
 
-    // MARK: - API：筛选选项
+    // MARK: - 缓存 Key
+
+    private func currentCacheKey() -> String {
+        TemplateCache.templatesKey(
+            category: selectedCategory,
+            style:    selectedStyle,
+            color:    selectedColor,
+            page:     1)
+    }
+
+    // MARK: - API：筛选选项（带缓存）
 
     private func loadFilterOptions() {
-        PPTAPIService.shared.fetchOptions { [weak self] result in
-            guard let self, case .success(let options) = result else { return }
-            let categories = options.filter { $0.type.lowercased() == "category" }
-            let styles     = options.filter { $0.type.lowercased() == "style" }
-            let colors     = options.filter { $0.type.lowercased() == "themecolor" }
-            self.categoryOptions = [("全部场景", "")] + categories.map { ($0.name, $0.value) }
-            self.styleOptions    = [("全部风格", "")] + styles.map    { ($0.name, $0.value) }
-            self.colorOptions    = [("全部颜色", "")] + colors.map    { ($0.name, $0.value) }
-            self.categoryView.configure(with: self.categoryOptions)
+        let key = TemplateCache.optionsKey()
+        switch TemplateCache.shared.fetchOptions(key: key) {
+        case .fresh(let data):
+            if let options = data as? [PPTOption] { applyFilterOptions(options) }
+            if TemplateCache.shared.isAging(key: key) { fetchAndCacheOptions(key: key) }
+        case .stale(let data):
+            if let options = data as? [PPTOption] { applyFilterOptions(options) }
+            fetchAndCacheOptions(key: key)
+        case .miss:
+            fetchAndCacheOptions(key: key)
         }
     }
 
-    // MARK: - API：分页加载模板
+    private func applyFilterOptions(_ options: [PPTOption]) {
+        let categories = options.filter { $0.type.lowercased() == "category" }
+        let styles     = options.filter { $0.type.lowercased() == "style" }
+        let colors     = options.filter { $0.type.lowercased() == "themecolor" }
+        categoryOptions = [("全部场景", "")] + categories.map { ($0.name, $0.value) }
+        styleOptions    = [("全部风格", "")] + styles.map    { ($0.name, $0.value) }
+        colorOptions    = [("全部颜色", "")] + colors.map    { ($0.name, $0.value) }
+        categoryView.configure(with: categoryOptions)
+    }
+
+    private func fetchAndCacheOptions(key: String) {
+        PPTAPIService.shared.fetchOptions { [weak self] result in
+            guard let self, case .success(let options) = result else { return }
+            TemplateCache.shared.storeOptions(key: key, options: options)
+            self.applyFilterOptions(options)
+        }
+    }
+
+    // MARK: - API：分页加载模板（带缓存，stale-while-revalidate）
 
     private func loadTemplates(reset: Bool) {
         if reset {
@@ -361,25 +390,99 @@ class TemplateSelectorViewController: UIViewController {
             allTemplates      = []
             filteredTemplates = []
             hasMore           = true
-            showSkeleton()
         }
         guard !isLoading, (reset || hasMore) else { return }
-        isLoading = true
-        let gen = loadGeneration
 
-        PPTAPIService.shared.fetchTemplates(
-            category:   selectedCategory.isEmpty ? nil : selectedCategory,
-            style:      selectedStyle.isEmpty    ? nil : selectedStyle,
-            themeColor: selectedColor.isEmpty    ? nil : selectedColor,
-            page:       currentPage
-        ) { [weak self] result in
-            guard let self, self.loadGeneration == gen else { return }
-            self.isLoading = false
-            self.hideSkeleton()
-            if case .success(let newTemplates) = result {
-                self.allTemplates.append(contentsOf: newTemplates)
-                self.hasMore     = newTemplates.count >= 20
-                self.currentPage += 1
+        if reset {
+            showSkeleton()
+            let key        = currentCacheKey()
+            let generation = loadGeneration
+
+            switch TemplateCache.shared.fetchTemplates(key: key) {
+            case .fresh(let data):
+                guard let cached = data as? [PPTTemplate] else { break }
+                hideSkeleton()
+                allTemplates = cached
+                hasMore      = cached.count >= 20
+                currentPage  = 2
+                applySort()
+                if TemplateCache.shared.isAging(key: key) {
+                    scheduleBackgroundRefresh(for: key)
+                }
+                return
+            case .stale(let data):
+                guard let cached = data as? [PPTTemplate] else { break }
+                hideSkeleton()
+                allTemplates = cached
+                hasMore      = cached.count >= 20
+                currentPage  = 2
+                applySort()
+                scheduleBackgroundRefresh(for: key)
+                return
+            case .miss:
+                break
+            }
+
+            // 缓存未命中：发起网络请求
+            isLoading = true
+            PPTAPIService.shared.fetchTemplates(
+                category:   selectedCategory.isEmpty ? nil : selectedCategory,
+                style:      selectedStyle.isEmpty    ? nil : selectedStyle,
+                themeColor: selectedColor.isEmpty    ? nil : selectedColor,
+                page:       1
+            ) { [weak self] result in
+                guard let self, self.loadGeneration == generation else { return }
+                self.isLoading = false
+                self.hideSkeleton()
+                if case .success(let newTemplates) = result {
+                    self.allTemplates = newTemplates
+                    self.hasMore      = newTemplates.count >= 20
+                    self.currentPage  = 2
+                    TemplateCache.shared.storeTemplates(key: key, templates: newTemplates)
+                    self.applySort()
+                }
+            }
+
+        } else {
+            // 翻页：直接网络请求
+            isLoading = true
+            let generation = loadGeneration
+
+            PPTAPIService.shared.fetchTemplates(
+                category:   selectedCategory.isEmpty ? nil : selectedCategory,
+                style:      selectedStyle.isEmpty    ? nil : selectedStyle,
+                themeColor: selectedColor.isEmpty    ? nil : selectedColor,
+                page:       currentPage
+            ) { [weak self] result in
+                guard let self, self.loadGeneration == generation else { return }
+                self.isLoading = false
+                if case .success(let newTemplates) = result {
+                    self.hasMore     = newTemplates.count >= 20
+                    self.currentPage += 1
+                    self.allTemplates.append(contentsOf: newTemplates)
+                    self.applySort()
+                }
+            }
+        }
+    }
+
+    private func scheduleBackgroundRefresh(for key: String) {
+        let category = selectedCategory
+        let style    = selectedStyle
+        let color    = selectedColor
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            guard let self else { return }
+            PPTAPIService.shared.fetchTemplates(
+                category:   category.isEmpty ? nil : category,
+                style:      style.isEmpty    ? nil : style,
+                themeColor: color.isEmpty    ? nil : color,
+                page:       1
+            ) { [weak self] result in
+                guard let self, case .success(let fresh) = result else { return }
+                TemplateCache.shared.storeTemplates(key: key, templates: fresh)
+                guard self.currentCacheKey() == key, self.currentPage == 2 else { return }
+                self.allTemplates = fresh
+                self.hasMore      = fresh.count >= 20
                 self.applySort()
             }
         }

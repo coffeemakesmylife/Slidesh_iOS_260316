@@ -75,6 +75,8 @@ class TemplateCell: UICollectionViewCell {
         nameLabel.font = .systemFont(ofSize: 14, weight: .medium)
         nameLabel.textColor = .appTextPrimary
         nameLabel.numberOfLines = 2
+        // 低拥抱优先级：让栈视图横向拉伸 nameLabel，骨架屏时宽度不会收缩到 0
+        nameLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         descLabel.font = .systemFont(ofSize: 12)
         descLabel.textColor = .appTextSecondary
