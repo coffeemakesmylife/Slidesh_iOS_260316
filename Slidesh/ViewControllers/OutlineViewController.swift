@@ -303,7 +303,7 @@ class OutlineViewController: UIViewController {
             bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            checkImg.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 10),
+            checkImg.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 48),
             checkImg.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
             checkImg.widthAnchor.constraint(equalToConstant: 14),
             checkImg.heightAnchor.constraint(equalToConstant: 14),
@@ -334,7 +334,7 @@ class OutlineViewController: UIViewController {
         bottomGradLayer?.colors   = [bg.withAlphaComponent(0).cgColor,
                                      bg.withAlphaComponent(0.92).cgColor,
                                      bg.cgColor]
-        bottomGradLayer?.locations = [0, 0.45, 1]
+        bottomGradLayer?.locations = [0, 0.30, 1]
     }
 
     @discardableResult
