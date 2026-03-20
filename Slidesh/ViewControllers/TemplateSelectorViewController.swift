@@ -54,11 +54,16 @@ class TemplateSelectorViewController: UIViewController {
     private var collectionView: UICollectionView!
     private weak var footerView: SelectorFooterView?
 
+    // MARK: - 浮动关闭按钮（替代 nav bar 的 X）
+
+    private let closeBtn = UIButton(type: .system)
+
     // MARK: - 底部合成PPT栏
 
     private let bottomBar  = UIView()
     private let composeBtn = UIButton(type: .custom)
     private var composeGrad: CAGradientLayer?
+    private var bottomGradLayer: CAGradientLayer?  // 渐变淡入遮罩
 
     // MARK: - 空状态（"最近使用" tab）
 
@@ -91,22 +96,42 @@ class TemplateSelectorViewController: UIViewController {
         loadTemplates(reset: true)
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // 隐藏 nav bar，让 tab 栏紧贴状态栏，最大化可滑动区域
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // push 到预览页时恢复 nav bar
+        navigationController?.setNavigationBarHidden(false, animated: animated)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        composeGrad?.frame = composeBtn.bounds
+        composeGrad?.frame   = composeBtn.bounds
+        bottomGradLayer?.frame = bottomBar.bounds
     }
 
     // MARK: - 导航栏
 
     private func setupNavBar() {
-        title = "挑选PPT模板"
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            image: UIImage(systemName: "xmark"), style: .plain,
-            target: self, action: #selector(closeTapped))
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        navigationController?.navigationBar.standardAppearance   = appearance
-        navigationController?.navigationBar.scrollEdgeAppearance = appearance
+        // 浮动关闭按钮：圆形背景 + xmark，叠加在 tab 栏左侧
+        closeBtn.setImage(UIImage(systemName: "xmark"), for: .normal)
+        closeBtn.tintColor       = .appTextPrimary
+        closeBtn.backgroundColor = UIColor.appCardBackground.withAlphaComponent(0.85)
+        closeBtn.layer.cornerRadius = 18
+        closeBtn.clipsToBounds   = true
+        closeBtn.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
+        closeBtn.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(closeBtn)
+        NSLayoutConstraint.activate([
+            closeBtn.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            closeBtn.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 4),
+            closeBtn.widthAnchor.constraint(equalToConstant: 36),
+            closeBtn.heightAnchor.constraint(equalToConstant: 36),
+        ])
     }
 
     @objc private func closeTapped() { dismiss(animated: true) }
@@ -236,7 +261,7 @@ class TemplateSelectorViewController: UIViewController {
             withReuseIdentifier: SelectorFooterView.reuseID)
         collectionView.dataSource    = self
         collectionView.delegate      = self
-        collectionView.contentInset  = UIEdgeInsets(top: 12, left: 0, bottom: 100, right: 0)
+        collectionView.contentInset  = UIEdgeInsets(top: 12, left: 0, bottom: 140, right: 0)
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(collectionView)
         NSLayoutConstraint.activate([
@@ -274,14 +299,22 @@ class TemplateSelectorViewController: UIViewController {
     // MARK: - 底部合成PPT栏
 
     private func setupBottomBar() {
-        bottomBar.backgroundColor = .appCardBackground
+        // 完全透明容器，叠加在 collectionView 上方
+        bottomBar.backgroundColor = .clear
+        bottomBar.isUserInteractionEnabled = true
         bottomBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bottomBar)
 
-        let sep = UIView()
-        sep.backgroundColor = .appSeparator
-        sep.translatesAutoresizingMaskIntoConstraints = false
-        bottomBar.addSubview(sep)
+        // 渐变遮罩：顶部完全透明 → 底部不透明，实现自然过渡（无分割线）
+        let gradBg = CAGradientLayer()
+        gradBg.colors     = [UIColor.appBackgroundPrimary.withAlphaComponent(0).cgColor,
+                             UIColor.appBackgroundPrimary.withAlphaComponent(0.92).cgColor,
+                             UIColor.appBackgroundPrimary.cgColor]
+        gradBg.locations  = [0, 0.45, 1]
+        gradBg.startPoint = CGPoint(x: 0.5, y: 0)
+        gradBg.endPoint   = CGPoint(x: 0.5, y: 1)
+        bottomBar.layer.insertSublayer(gradBg, at: 0)
+        bottomGradLayer = gradBg
 
         composeBtn.setTitle("合成PPT", for: .normal)
         composeBtn.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
@@ -307,12 +340,7 @@ class TemplateSelectorViewController: UIViewController {
             bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
-            sep.topAnchor.constraint(equalTo: bottomBar.topAnchor),
-            sep.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor),
-            sep.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor),
-            sep.heightAnchor.constraint(equalToConstant: 0.5),
-
-            composeBtn.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
+            composeBtn.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 32),
             composeBtn.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
             composeBtn.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16),
             composeBtn.heightAnchor.constraint(equalToConstant: 56),
