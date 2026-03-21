@@ -32,6 +32,7 @@ class SavedOutlineViewController: UIViewController {
 
     private func setupTableView() {
         tableView.dataSource    = self
+        tableView.delegate      = self
         tableView.backgroundColor = .clear
         tableView.separatorStyle  = .none
         tableView.allowsSelection = false
@@ -47,6 +48,23 @@ class SavedOutlineViewController: UIViewController {
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
+}
+
+    // 只读页背景透明度更低，让渐变底层更透出
+    private func applyCardBackground(to cell: UITableViewCell) {
+        var bg = UIBackgroundConfiguration.listGroupedCell()
+        bg.backgroundColor = .appCardBackground.withAlphaComponent(0.45)
+        cell.backgroundConfiguration = bg
+    }
+
+// MARK: - UITableViewDelegate
+
+extension SavedOutlineViewController: UITableViewDelegate {
+    // 与 OutlineViewController 一致：header 高度 0，footer 8pt 作为 section 间距
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { 0 }
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? { nil }
+    func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat { 8 }
+    func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? { UIView() }
 }
 
 // MARK: - UITableViewDataSource
@@ -69,12 +87,14 @@ extension SavedOutlineViewController: UITableViewDataSource {
                 withIdentifier: OutlineHeaderCell.reuseID, for: indexPath) as! OutlineHeaderCell
             cell.configure(tag: sec.tagLabel, title: sec.title)
             cell.setReadOnly()
+            applyCardBackground(to: cell)
             return cell
         } else {
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: OutlineBulletCell.reuseID, for: indexPath) as! OutlineBulletCell
             cell.configure(with: sec.bullets[indexPath.row - 1])
             cell.setReadOnly()
+            applyCardBackground(to: cell)
             return cell
         }
     }
