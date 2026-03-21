@@ -36,6 +36,7 @@ class SavedOutlineViewController: UIViewController {
         tableView.backgroundColor = .clear
         tableView.separatorStyle  = .none
         tableView.allowsSelection = false
+        tableView.contentInsetAdjustmentBehavior = .always
         tableView.register(OutlineHeaderCell.self, forCellReuseIdentifier: OutlineHeaderCell.reuseID)
         tableView.register(OutlineBulletCell.self, forCellReuseIdentifier: OutlineBulletCell.reuseID)
         tableView.translatesAutoresizingMaskIntoConstraints = false
@@ -53,7 +54,7 @@ class SavedOutlineViewController: UIViewController {
     // 只读页背景透明度更低，让渐变底层更透出
     private func applyCardBackground(to cell: UITableViewCell) {
         var bg = UIBackgroundConfiguration.listGroupedCell()
-        bg.backgroundColor = .appCardBackground.withAlphaComponent(0.45)
+        bg.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
         cell.backgroundConfiguration = bg
     }
 
