@@ -2,7 +2,7 @@
 //  SavedOutlineViewController.swift
 //  Slidesh
 //
-//  只读展示已保存的大纲 Markdown
+//  只读展示已保存的大纲，样式与生成结果页完全一致
 //
 
 import UIKit
@@ -10,8 +10,9 @@ import UIKit
 class SavedOutlineViewController: UIViewController {
 
     private let record: OutlineRecord
+    private var sections: [OutlineSection] = []
 
-    private let textView = UITextView()
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     init(record: OutlineRecord) {
         self.record = record
@@ -25,69 +26,56 @@ class SavedOutlineViewController: UIViewController {
         title = record.subject
         view.backgroundColor = .systemGroupedBackground
         addMeshGradientBackground()
-        setupTextView()
-        renderContent()
+        sections = MarkdownParser.parse(record.markdown)
+        setupTableView()
     }
 
-    private func setupTextView() {
-        textView.isEditable   = false
-        textView.isSelectable = true
-        textView.backgroundColor = .clear
-        textView.textContainerInset = UIEdgeInsets(top: 16, left: 12, bottom: 24, right: 12)
-        textView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(textView)
+    private func setupTableView() {
+        tableView.dataSource    = self
+        tableView.backgroundColor = .clear
+        tableView.separatorStyle  = .none
+        tableView.allowsSelection = false
+        tableView.register(OutlineHeaderCell.self, forCellReuseIdentifier: OutlineHeaderCell.reuseID)
+        tableView.register(OutlineBulletCell.self, forCellReuseIdentifier: OutlineBulletCell.reuseID)
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(tableView)
 
         NSLayoutConstraint.activate([
-            textView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            textView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            textView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            textView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            tableView.topAnchor.constraint(equalTo: view.topAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
+}
 
-    private func renderContent() {
-        textView.attributedText = buildAttributedString(from: record.markdown)
+// MARK: - UITableViewDataSource
+
+extension SavedOutlineViewController: UITableViewDataSource {
+
+    func numberOfSections(in tableView: UITableView) -> Int {
+        sections.count
     }
 
-    // 简单 markdown 渲染：# H1  ## H2  ### H3  - bullet  正文
-    private func buildAttributedString(from md: String) -> NSAttributedString {
-        let result = NSMutableAttributedString()
-        let source = md.replacingOccurrences(of: "[DONE]", with: "")
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        1 + sections[section].bullets.count  // 1 header + n bullets
+    }
 
-        for line in source.components(separatedBy: "\n") {
-            let t = line.trimmingCharacters(in: .whitespaces)
-            if t.isEmpty { continue }
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let sec = sections[indexPath.section]
 
-            let (text, font, color, spacing): (String, UIFont, UIColor, CGFloat)
-            if t.hasPrefix("#### ") {
-                (text, font, color, spacing) = (String(t.dropFirst(5)),
-                    .systemFont(ofSize: 14, weight: .semibold), .appTextPrimary, 6)
-            } else if t.hasPrefix("### ") {
-                (text, font, color, spacing) = (String(t.dropFirst(4)),
-                    .systemFont(ofSize: 15, weight: .semibold), .appTextPrimary, 8)
-            } else if t.hasPrefix("## ") {
-                (text, font, color, spacing) = (String(t.dropFirst(3)),
-                    .systemFont(ofSize: 17, weight: .bold), .appTextPrimary, 12)
-            } else if t.hasPrefix("# ") {
-                (text, font, color, spacing) = (String(t.dropFirst(2)),
-                    .systemFont(ofSize: 20, weight: .bold), .appTextPrimary, 16)
-            } else if t.hasPrefix("- ") || t.hasPrefix("* ") {
-                (text, font, color, spacing) = ("• " + String(t.dropFirst(2)),
-                    .systemFont(ofSize: 14), .appTextSecondary, 4)
-            } else {
-                (text, font, color, spacing) = (t,
-                    .systemFont(ofSize: 14), .appTextSecondary, 4)
-            }
-
-            let para = NSMutableParagraphStyle()
-            para.paragraphSpacingBefore = spacing
-            para.lineSpacing   = 2
-
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: font, .foregroundColor: color, .paragraphStyle: para
-            ]
-            result.append(NSAttributedString(string: text + "\n", attributes: attrs))
+        if indexPath.row == 0 {
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: OutlineHeaderCell.reuseID, for: indexPath) as! OutlineHeaderCell
+            cell.configure(tag: sec.tagLabel, title: sec.title)
+            cell.setReadOnly()
+            return cell
+        } else {
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: OutlineBulletCell.reuseID, for: indexPath) as! OutlineBulletCell
+            cell.configure(with: sec.bullets[indexPath.row - 1])
+            cell.setReadOnly()
+            return cell
         }
-        return result
     }
 }

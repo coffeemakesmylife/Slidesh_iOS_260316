@@ -921,7 +921,7 @@ extension OutlineViewController: UITableViewDataSource, UITableViewDelegate {
 
 // MARK: - OutlineHeaderCell（卡片标题行：tag badge + 可编辑标题）
 
-private class OutlineHeaderCell: UITableViewCell {
+class OutlineHeaderCell: UITableViewCell {
     static let reuseID = "OutlineHeaderCell"
 
     var onTitleChanged: ((String) -> Void)?  // 标题编辑回调
@@ -991,6 +991,12 @@ private class OutlineHeaderCell: UITableViewCell {
     }
 
     func beginEditing() { titleView.becomeFirstResponder() }
+
+    // 只读模式：禁用编辑
+    func setReadOnly() {
+        titleView.isEditable = false
+        titleView.isUserInteractionEnabled = false
+    }
 }
 
 extension OutlineHeaderCell: UITextViewDelegate {
@@ -1001,7 +1007,7 @@ extension OutlineHeaderCell: UITextViewDelegate {
 
 // MARK: - OutlineBulletCell（可编辑子条目）
 
-private class OutlineBulletCell: UITableViewCell {
+class OutlineBulletCell: UITableViewCell {
     static let reuseID = "OutlineBulletCell"
 
     var onTextChanged: ((String) -> Void)?  // 条目编辑回调（已去除前缀）
@@ -1051,6 +1057,12 @@ private class OutlineBulletCell: UITableViewCell {
     }
 
     func beginEditing() { textView.becomeFirstResponder() }
+
+    // 只读模式：禁用编辑
+    func setReadOnly() {
+        textView.isEditable = false
+        textView.isUserInteractionEnabled = false
+    }
 
     private func style(for level: OutlineBullet.Level) -> (String, UIFont, UIColor, CGFloat) {
         // 注意：此处同时是前缀去除的依据，修改前缀需同步更新 textViewDidChange
