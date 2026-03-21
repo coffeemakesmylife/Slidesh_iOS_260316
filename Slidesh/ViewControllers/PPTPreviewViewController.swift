@@ -110,23 +110,25 @@ class PPTPreviewViewController: UIViewController {
             bottomBar.addSubview(btn)
         }
 
-        saveBtn.setTitle("存到文件", for: .normal)
-        saveBtn.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
-
         shareBtn.setTitle("分享", for: .normal)
         shareBtn.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
 
-        NSLayoutConstraint.activate([
-            saveBtn.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
-            saveBtn.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
-            saveBtn.heightAnchor.constraint(equalToConstant: 52),
-            saveBtn.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+        saveBtn.setTitle("存到文件", for: .normal)
+        saveBtn.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
 
-            shareBtn.topAnchor.constraint(equalTo: saveBtn.topAnchor),
-            shareBtn.leadingAnchor.constraint(equalTo: saveBtn.trailingAnchor, constant: 12),
-            shareBtn.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16),
-            shareBtn.heightAnchor.constraint(equalTo: saveBtn.heightAnchor),
-            shareBtn.widthAnchor.constraint(equalTo: saveBtn.widthAnchor),
+        NSLayoutConstraint.activate([
+            // 分享在左
+            shareBtn.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
+            shareBtn.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
+            shareBtn.heightAnchor.constraint(equalToConstant: 52),
+            shareBtn.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+
+            // 下载在右
+            saveBtn.topAnchor.constraint(equalTo: shareBtn.topAnchor),
+            saveBtn.leadingAnchor.constraint(equalTo: shareBtn.trailingAnchor, constant: 12),
+            saveBtn.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16),
+            saveBtn.heightAnchor.constraint(equalTo: shareBtn.heightAnchor),
+            saveBtn.widthAnchor.constraint(equalTo: shareBtn.widthAnchor),
         ])
 
         saveBtnGrad  = makeGradient(for: saveBtn,  alpha: 1.0)
