@@ -316,7 +316,7 @@ extension MyWorksViewController: UICollectionViewDelegate {
 
         if indexPath.section == 0, !ppts.isEmpty {
             let info = ppts[indexPath.item]
-            navigationController?.pushViewController(PPTPreviewViewController(pptInfo: info), animated: true)
+            navigationController?.pushViewController(PPTPreviewViewController(pptInfo: info, canChangeTemplate: true), animated: true)
 
         } else if indexPath.section == 1, !outlines.isEmpty {
             let r = outlines[indexPath.item]

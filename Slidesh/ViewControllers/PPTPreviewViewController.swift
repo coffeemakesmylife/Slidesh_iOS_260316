@@ -10,7 +10,8 @@ import WebKit
 
 class PPTPreviewViewController: UIViewController {
 
-    private let pptInfo: PPTInfo
+    private var pptInfo: PPTInfo
+    private let canChangeTemplate: Bool
 
     // MARK: - 子视图
 
@@ -31,8 +32,9 @@ class PPTPreviewViewController: UIViewController {
 
     // MARK: - Init
 
-    init(pptInfo: PPTInfo) {
+    init(pptInfo: PPTInfo, canChangeTemplate: Bool = false) {
         self.pptInfo = pptInfo
+        self.canChangeTemplate = canChangeTemplate
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -70,6 +72,12 @@ class PPTPreviewViewController: UIViewController {
             navigationItem.leftBarButtonItem = closeBtn
         }
 
+        // 场景二（从我的作品进入）显示换模板按钮
+        if canChangeTemplate {
+            let changeBtn = UIBarButtonItem(
+                title: "换模板", style: .plain, target: self, action: #selector(changeTemplateTapped))
+            navigationItem.rightBarButtonItem = changeBtn
+        }
     }
 
     // MARK: - 底部栏
@@ -300,6 +308,56 @@ class PPTPreviewViewController: UIViewController {
 
     @objc private func closeTapped() {
         dismiss(animated: true)
+    }
+
+    @objc private func changeTemplateTapped() {
+        let picker = TemplatePickerViewController()
+        picker.onSelect = { [weak self] templateId in
+            self?.applyTemplate(templateId)
+        }
+        let nav = UINavigationController(rootViewController: picker)
+        nav.modalPresentationStyle = .pageSheet
+        present(nav, animated: true)
+    }
+
+    /// 调用 templates-update，成功后重新 load PPT 刷新 WebView
+    private func applyTemplate(_ templateId: String) {
+        guard let pptId = pptInfo.pptId.isEmpty ? nil : Optional(pptInfo.pptId) else { return }
+
+        // 导航栏标题显示加载状态
+        let changeBtn = navigationItem.rightBarButtonItem
+        changeBtn?.isEnabled = false
+        title = "更换模板中…"
+
+        PPTAPIService.shared.updateTemplate(pptId: pptId, templateId: templateId) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .failure(let error):
+                self.title = self.pptInfo.subject ?? "PPT 预览"
+                changeBtn?.isEnabled = true
+                let alert = UIAlertController(title: "换模板失败",
+                                              message: error.localizedDescription,
+                                              preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "确定", style: .default))
+                self.present(alert, animated: true)
+
+            case .success:
+                // 重新加载 PPT 详情获取新 fileUrl
+                PPTAPIService.shared.loadPPT(pptId: pptId) { [weak self] result in
+                    guard let self else { return }
+                    changeBtn?.isEnabled = true
+                    switch result {
+                    case .success(let newInfo):
+                        self.pptInfo = newInfo
+                        self.title = newInfo.subject ?? "PPT 预览"
+                        self.loadContent()
+                    case .failure:
+                        // loadPPT 失败时保留旧预览，只恢复标题
+                        self.title = self.pptInfo.subject ?? "PPT 预览"
+                    }
+                }
+            }
+        }
     }
 
     /// 存到文件：下载后用 UIDocumentPickerViewController 直接打开文件 App

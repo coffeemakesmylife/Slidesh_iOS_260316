@@ -188,6 +188,20 @@ class PPTAPIService {
         }
     }
 
+    /// 为已生成的 PPT 更换模板，回调在主线程
+    func updateTemplate(pptId: String, templateId: String,
+                        completion: @escaping (Result<Void, Error>) -> Void) {
+        let uuid = AppDelegate.getCurrentUserId() ?? "temp"
+        post(path: "/v1/api/ai/ppt/templates-update", params: [
+            "pptId": pptId, "templateId": templateId, "appId": appId, "uuid": uuid,
+        ]) { result in
+            switch result {
+            case .success: completion(.success(()))
+            case .failure(let error): completion(.failure(error))
+            }
+        }
+    }
+
     /// 查询当前用户已生成的 PPT 列表（含 coverUrl），回调在主线程
     func listMyPPTs(page: Int = 1, pageSize: Int = 50,
                     completion: @escaping (Result<[PPTInfo], Error>) -> Void) {
