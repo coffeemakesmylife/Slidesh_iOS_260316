@@ -7,6 +7,7 @@
 
 import UIKit
 import WebKit
+import ZIPFoundation
 
 class PPTPreviewViewController: UIViewController {
 
@@ -383,6 +384,55 @@ class PPTPreviewViewController: UIViewController {
         }
     }
 
+    // MARK: - PPTX 缩略图注入
+
+    /// 将封面图写入 PPTX ZIP 的 docProps/thumbnail.jpeg，失败时回退原文件
+    private func injectThumbnail(into pptxURL: URL, completion: @escaping (URL) -> Void) {
+        guard let coverStr = pptInfo.coverUrl,
+              let coverURL = URL(string: coverStr) else {
+            completion(pptxURL)
+            return
+        }
+
+        URLSession.shared.dataTask(with: coverURL) { data, _, _ in
+            guard let data,
+                  let image = UIImage(data: data),
+                  let jpegData = image.jpegData(compressionQuality: 0.85) else {
+                DispatchQueue.main.async { completion(pptxURL) }
+                return
+            }
+
+            // 把封面先写成临时文件，ZIPFoundation 用 fileURL API 添加最方便
+            let tmpThumb = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + ".jpeg")
+            let tmpPPTX  = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString + ".pptx")
+
+            do {
+                try jpegData.write(to: tmpThumb)
+                try FileManager.default.copyItem(at: pptxURL, to: tmpPPTX)
+
+                guard let archive = Archive(url: tmpPPTX, accessMode: .update) else {
+                    DispatchQueue.main.async { completion(pptxURL) }
+                    return
+                }
+                // 移除旧缩略图（如有）
+                for name in ["docProps/thumbnail.jpeg", "docProps/thumbnail.jpg",
+                             "docProps/thumbnail.png"] {
+                    if let entry = archive[name] { try archive.remove(entry) }
+                }
+                // 写入新封面缩略图
+                try archive.addEntry(with: "docProps/thumbnail.jpeg", fileURL: tmpThumb)
+                try? FileManager.default.removeItem(at: tmpThumb)
+                DispatchQueue.main.async { completion(tmpPPTX) }
+            } catch {
+                try? FileManager.default.removeItem(at: tmpThumb)
+                try? FileManager.default.removeItem(at: tmpPPTX)
+                DispatchQueue.main.async { completion(pptxURL) }
+            }
+        }.resume()
+    }
+
     // MARK: - 加载遮罩
 
     private func showLoadingOverlay(message: String) {
@@ -443,14 +493,16 @@ class PPTPreviewViewController: UIViewController {
         loadingOverlay = nil
     }
 
-    /// 保存到本地：下载后用 UIDocumentPickerViewController 直接打开文件 App
+    /// 保存到本地：下载 → 注入封面缩略图 → UIDocumentPickerViewController
     @objc private func saveTapped() {
         downloadFile(indicator: saveIndicator, activeBtn: saveBtn) { [weak self] destUrl in
             guard let self else { return }
-            let picker = UIDocumentPickerViewController(forExporting: [destUrl], asCopy: true)
-            picker.delegate = self
-            picker.modalPresentationStyle = .formSheet
-            self.present(picker, animated: true)
+            self.injectThumbnail(into: destUrl) { finalUrl in
+                let picker = UIDocumentPickerViewController(forExporting: [finalUrl], asCopy: true)
+                picker.delegate = self
+                picker.modalPresentationStyle = .formSheet
+                self.present(picker, animated: true)
+            }
         }
     }
 

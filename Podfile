@@ -8,5 +8,6 @@ target ‘Slidesh’ do
   pod 'ZXRequestBlock'
   pod 'lottie-ios'
   pod 'SnapKit'
+  pod 'ZIPFoundation', '~> 0.9'
   
 end
