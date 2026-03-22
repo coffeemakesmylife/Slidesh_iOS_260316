@@ -386,7 +386,7 @@ class PPTPreviewViewController: UIViewController {
 
     // MARK: - PPTX 缩略图注入
 
-    /// 将封面图写入 PPTX ZIP 的 docProps/thumbnail.jpeg，失败时回退原文件
+    /// 将封面图写入 PPTX ZIP，并更新 _rels/.rels 和 [Content_Types].xml，失败时回退原文件
     private func injectThumbnail(into pptxURL: URL, completion: @escaping (URL) -> Void) {
         guard let coverStr = pptInfo.coverUrl,
               let coverURL = URL(string: coverStr) else {
@@ -394,36 +394,86 @@ class PPTPreviewViewController: UIViewController {
             return
         }
 
-        URLSession.shared.dataTask(with: coverURL) { data, _, _ in
-            guard let data,
+        URLSession.shared.dataTask(with: coverURL) { [weak self] data, _, _ in
+            guard let self,
+                  let data,
                   let image = UIImage(data: data),
                   let jpegData = image.jpegData(compressionQuality: 0.85) else {
                 DispatchQueue.main.async { completion(pptxURL) }
                 return
             }
 
-            // 把封面先写成临时文件，ZIPFoundation 用 fileURL API 添加最方便
+            // 用 PPT 标题命名输出文件
+            let rawName = (self.pptInfo.subject ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            let safeName = rawName.isEmpty ? "presentation" :
+                rawName.components(separatedBy: CharacterSet(charactersIn: "/\\:*?\"<>|"))
+                       .joined(separator: "_")
             let tmpThumb = FileManager.default.temporaryDirectory
                 .appendingPathComponent(UUID().uuidString + ".jpeg")
             let tmpPPTX  = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString + ".pptx")
+                .appendingPathComponent(safeName + ".pptx")
 
             do {
                 try jpegData.write(to: tmpThumb)
+                try? FileManager.default.removeItem(at: tmpPPTX)
                 try FileManager.default.copyItem(at: pptxURL, to: tmpPPTX)
 
                 guard let archive = Archive(url: tmpPPTX, accessMode: .update) else {
                     DispatchQueue.main.async { completion(pptxURL) }
                     return
                 }
-                // 移除旧缩略图（如有）
+
+                // 1. 移除旧缩略图（如有）
                 for name in ["docProps/thumbnail.jpeg", "docProps/thumbnail.jpg",
                              "docProps/thumbnail.png"] {
                     if let entry = archive[name] { try archive.remove(entry) }
                 }
-                // 写入新封面缩略图
+                // 2. 写入新封面缩略图
                 try archive.addEntry(with: "docProps/thumbnail.jpeg", fileURL: tmpThumb)
                 try? FileManager.default.removeItem(at: tmpThumb)
+
+                // 3. 更新 _rels/.rels：添加 thumbnail relationship（QuickLook 依赖此条目定位缩略图）
+                if let relsEntry = archive["_rels/.rels"] {
+                    var relsData = Data()
+                    _ = try archive.extract(relsEntry) { relsData.append($0) }
+                    if var relsStr = String(data: relsData, encoding: .utf8),
+                       !relsStr.contains("metadata/thumbnail") {
+                        let rel = "<Relationship Id=\"rIdThumb\" " +
+                            "Type=\"http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail\" " +
+                            "Target=\"docProps/thumbnail.jpeg\"/>"
+                        relsStr = relsStr.replacingOccurrences(
+                            of: "</Relationships>", with: "  \(rel)\n</Relationships>")
+                        if let updated = relsStr.data(using: .utf8) {
+                            let tmpRels = FileManager.default.temporaryDirectory
+                                .appendingPathComponent(UUID().uuidString + ".rels")
+                            try updated.write(to: tmpRels)
+                            try archive.remove(relsEntry)
+                            try archive.addEntry(with: "_rels/.rels", fileURL: tmpRels)
+                            try? FileManager.default.removeItem(at: tmpRels)
+                        }
+                    }
+                }
+
+                // 4. 更新 [Content_Types].xml：确保 jpeg 类型已注册
+                if let ctEntry = archive["[Content_Types].xml"] {
+                    var ctData = Data()
+                    _ = try archive.extract(ctEntry) { ctData.append($0) }
+                    if var ctStr = String(data: ctData, encoding: .utf8),
+                       !ctStr.lowercased().contains("jpeg") {
+                        ctStr = ctStr.replacingOccurrences(
+                            of: "</Types>",
+                            with: "  <Default Extension=\"jpeg\" ContentType=\"image/jpeg\"/>\n</Types>")
+                        if let updated = ctStr.data(using: .utf8) {
+                            let tmpCT = FileManager.default.temporaryDirectory
+                                .appendingPathComponent(UUID().uuidString + ".xml")
+                            try updated.write(to: tmpCT)
+                            try archive.remove(ctEntry)
+                            try archive.addEntry(with: "[Content_Types].xml", fileURL: tmpCT)
+                            try? FileManager.default.removeItem(at: tmpCT)
+                        }
+                    }
+                }
+
                 DispatchQueue.main.async { completion(tmpPPTX) }
             } catch {
                 try? FileManager.default.removeItem(at: tmpThumb)
