@@ -283,7 +283,7 @@ class OutlineViewController: UIViewController {
         bottomBar.addSubview(hintLbl)
 
         // 换个大纲 & 下载大纲（使用自定义图片，alwaysTemplate 保留当前颜色）
-        let regenBtn = makeToolbarBtn(image: UIImage(named: "refresh-line"),      label: "换个大纲", action: #selector(regenerateTapped))
+        let regenBtn = makeToolbarBtn(image: UIImage(named: "refresh-line"),      label: "重写大纲", action: #selector(regenerateTapped))
         let dlBtn    = makeToolbarBtn(image: UIImage(named: "file-download-line"), label: "下载大纲", action: #selector(downloadTapped))
 
         // 渐变"挑选PPT模板"按钮
