@@ -646,7 +646,7 @@ class TemplateSelectorViewController: UIViewController {
                 print("❌ loadPPT 失败：\(error.localizedDescription)")
                 // loadPPT 失败时仍展示预览页（用空 fileUrl，提示用户）
                 let stub = PPTInfo(pptId: pptId, taskId: nil, subject: nil,
-                                   fileUrl: nil, coverUrl: nil, status: nil, total: nil)
+                                   fileUrl: nil, coverUrl: nil, status: nil, total: nil, createTime: nil)
                 let previewVC = PPTPreviewViewController(pptInfo: stub)
                 self.navigationController?.pushViewController(previewVC, animated: true)
             }

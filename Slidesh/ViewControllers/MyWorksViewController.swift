@@ -74,10 +74,15 @@ private class PPTGridCell: UICollectionViewCell {
         coverView.image = UIImage(systemName: "doc.richtext.fill")
     }
 
-    func configure(with record: PPTRecord, dateText: String) {
-        titleLabel.text = record.subject
-        dateLabel.text  = dateText
-        if let urlStr = record.coverUrl, let url = URL(string: urlStr) {
+    func configure(with info: PPTInfo) {
+        titleLabel.text = info.subject ?? "未命名"
+        // createTime 格式 "yyyy-MM-dd HH:mm:ss"，截取前16字符显示 "yyyy-MM-dd HH:mm"
+        if let t = info.createTime, t.count >= 16 {
+            dateLabel.text = String(t.prefix(16))
+        } else {
+            dateLabel.text = info.createTime
+        }
+        if let urlStr = info.coverUrl, !urlStr.isEmpty, let url = URL(string: urlStr) {
             imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
                 guard let data, let img = UIImage(data: data) else { return }
                 DispatchQueue.main.async { self?.coverView.image = img }
@@ -114,7 +119,8 @@ private class WorksSectionHeader: UICollectionReusableView {
 
 class MyWorksViewController: UIViewController {
 
-    private var ppts:     [PPTRecord]     = []
+    // PPT 来自服务端 list-me；大纲来自本地 WorksStore
+    private var ppts:     [PPTInfo]       = []
     private var outlines: [OutlineRecord] = []
     private var collectionView: UICollectionView!
 
@@ -130,13 +136,32 @@ class MyWorksViewController: UIViewController {
         view.backgroundColor = .systemGroupedBackground
         addMeshGradientBackground()
         setupCollectionView()
-        reloadData()
+        outlines = WorksStore.shared.outlines
+        fetchPPTs()
 
         NotificationCenter.default.addObserver(
             self, selector: #selector(worksDidUpdate), name: .worksDidUpdate, object: nil)
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        fetchPPTs()
+    }
+
     deinit { NotificationCenter.default.removeObserver(self) }
+
+    // MARK: - 拉取 PPT 列表
+
+    private func fetchPPTs() {
+        PPTAPIService.shared.listMyPPTs { [weak self] result in
+            guard let self else { return }
+            if case .success(let list) = result {
+                self.ppts = list
+                self.collectionView.collectionViewLayout.invalidateLayout()
+                self.collectionView.reloadData()
+            }
+        }
+    }
 
     // MARK: - 布局
 
@@ -213,15 +238,9 @@ class MyWorksViewController: UIViewController {
 
     // MARK: - 数据
 
-    private func reloadData() {
-        ppts     = WorksStore.shared.ppts
-        outlines = WorksStore.shared.outlines
-        collectionView.collectionViewLayout.invalidateLayout()
-        collectionView.reloadData()
-    }
-
     @objc private func worksDidUpdate() {
-        DispatchQueue.main.async { self.reloadData() }
+        outlines = WorksStore.shared.outlines
+        collectionView.reloadSections(IndexSet(integer: 1))
     }
 }
 
@@ -251,8 +270,7 @@ extension MyWorksViewController: UICollectionViewDataSource {
             }
             let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: PPTGridCell.reuseID, for: indexPath) as! PPTGridCell
-            let r = ppts[indexPath.item]
-            cell.configure(with: r, dateText: Self.dateFormatter.string(from: r.savedAt))
+            cell.configure(with: ppts[indexPath.item])
             return cell
 
         } else {
@@ -298,10 +316,7 @@ extension MyWorksViewController: UICollectionViewDelegate {
         collectionView.deselectItem(at: indexPath, animated: true)
 
         if indexPath.section == 0, !ppts.isEmpty {
-            let r    = ppts[indexPath.item]
-            let info = PPTInfo(pptId: r.id, taskId: r.taskId, subject: r.subject,
-                               fileUrl: r.fileUrl, coverUrl: r.coverUrl,
-                               status: "SUCCESS", total: nil)
+            let info = ppts[indexPath.item]
             navigationController?.pushViewController(PPTPreviewViewController(pptInfo: info), animated: true)
 
         } else if indexPath.section == 1, !outlines.isEmpty {
