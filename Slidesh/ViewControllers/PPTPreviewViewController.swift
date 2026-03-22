@@ -154,8 +154,11 @@ class PPTPreviewViewController: UIViewController {
             saveBtn.widthAnchor.constraint(equalTo: leftBtn.widthAnchor),
         ])
 
-        // loading 指示器（存到文件 / 分享）
-        for (indicator, btn) in [(saveIndicator, saveBtn), (shareIndicator, shareBtn)] {
+        // loading 指示器：saveIndicator 始终需要，shareIndicator 仅在非换模板场景
+        let indicators: [(UIActivityIndicatorView, UIButton)] = canChangeTemplate
+            ? [(saveIndicator, saveBtn)]
+            : [(saveIndicator, saveBtn), (shareIndicator, shareBtn)]
+        for (indicator, btn) in indicators {
             indicator.color = .white
             indicator.hidesWhenStopped = true
             indicator.translatesAutoresizingMaskIntoConstraints = false
