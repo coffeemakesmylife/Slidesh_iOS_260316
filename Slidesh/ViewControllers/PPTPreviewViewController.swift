@@ -78,6 +78,25 @@ class PPTPreviewViewController: UIViewController {
         navigationController?.navigationBar.scrollEdgeAppearance = appearance
     }
 
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // 离开时恢复 CustomNavigationController 的默认毛玻璃外观
+        guard let nav = navigationController else { return }
+        let titleAttributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 18.5, weight: .semibold),
+            .foregroundColor: UIColor.appTextPrimary,
+        ]
+        let blurAppearance = UINavigationBarAppearance()
+        blurAppearance.configureWithDefaultBackground()
+        blurAppearance.titleTextAttributes = titleAttributes
+        let transparentAppearance = UINavigationBarAppearance()
+        transparentAppearance.configureWithTransparentBackground()
+        transparentAppearance.titleTextAttributes = titleAttributes
+        nav.navigationBar.standardAppearance   = blurAppearance
+        nav.navigationBar.compactAppearance    = blurAppearance
+        nav.navigationBar.scrollEdgeAppearance = transparentAppearance
+    }
+
     // MARK: - 底部栏
 
     private func setupBottomBar() {
