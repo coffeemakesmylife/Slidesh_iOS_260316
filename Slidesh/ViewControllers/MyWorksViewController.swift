@@ -53,14 +53,14 @@ private class PPTGridCell: UICollectionViewCell {
             // 16:9 封面高度
             coverView.heightAnchor.constraint(equalTo: contentView.widthAnchor, multiplier: 9.0 / 16.0),
 
-            titleLabel.topAnchor.constraint(equalTo: coverView.bottomAnchor, constant: 8),
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            titleLabel.topAnchor.constraint(equalTo: coverView.bottomAnchor, constant: 10),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
 
-            dateLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 2),
-            dateLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
-            dateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
-            dateLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -8),
+            dateLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            dateLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
+            dateLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
+            dateLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -10),
         ])
     }
 
@@ -74,11 +74,12 @@ private class PPTGridCell: UICollectionViewCell {
 
     func configure(with info: PPTInfo) {
         titleLabel.text = info.subject ?? "未命名"
-        // createTime 格式 "yyyy-MM-dd HH:mm:ss"，截取前16字符显示 "yyyy-MM-dd HH:mm"
-        if let t = info.createTime, t.count >= 16 {
-            dateLabel.text = String(t.prefix(16))
+        // createTime 可能含 T 分隔符（如 "2026-03-21T10:59:00"），替换 T 为空格后截取前16字符
+        if let t = info.createTime {
+            let normalized = t.replacingOccurrences(of: "T", with: " ")
+            dateLabel.text = normalized.count >= 16 ? String(normalized.prefix(16)) : normalized
         } else {
-            dateLabel.text = info.createTime
+            dateLabel.text = nil
         }
         if let urlStr = info.coverUrl, !urlStr.isEmpty, let url = URL(string: urlStr) {
             // 使用 Kingfisher 加载封面，带缓存和淡入动画，无占位图
@@ -201,7 +202,7 @@ class MyWorksViewController: UIViewController {
         let isEmpty = ppts.isEmpty
         // 空状态：单行全宽占位；有数据：两列网格
         let itemWidth: NSCollectionLayoutDimension = isEmpty ? .fractionalWidth(1.0) : .fractionalWidth(0.5)
-        let groupHeight: CGFloat = isEmpty ? 44 : 180
+        let groupHeight: CGFloat = isEmpty ? 44 : 190
 
         let item = NSCollectionLayoutItem(
             layoutSize: NSCollectionLayoutSize(widthDimension: itemWidth, heightDimension: .fractionalHeight(1.0)))
