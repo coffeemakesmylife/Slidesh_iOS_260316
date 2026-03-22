@@ -2,7 +2,7 @@
 //  PPTPreviewViewController.swift
 //  Slidesh
 //
-//  PPT 预览页：WKWebView 加载 fileUrl，支持存到文件 / 分享
+//  PPT 预览页：WKWebView 加载 fileUrl，支持保存到本地 / 分享
 //
 
 import UIKit
@@ -20,13 +20,13 @@ class PPTPreviewViewController: UIViewController {
     private var progressObservation: NSKeyValueObservation?
 
     private let bottomBar         = UIView()
-    private let saveBtn           = UIButton(type: .custom)   // 存到文件
+    private let saveBtn           = UIButton(type: .custom)   // 保存到本地
     private let shareBtn          = UIButton(type: .custom)   // 分享（非换模板场景）
     private let changeTemplateBtn = UIButton(type: .custom)   // 换模板（换模板场景）
     private var saveBtnGrad:       CAGradientLayer?
     private var shareBtnGrad:      CAGradientLayer?
 
-    // 下载任务（存到文件 / 分享共用）
+    // 下载任务（保存到本地 / 分享共用）
     private var downloadTask: URLSessionDownloadTask?
     private let saveIndicator  = UIActivityIndicatorView(style: .medium)
     private let shareIndicator = UIActivityIndicatorView(style: .medium)
@@ -102,8 +102,8 @@ class PPTPreviewViewController: UIViewController {
             sep.heightAnchor.constraint(equalToConstant: 0.5),
         ])
 
-        // 存到文件按钮（右）
-        saveBtn.setTitle("存到文件", for: .normal)
+        // 保存到本地按钮（右）
+        saveBtn.setTitle("保存到本地", for: .normal)
         saveBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         saveBtn.setTitleColor(.white, for: .normal)
         saveBtn.layer.cornerRadius = 26
@@ -172,10 +172,13 @@ class PPTPreviewViewController: UIViewController {
 
     private func makeGradient(for btn: UIButton, alpha: CGFloat) -> CAGradientLayer {
         let g = CAGradientLayer()
-        g.colors      = [UIColor.appPrimary.cgColor,
-                         UIColor.appPrimary.withAlphaComponent(alpha * 0.75).cgColor]
-        g.startPoint  = CGPoint(x: 0, y: 0.5)
-        g.endPoint    = CGPoint(x: 1, y: 0.5)
+        // 与 VIP 卡片渐变统一
+        g.colors     = [UIColor.appGradientStart.withAlphaComponent(alpha).cgColor,
+                        UIColor.appGradientMid.withAlphaComponent(alpha).cgColor,
+                        UIColor.appGradientEnd.withAlphaComponent(alpha).cgColor]
+        g.locations  = [0.0, 0.55, 1.0]
+        g.startPoint = CGPoint(x: 0, y: 0.5)
+        g.endPoint   = CGPoint(x: 1, y: 0.5)
         g.cornerRadius = 26
         btn.layer.insertSublayer(g, at: 0)
         return g
@@ -302,7 +305,7 @@ class PPTPreviewViewController: UIViewController {
         shareBtn.isEnabled          = enabled
         changeTemplateBtn.isEnabled = enabled
         if enabled {
-            saveBtn.setTitle("存到文件", for: .normal)
+            saveBtn.setTitle("保存到本地", for: .normal)
             shareBtn.setTitle("分享", for: .normal)
         }
     }
@@ -440,11 +443,12 @@ class PPTPreviewViewController: UIViewController {
         loadingOverlay = nil
     }
 
-    /// 存到文件：下载后用 UIDocumentPickerViewController 直接打开文件 App
+    /// 保存到本地：下载后用 UIDocumentPickerViewController 直接打开文件 App
     @objc private func saveTapped() {
         downloadFile(indicator: saveIndicator, activeBtn: saveBtn) { [weak self] destUrl in
             guard let self else { return }
             let picker = UIDocumentPickerViewController(forExporting: [destUrl], asCopy: true)
+            picker.delegate = self
             picker.modalPresentationStyle = .formSheet
             self.present(picker, animated: true)
         }
@@ -467,5 +471,19 @@ extension PPTPreviewViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFailProvisionalNavigation _: WKNavigation!, withError error: Error) {
         print("❌ PPTPreview 加载失败：\(error.localizedDescription)")
         showCenterMessage("加载失败，请检查网络\n\(error.localizedDescription)")
+    }
+}
+
+// MARK: - UIDocumentPickerDelegate
+
+extension PPTPreviewViewController: UIDocumentPickerDelegate {
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        // 用户点击"保存"完成后弹出提示
+        let alert = UIAlertController(
+            title: "已保存到文件 App",
+            message: "你可以在「文件」App 中找到「\(pptInfo.subject ?? "PPT")」。",
+            preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "好的", style: .default))
+        present(alert, animated: true)
     }
 }
