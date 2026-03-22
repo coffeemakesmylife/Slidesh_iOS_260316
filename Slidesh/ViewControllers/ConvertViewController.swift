@@ -30,25 +30,11 @@ struct ConvertToolItem: Hashable, Sendable {
     let title:     String
     let subTitle:  String
     let icon:      String  // SF Symbol name
-    let colorName: String  // 用颜色名称代替 UIColor，避免非 Sendable 属性
+    let colorName: String  // 存颜色名称，UIColor 由 @MainActor extension 解析
     let isFeatured: Bool
 
-    func hash(into hasher: inout Hasher) { hasher.combine(id) }
-    static func == (lhs: ConvertToolItem, rhs: ConvertToolItem) -> Bool { lhs.id == rhs.id }
-
-    // 运行时按需解析颜色
-    var color: UIColor {
-        switch colorName {
-        case "appPrimary":  return .appPrimary
-        case "systemRed":   return .systemRed
-        case "systemBlue":  return .systemBlue
-        case "systemIndigo":return .systemIndigo
-        case "systemGreen": return .systemGreen
-        case "systemOrange":return .systemOrange
-        case "systemTeal":  return .systemTeal
-        default:            return .appPrimary
-        }
-    }
+    nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    nonisolated static func == (lhs: ConvertToolItem, rhs: ConvertToolItem) -> Bool { lhs.id == rhs.id }
 
     static let all: [ConvertSection: [ConvertToolItem]] = [
         .featured: [
@@ -160,7 +146,7 @@ class ConvertViewController: UIViewController {
             }
         }
 
-        dataSource.supplementaryViewProvider = { (collectionView, kind, indexPath) -> UICollectionReusableView? in
+        dataSource.supplementaryViewProvider = { (collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView? in
             let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: SectionHeaderView.reuseIdentifier, for: indexPath) as! SectionHeaderView
             let section = ConvertSection(rawValue: indexPath.section)!
             header.titleLabel.text = section.title
@@ -212,6 +198,21 @@ extension ConvertViewController: UICollectionViewDelegate {
                 cell.transform = .identity
             }
         }
+    }
+}
+
+// MARK: - 颜色名称解析（在主线程 UI 层调用）
+
+private func resolveToolColor(name: String) -> UIColor {
+    switch name {
+    case "appPrimary":   return .appPrimary
+    case "systemRed":    return .systemRed
+    case "systemBlue":   return .systemBlue
+    case "systemIndigo": return .systemIndigo
+    case "systemGreen":  return .systemGreen
+    case "systemOrange": return .systemOrange
+    case "systemTeal":   return .systemTeal
+    default:             return .appPrimary
     }
 }
 
@@ -301,8 +302,9 @@ class ToolCardCell: UICollectionViewCell {
         titleLabel.text = item.title
         subTitleLabel.text = item.subTitle
         iconImageView.image = UIImage(systemName: item.icon)
-        iconContainer.backgroundColor = item.color.withAlphaComponent(0.15)
-        iconImageView.tintColor = item.color
+        let color = resolveToolColor(name: item.colorName)
+        iconContainer.backgroundColor = color.withAlphaComponent(0.15)
+        iconImageView.tintColor = color
     }
 }
 
