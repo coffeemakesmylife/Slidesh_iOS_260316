@@ -319,7 +319,8 @@ class FeaturedCardCell: ToolCardCell {
         
         // 使用渐变背景
         let gradientLayer = CAGradientLayer()
-        gradientLayer.colors = [UIColor.appGradientStart.cgColor, UIColor.appGradientEnd.cgColor]
+        // 深海蓝 → 中蓝，确保白色文字始终可读
+        gradientLayer.colors = [UIColor.appGradientStart.cgColor, UIColor.appGradientMid.cgColor]
         gradientLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientLayer.endPoint = CGPoint(x: 1, y: 1)
         gradientLayer.name = "BackgroundGradient"
