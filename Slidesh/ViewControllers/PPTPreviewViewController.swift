@@ -20,11 +20,9 @@ class PPTPreviewViewController: UIViewController {
     private var progressObservation: NSKeyValueObservation?
 
     private let bottomBar         = UIView()
-    private let saveBtn           = UIButton(type: .custom)   // 保存到本地
-    private let shareBtn          = UIButton(type: .custom)   // 分享（非换模板场景）
+    private let saveBtn           = GradientButton()          // 保存到本地
+    private let shareBtn          = GradientButton()          // 分享（非换模板场景）
     private let changeTemplateBtn = UIButton(type: .custom)   // 换模板（换模板场景）
-    private var saveBtnGrad:       CAGradientLayer?
-    private var shareBtnGrad:      CAGradientLayer?
 
     // 下载任务（保存到本地 / 分享共用）
     private var downloadTask: URLSessionDownloadTask?
@@ -58,12 +56,6 @@ class PPTPreviewViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        // 禁用隐式动画，防止渐变层从左上角展开
-        CATransaction.begin()
-        CATransaction.setDisableActions(true)
-        saveBtnGrad?.frame  = saveBtn.bounds
-        shareBtnGrad?.frame = shareBtn.bounds
-        CATransaction.commit()
         changeTemplateBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
     }
 
@@ -114,7 +106,7 @@ class PPTPreviewViewController: UIViewController {
         saveBtn.translatesAutoresizingMaskIntoConstraints = false
         saveBtn.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
         bottomBar.addSubview(saveBtn)
-        saveBtnGrad = makeGradient(for: saveBtn, alpha: 1.0)
+        saveBtn.applyGradient(alpha: 1.0)
 
         // 左侧按钮：换模板场景用 changeTemplateBtn，否则用 shareBtn
         let leftBtn: UIButton
@@ -140,7 +132,7 @@ class PPTPreviewViewController: UIViewController {
             shareBtn.translatesAutoresizingMaskIntoConstraints = false
             shareBtn.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
             bottomBar.addSubview(shareBtn)
-            shareBtnGrad = makeGradient(for: shareBtn, alpha: 0.8)
+            shareBtn.applyGradient(alpha: 0.8)
             leftBtn = shareBtn
         }
 
@@ -173,19 +165,6 @@ class PPTPreviewViewController: UIViewController {
         }
     }
 
-    private func makeGradient(for btn: UIButton, alpha: CGFloat) -> CAGradientLayer {
-        let g = CAGradientLayer()
-        // 与 VIP 卡片渐变统一
-        g.colors     = [UIColor.appGradientStart.withAlphaComponent(alpha).cgColor,
-                        UIColor.appGradientMid.withAlphaComponent(alpha).cgColor,
-                        UIColor.appGradientEnd.withAlphaComponent(alpha).cgColor]
-        g.locations  = [0.0, 0.55, 1.0]
-        g.startPoint = CGPoint(x: 0, y: 0.5)
-        g.endPoint   = CGPoint(x: 1, y: 0.5)
-        g.cornerRadius = 26
-        btn.layer.insertSublayer(g, at: 0)
-        return g
-    }
 
     // MARK: - WebView
 
@@ -474,6 +453,30 @@ extension PPTPreviewViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFailProvisionalNavigation _: WKNavigation!, withError error: Error) {
         print("❌ PPTPreview 加载失败：\(error.localizedDescription)")
         showCenterMessage("加载失败，请检查网络\n\(error.localizedDescription)")
+    }
+}
+
+// MARK: - GradientButton（自动在 layoutSubviews 更新渐变 frame，避免隐式动画）
+
+private class GradientButton: UIButton {
+    private let gradLayer = CAGradientLayer()
+
+    func applyGradient(alpha: CGFloat) {
+        gradLayer.colors = [
+            UIColor.appGradientStart.withAlphaComponent(alpha).cgColor,
+            UIColor.appGradientMid.withAlphaComponent(alpha).cgColor,
+            UIColor.appGradientEnd.withAlphaComponent(alpha).cgColor,
+        ]
+        gradLayer.locations  = [0.0, 0.55, 1.0]
+        gradLayer.startPoint = CGPoint(x: 0, y: 0.5)
+        gradLayer.endPoint   = CGPoint(x: 1, y: 0.5)
+        gradLayer.cornerRadius = 26
+        layer.insertSublayer(gradLayer, at: 0)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradLayer.frame = bounds
     }
 }
 
