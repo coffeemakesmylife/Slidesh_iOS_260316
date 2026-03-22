@@ -23,9 +23,7 @@ class PPTPreviewViewController: UIViewController {
     private let saveBtn           = UIButton(type: .custom)   // 保存到本地
     private let shareBtn          = UIButton(type: .custom)   // 分享（非换模板场景）
     private let changeTemplateBtn = UIButton(type: .custom)   // 换模板（换模板场景）
-    private var saveBtnContainer:  UIView?
     private var shareBtnContainer: UIView?
-    private var saveBtnGrad:       CAGradientLayer?
     private var shareBtnGrad:      CAGradientLayer?
 
     // 下载任务（保存到本地 / 分享共用）
@@ -60,7 +58,6 @@ class PPTPreviewViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        saveBtnGrad?.frame  = saveBtnContainer?.bounds ?? .zero
         shareBtnGrad?.frame = shareBtnContainer?.bounds ?? .zero
         changeTemplateBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
     }
@@ -103,16 +100,16 @@ class PPTPreviewViewController: UIViewController {
             sep.heightAnchor.constraint(equalToConstant: 0.5),
         ])
 
-        // 保存按钮容器（渐变背景）
-        let saveContainer = makeGradientContainer(alpha: 1.0, grad: &saveBtnGrad)
-        saveBtnContainer = saveContainer
-        bottomBar.addSubview(saveContainer)
+        // 保存到本地按钮（主题色背景）
         saveBtn.setTitle("保存到本地", for: .normal)
         saveBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         saveBtn.setTitleColor(.white, for: .normal)
+        saveBtn.backgroundColor = .appPrimary
+        saveBtn.layer.cornerRadius = 26
+        saveBtn.clipsToBounds = true
         saveBtn.translatesAutoresizingMaskIntoConstraints = false
         saveBtn.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
-        saveContainer.addSubview(saveBtn)
+        bottomBar.addSubview(saveBtn)
 
         // 左侧：换模板场景用 changeTemplateBtn（无渐变），否则用 shareBtn 容器
         let leftView: UIView
@@ -148,16 +145,11 @@ class PPTPreviewViewController: UIViewController {
             leftView.heightAnchor.constraint(equalToConstant: 52),
             leftView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
 
-            saveContainer.topAnchor.constraint(equalTo: leftView.topAnchor),
-            saveContainer.leadingAnchor.constraint(equalTo: leftView.trailingAnchor, constant: 12),
-            saveContainer.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16),
-            saveContainer.heightAnchor.constraint(equalTo: leftView.heightAnchor),
-            saveContainer.widthAnchor.constraint(equalTo: leftView.widthAnchor),
-
-            saveBtn.topAnchor.constraint(equalTo: saveContainer.topAnchor),
-            saveBtn.bottomAnchor.constraint(equalTo: saveContainer.bottomAnchor),
-            saveBtn.leadingAnchor.constraint(equalTo: saveContainer.leadingAnchor),
-            saveBtn.trailingAnchor.constraint(equalTo: saveContainer.trailingAnchor),
+            saveBtn.topAnchor.constraint(equalTo: leftView.topAnchor),
+            saveBtn.leadingAnchor.constraint(equalTo: leftView.trailingAnchor, constant: 12),
+            saveBtn.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16),
+            saveBtn.heightAnchor.constraint(equalTo: leftView.heightAnchor),
+            saveBtn.widthAnchor.constraint(equalTo: leftView.widthAnchor),
         ])
         if let sc = shareBtnContainer {
             NSLayoutConstraint.activate([
@@ -170,8 +162,8 @@ class PPTPreviewViewController: UIViewController {
 
         // loading 指示器居中在各自容器上
         let indicatorPairs: [(UIActivityIndicatorView, UIView)] = canChangeTemplate
-            ? [(saveIndicator, saveContainer)]
-            : [(saveIndicator, saveContainer), (shareIndicator, shareBtnContainer!)]
+            ? [(saveIndicator, saveBtn)]
+            : [(saveIndicator, saveBtn), (shareIndicator, shareBtnContainer!)]
         for (indicator, container) in indicatorPairs {
             indicator.color = .white
             indicator.hidesWhenStopped = true
