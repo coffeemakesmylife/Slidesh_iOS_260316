@@ -56,11 +56,14 @@ class PPTPreviewViewController: UIViewController {
         loadContent()
     }
 
-    override func viewWillLayoutSubviews() {
-        super.viewWillLayoutSubviews()
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        // 禁用隐式动画，防止渐变层从左上角展开
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         saveBtnGrad?.frame  = saveBtn.bounds
         shareBtnGrad?.frame = shareBtn.bounds
-        // 换模板按钮不用渐变，borderColor 跟随 trait 更新
+        CATransaction.commit()
         changeTemplateBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
     }
 
