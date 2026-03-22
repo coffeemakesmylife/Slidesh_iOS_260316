@@ -254,7 +254,11 @@ class PPTPreviewViewController: UIViewController {
                 return
             }
             guard let tempUrl else { return }
-            let fileName = url.lastPathComponent.isEmpty ? "presentation.pptx" : url.lastPathComponent
+            // 用 PPT 标题作为文件名，去除文件系统非法字符
+            let rawName = self.pptInfo.subject?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let safeName = rawName.isEmpty ? "presentation" :
+                rawName.components(separatedBy: CharacterSet(charactersIn: "/\\:*?\"<>|")).joined(separator: "_")
+            let fileName = safeName + ".pptx"
             let destUrl  = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                 .appendingPathComponent(fileName)
             try? FileManager.default.removeItem(at: destUrl)
