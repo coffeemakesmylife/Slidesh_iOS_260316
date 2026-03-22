@@ -7,62 +7,74 @@
 
 import UIKit
 
-// 格式转换页
+// MARK: - 数据模型（顶层类型，避免 @MainActor 污染 Sendable 约束）
+
+enum ConvertSection: Int, CaseIterable, Sendable {
+    case featured
+    case pdfTools
+    case officeTools
+    case utility
+
+    var title: String? {
+        switch self {
+        case .featured:    return nil
+        case .pdfTools:    return "PDF 专家"
+        case .officeTools: return "Office 转换"
+        case .utility:     return "万能提取"
+        }
+    }
+}
+
+struct ConvertToolItem: Hashable, Sendable {
+    let id       = UUID()
+    let title:     String
+    let subTitle:  String
+    let icon:      String  // SF Symbol name
+    let colorName: String  // 用颜色名称代替 UIColor，避免非 Sendable 属性
+    let isFeatured: Bool
+
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    static func == (lhs: ConvertToolItem, rhs: ConvertToolItem) -> Bool { lhs.id == rhs.id }
+
+    // 运行时按需解析颜色
+    var color: UIColor {
+        switch colorName {
+        case "appPrimary":  return .appPrimary
+        case "systemRed":   return .systemRed
+        case "systemBlue":  return .systemBlue
+        case "systemIndigo":return .systemIndigo
+        case "systemGreen": return .systemGreen
+        case "systemOrange":return .systemOrange
+        case "systemTeal":  return .systemTeal
+        default:            return .appPrimary
+        }
+    }
+
+    static let all: [ConvertSection: [ConvertToolItem]] = [
+        .featured: [
+            ConvertToolItem(title: "PDF 转 Word", subTitle: "保持排版，精准转换，支持多种 OCR 识别", icon: "doc.text.fill", colorName: "appPrimary", isFeatured: true)
+        ],
+        .pdfTools: [
+            ConvertToolItem(title: "PDF 转换器", subTitle: "转为 Word/Excel/PPT/HTML", icon: "pdf.fill", colorName: "systemRed", isFeatured: false),
+            ConvertToolItem(title: "合并 PDF", subTitle: "支持两份或多份文件合并", icon: "plus.square.fill.on.square.fill", colorName: "systemBlue", isFeatured: false)
+        ],
+        .officeTools: [
+            ConvertToolItem(title: "Word 转换", subTitle: "转为 PDF/HTML/PNG", icon: "doc.richtext.fill", colorName: "systemIndigo", isFeatured: false),
+            ConvertToolItem(title: "Excel 转换", subTitle: "转为 PDF/HTML/PNG", icon: "tablecells.fill", colorName: "systemGreen", isFeatured: false),
+            ConvertToolItem(title: "PPT 转换", subTitle: "转为 PDF/HTML/PNG", icon: "tv.fill", colorName: "systemOrange", isFeatured: false)
+        ],
+        .utility: [
+            ConvertToolItem(title: "文件转图片", subTitle: "将文档每一页提取为图片", icon: "photo.on.rectangle.angled.fill", colorName: "systemTeal", isFeatured: false)
+        ]
+    ]
+}
+
+// MARK: - 格式转换页
+
 class ConvertViewController: UIViewController {
 
-    enum Section: Int, CaseIterable, Sendable {
-        case featured
-        case pdfTools
-        case officeTools
-        case utility
-
-        var title: String? {
-            switch self {
-            case .featured: return nil
-            case .pdfTools: return "PDF 专家"
-            case .officeTools: return "Office 转换"
-            case .utility: return "万能提取"
-            }
-        }
-    }
-
-    struct ToolItem: Hashable, @unchecked Sendable {
-        let id = UUID()
-        let title: String
-        let subTitle: String
-        let icon: String // SF Symbol name
-        let color: UIColor
-        let isFeatured: Bool
-        
-        func hash(into hasher: inout Hasher) {
-            hasher.combine(id)
-        }
-        
-        static func == (lhs: ToolItem, rhs: ToolItem) -> Bool {
-            return lhs.id == rhs.id
-        }
-
-        static let all: [Section: [ToolItem]] = [
-            .featured: [
-                ToolItem(title: "PDF 转 Word", subTitle: "保持排版，精准转换，支持多种 OCR 识别", icon: "doc.text.fill", color: .appPrimary, isFeatured: true)
-            ],
-            .pdfTools: [
-                ToolItem(title: "PDF 转换器", subTitle: "转为 Word/Excel/PPT/HTML", icon: "pdf.fill", color: .systemRed, isFeatured: false),
-                ToolItem(title: "合并 PDF", subTitle: "支持两份或多份文件合并", icon: "plus.square.fill.on.square.fill", color: .systemBlue, isFeatured: false)
-            ],
-            .officeTools: [
-                ToolItem(title: "Word 转换", subTitle: "转为 PDF/HTML/PNG", icon: "doc.richtext.fill", color: .systemIndigo, isFeatured: false),
-                ToolItem(title: "Excel 转换", subTitle: "转为 PDF/HTML/PNG", icon: "tablecells.fill", color: .systemGreen, isFeatured: false),
-                ToolItem(title: "PPT 转换", subTitle: "转为 PDF/HTML/PNG", icon: "tv.fill", color: .systemOrange, isFeatured: false)
-            ],
-            .utility: [
-                ToolItem(title: "文件转图片", subTitle: "将文档每一页提取为图片", icon: "photo.on.rectangle.angled.fill", color: .systemTeal, isFeatured: false)
-            ]
-        ]
-    }
-
     private var collectionView: UICollectionView!
-    private var dataSource: UICollectionViewDiffableDataSource<Section, ToolItem>!
+    private var dataSource: UICollectionViewDiffableDataSource<ConvertSection, ConvertToolItem>!
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -100,7 +112,7 @@ class ConvertViewController: UIViewController {
 
     private func createLayout() -> UICollectionViewLayout {
         return UICollectionViewCompositionalLayout { sectionIndex, layoutEnvironment in
-            let section = Section(rawValue: sectionIndex)!
+            let section = ConvertSection(rawValue: sectionIndex)!
             
             switch section {
             case .featured:
@@ -136,7 +148,7 @@ class ConvertViewController: UIViewController {
     }
 
     private func setupDataSource() {
-        dataSource = UICollectionViewDiffableDataSource<Section, ToolItem>(collectionView: collectionView) { (collectionView: UICollectionView, indexPath: IndexPath, item: ToolItem) -> UICollectionViewCell? in
+        dataSource = UICollectionViewDiffableDataSource<ConvertSection, ConvertToolItem>(collectionView: collectionView) { (collectionView: UICollectionView, indexPath: IndexPath, item: ConvertToolItem) -> UICollectionViewCell? in
             if item.isFeatured {
                 let cell = collectionView.dequeueReusableCell(withReuseIdentifier: FeaturedCardCell.featuredReuseIdentifier, for: indexPath) as! FeaturedCardCell
                 cell.configure(with: item)
@@ -148,19 +160,19 @@ class ConvertViewController: UIViewController {
             }
         }
 
-        dataSource.supplementaryViewProvider = { collectionView, kind, indexPath in
+        dataSource.supplementaryViewProvider = { (collectionView, kind, indexPath) -> UICollectionReusableView? in
             let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: SectionHeaderView.reuseIdentifier, for: indexPath) as! SectionHeaderView
-            let section = Section(rawValue: indexPath.section)!
+            let section = ConvertSection(rawValue: indexPath.section)!
             header.titleLabel.text = section.title
             return header
         }
     }
 
     private func applyInitialSnapshot() {
-        var snapshot = NSDiffableDataSourceSnapshot<Section, ToolItem>()
-        snapshot.appendSections(Section.allCases)
-        for section in Section.allCases {
-            if let items = ToolItem.all[section] {
+        var snapshot = NSDiffableDataSourceSnapshot<ConvertSection, ConvertToolItem>()
+        snapshot.appendSections(ConvertSection.allCases)
+        for section in ConvertSection.allCases {
+            if let items = ConvertToolItem.all[section] {
                 snapshot.appendItems(items, toSection: section)
             }
         }
@@ -285,7 +297,7 @@ class ToolCardCell: UICollectionViewCell {
         ] + iconSizeConstraints)
     }
 
-    func configure(with item: ConvertViewController.ToolItem) {
+    func configure(with item: ConvertToolItem) {
         titleLabel.text = item.title
         subTitleLabel.text = item.subTitle
         iconImageView.image = UIImage(systemName: item.icon)
