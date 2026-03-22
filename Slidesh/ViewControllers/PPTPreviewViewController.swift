@@ -19,16 +19,20 @@ class PPTPreviewViewController: UIViewController {
     private let progressBar = UIProgressView(progressViewStyle: .bar)
     private var progressObservation: NSKeyValueObservation?
 
-    private let bottomBar    = UIView()
-    private let saveBtn      = UIButton(type: .custom)   // 存到文件
-    private let shareBtn     = UIButton(type: .custom)   // 分享
-    private var saveBtnGrad:  CAGradientLayer?
-    private var shareBtnGrad: CAGradientLayer?
+    private let bottomBar         = UIView()
+    private let saveBtn           = UIButton(type: .custom)   // 存到文件
+    private let shareBtn          = UIButton(type: .custom)   // 分享（非换模板场景）
+    private let changeTemplateBtn = UIButton(type: .custom)   // 换模板（换模板场景）
+    private var saveBtnGrad:       CAGradientLayer?
+    private var shareBtnGrad:      CAGradientLayer?
 
     // 下载任务（存到文件 / 分享共用）
     private var downloadTask: URLSessionDownloadTask?
     private let saveIndicator  = UIActivityIndicatorView(style: .medium)
     private let shareIndicator = UIActivityIndicatorView(style: .medium)
+
+    // 换模板加载遮罩
+    private var loadingOverlay: UIView?
 
     // MARK: - Init
 
@@ -56,6 +60,8 @@ class PPTPreviewViewController: UIViewController {
         super.viewWillLayoutSubviews()
         saveBtnGrad?.frame  = saveBtn.bounds
         shareBtnGrad?.frame = shareBtn.bounds
+        // 换模板按钮不用渐变，borderColor 跟随 trait 更新
+        changeTemplateBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
     }
 
     // MARK: - 导航栏
@@ -72,12 +78,6 @@ class PPTPreviewViewController: UIViewController {
             navigationItem.leftBarButtonItem = closeBtn
         }
 
-        // 场景二（从我的作品进入）显示换模板按钮
-        if canChangeTemplate {
-            let changeBtn = UIBarButtonItem(
-                title: "换模板", style: .plain, target: self, action: #selector(changeTemplateTapped))
-            navigationItem.rightBarButtonItem = changeBtn
-        }
     }
 
     // MARK: - 底部栏
@@ -102,41 +102,59 @@ class PPTPreviewViewController: UIViewController {
             sep.heightAnchor.constraint(equalToConstant: 0.5),
         ])
 
-        // 公共样式
-        for btn in [saveBtn, shareBtn] {
-            btn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-            btn.setTitleColor(.white, for: .normal)
-            btn.layer.cornerRadius = 26
-            btn.clipsToBounds = true
-            btn.translatesAutoresizingMaskIntoConstraints = false
-            bottomBar.addSubview(btn)
+        // 存到文件按钮（右）
+        saveBtn.setTitle("存到文件", for: .normal)
+        saveBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+        saveBtn.setTitleColor(.white, for: .normal)
+        saveBtn.layer.cornerRadius = 26
+        saveBtn.clipsToBounds = true
+        saveBtn.translatesAutoresizingMaskIntoConstraints = false
+        saveBtn.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+        bottomBar.addSubview(saveBtn)
+        saveBtnGrad = makeGradient(for: saveBtn, alpha: 1.0)
+
+        // 左侧按钮：换模板场景用 changeTemplateBtn，否则用 shareBtn
+        let leftBtn: UIButton
+        if canChangeTemplate {
+            changeTemplateBtn.setTitle("换模板", for: .normal)
+            changeTemplateBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+            changeTemplateBtn.setTitleColor(.appPrimary, for: .normal)
+            changeTemplateBtn.backgroundColor = .appCardBackground
+            changeTemplateBtn.layer.cornerRadius = 26
+            changeTemplateBtn.layer.borderWidth = 1.5
+            changeTemplateBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
+            changeTemplateBtn.clipsToBounds = true
+            changeTemplateBtn.translatesAutoresizingMaskIntoConstraints = false
+            changeTemplateBtn.addTarget(self, action: #selector(changeTemplateTapped), for: .touchUpInside)
+            bottomBar.addSubview(changeTemplateBtn)
+            leftBtn = changeTemplateBtn
+        } else {
+            shareBtn.setTitle("分享", for: .normal)
+            shareBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
+            shareBtn.setTitleColor(.white, for: .normal)
+            shareBtn.layer.cornerRadius = 26
+            shareBtn.clipsToBounds = true
+            shareBtn.translatesAutoresizingMaskIntoConstraints = false
+            shareBtn.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
+            bottomBar.addSubview(shareBtn)
+            shareBtnGrad = makeGradient(for: shareBtn, alpha: 0.8)
+            leftBtn = shareBtn
         }
 
-        shareBtn.setTitle("分享", for: .normal)
-        shareBtn.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
-
-        saveBtn.setTitle("存到文件", for: .normal)
-        saveBtn.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
-
         NSLayoutConstraint.activate([
-            // 分享在左
-            shareBtn.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
-            shareBtn.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
-            shareBtn.heightAnchor.constraint(equalToConstant: 52),
-            shareBtn.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
+            leftBtn.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
+            leftBtn.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
+            leftBtn.heightAnchor.constraint(equalToConstant: 52),
+            leftBtn.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),
 
-            // 下载在右
-            saveBtn.topAnchor.constraint(equalTo: shareBtn.topAnchor),
-            saveBtn.leadingAnchor.constraint(equalTo: shareBtn.trailingAnchor, constant: 12),
+            saveBtn.topAnchor.constraint(equalTo: leftBtn.topAnchor),
+            saveBtn.leadingAnchor.constraint(equalTo: leftBtn.trailingAnchor, constant: 12),
             saveBtn.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor, constant: -16),
-            saveBtn.heightAnchor.constraint(equalTo: shareBtn.heightAnchor),
-            saveBtn.widthAnchor.constraint(equalTo: shareBtn.widthAnchor),
+            saveBtn.heightAnchor.constraint(equalTo: leftBtn.heightAnchor),
+            saveBtn.widthAnchor.constraint(equalTo: leftBtn.widthAnchor),
         ])
 
-        saveBtnGrad  = makeGradient(for: saveBtn,  alpha: 1.0)
-        shareBtnGrad = makeGradient(for: shareBtn, alpha: 0.8)
-
-        // loading 指示器
+        // loading 指示器（存到文件 / 分享）
         for (indicator, btn) in [(saveIndicator, saveBtn), (shareIndicator, shareBtn)] {
             indicator.color = .white
             indicator.hidesWhenStopped = true
@@ -277,8 +295,9 @@ class PPTPreviewViewController: UIViewController {
     }
 
     private func setButtonsEnabled(_ enabled: Bool) {
-        saveBtn.isEnabled  = enabled
-        shareBtn.isEnabled = enabled
+        saveBtn.isEnabled           = enabled
+        shareBtn.isEnabled          = enabled
+        changeTemplateBtn.isEnabled = enabled
         if enabled {
             saveBtn.setTitle("存到文件", for: .normal)
             shareBtn.setTitle("分享", for: .normal)
@@ -311,30 +330,31 @@ class PPTPreviewViewController: UIViewController {
     }
 
     @objc private func changeTemplateTapped() {
-        let picker = TemplatePickerViewController()
-        picker.onSelect = { [weak self] templateId in
+        let selector = TemplateSelectorViewController(
+            taskId:   pptInfo.taskId ?? "",
+            markdown: "")
+        selector.onTemplateSelected = { [weak self] templateId in
             self?.applyTemplate(templateId)
         }
-        let nav = UINavigationController(rootViewController: picker)
+        let nav = UINavigationController(rootViewController: selector)
         nav.modalPresentationStyle = .pageSheet
         present(nav, animated: true)
     }
 
     /// 调用 templates-update，成功后重新 load PPT 刷新 WebView
     private func applyTemplate(_ templateId: String) {
-        guard let pptId = pptInfo.pptId.isEmpty ? nil : Optional(pptInfo.pptId) else { return }
+        let pptId = pptInfo.pptId
+        guard !pptId.isEmpty else { return }
 
-        // 导航栏标题显示加载状态
-        let changeBtn = navigationItem.rightBarButtonItem
-        changeBtn?.isEnabled = false
-        title = "更换模板中…"
+        setButtonsEnabled(false)
+        showLoadingOverlay(message: "更换模板中…")
 
         PPTAPIService.shared.updateTemplate(pptId: pptId, templateId: templateId) { [weak self] result in
             guard let self else { return }
             switch result {
             case .failure(let error):
-                self.title = self.pptInfo.subject ?? "PPT 预览"
-                changeBtn?.isEnabled = true
+                self.hideLoadingOverlay()
+                self.setButtonsEnabled(true)
                 let alert = UIAlertController(title: "换模板失败",
                                               message: error.localizedDescription,
                                               preferredStyle: .alert)
@@ -345,19 +365,76 @@ class PPTPreviewViewController: UIViewController {
                 // 重新加载 PPT 详情获取新 fileUrl
                 PPTAPIService.shared.loadPPT(pptId: pptId) { [weak self] result in
                     guard let self else { return }
-                    changeBtn?.isEnabled = true
-                    switch result {
-                    case .success(let newInfo):
+                    self.hideLoadingOverlay()
+                    self.setButtonsEnabled(true)
+                    if case .success(let newInfo) = result {
                         self.pptInfo = newInfo
-                        self.title = newInfo.subject ?? "PPT 预览"
+                        self.title   = newInfo.subject ?? "PPT 预览"
                         self.loadContent()
-                    case .failure:
-                        // loadPPT 失败时保留旧预览，只恢复标题
-                        self.title = self.pptInfo.subject ?? "PPT 预览"
                     }
                 }
             }
         }
+    }
+
+    // MARK: - 加载遮罩
+
+    private func showLoadingOverlay(message: String) {
+        let overlay = UIView()
+        overlay.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(overlay)
+
+        let card = UIView()
+        card.backgroundColor    = .appCardBackground
+        card.layer.cornerRadius = 18
+        card.layer.shadowColor  = UIColor.black.cgColor
+        card.layer.shadowOpacity = 0.12
+        card.layer.shadowRadius  = 12
+        card.translatesAutoresizingMaskIntoConstraints = false
+        overlay.addSubview(card)
+
+        let spinner = UIActivityIndicatorView(style: .large)
+        spinner.color = .appPrimary
+        spinner.startAnimating()
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(spinner)
+
+        let label = UILabel()
+        label.text      = message
+        label.font      = .systemFont(ofSize: 15, weight: .medium)
+        label.textColor = .appTextPrimary
+        label.translatesAutoresizingMaskIntoConstraints = false
+        card.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            overlay.topAnchor.constraint(equalTo: view.topAnchor),
+            overlay.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            overlay.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            card.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: overlay.centerYAnchor),
+            card.widthAnchor.constraint(equalToConstant: 160),
+
+            spinner.topAnchor.constraint(equalTo: card.topAnchor, constant: 28),
+            spinner.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+
+            label.topAnchor.constraint(equalTo: spinner.bottomAnchor, constant: 14),
+            label.centerXAnchor.constraint(equalTo: card.centerXAnchor),
+            label.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -24),
+        ])
+
+        overlay.alpha = 0
+        UIView.animate(withDuration: 0.2) { overlay.alpha = 1 }
+        loadingOverlay = overlay
+    }
+
+    private func hideLoadingOverlay() {
+        guard let overlay = loadingOverlay else { return }
+        UIView.animate(withDuration: 0.2, animations: { overlay.alpha = 0 },
+                       completion: { _ in overlay.removeFromSuperview() })
+        loadingOverlay = nil
     }
 
     /// 存到文件：下载后用 UIDocumentPickerViewController 直接打开文件 App

@@ -15,6 +15,9 @@ class TemplateSelectorViewController: UIViewController {
     private let taskId:   String
     private let markdown: String
 
+    /// 非空时进入"换模板"模式：选好后回调 templateId，不走 generatePptx 流程
+    var onTemplateSelected: ((String) -> Void)?
+
     // MARK: - 数据状态
 
     private var selectedTemplate:  PPTTemplate?
@@ -88,6 +91,10 @@ class TemplateSelectorViewController: UIViewController {
         setupEmptyLabel()
         loadFilterOptions()
         loadTemplates(reset: true)
+        // 换模板模式：修改按钮标题
+        if onTemplateSelected != nil {
+            composeBtn.setTitle("使用此模板", for: .normal)
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -560,11 +567,16 @@ class TemplateSelectorViewController: UIViewController {
 
     @objc private func composeTapped() {
         guard let template = selectedTemplate else {
-            let alert = UIAlertController(title: "请先选择模板",
-                                          message: "点击一个模板后再合成PPT",
-                                          preferredStyle: .alert)
+            let msg = onTemplateSelected != nil ? "点击一个模板后再使用" : "点击一个模板后再合成PPT"
+            let alert = UIAlertController(title: "请先选择模板", message: msg, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "确定", style: .default))
             present(alert, animated: true)
+            return
+        }
+
+        // 换模板模式：直接回调 templateId，不走 generatePptx
+        if let onSelect = onTemplateSelected {
+            dismiss(animated: true) { onSelect(template.id) }
             return
         }
 
@@ -616,7 +628,7 @@ class TemplateSelectorViewController: UIViewController {
             ])
         } else {
             composeBtn.subviews.first(where: { $0.tag == 888 })?.removeFromSuperview()
-            composeBtn.setTitle("合成PPT", for: .normal)
+            composeBtn.setTitle(onTemplateSelected != nil ? "使用此模板" : "合成PPT", for: .normal)
         }
     }
 
