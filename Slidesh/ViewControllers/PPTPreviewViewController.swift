@@ -25,6 +25,7 @@ class PPTPreviewViewController: UIViewController {
     private let changeTemplateBtn = UIButton(type: .custom)   // 换模板（换模板场景）
     private var shareBtnContainer: UIView?
     private var shareBtnGrad:      CAGradientLayer?
+    private var bottomGradLayer:   CAGradientLayer?
 
     // 下载任务（保存到本地 / 分享共用）
     private var downloadTask: URLSessionDownloadTask?
@@ -50,15 +51,16 @@ class PPTPreviewViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .appBackgroundPrimary
         setupNavBar()
-        setupBottomBar()
         setupWebView()
+        setupBottomBar()
         setupProgressBar()
         loadContent()
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        shareBtnGrad?.frame = shareBtnContainer?.bounds ?? .zero
+        shareBtnGrad?.frame   = shareBtnContainer?.bounds ?? .zero
+        bottomGradLayer?.frame = bottomBar.bounds
         changeTemplateBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
     }
 
@@ -81,23 +83,27 @@ class PPTPreviewViewController: UIViewController {
     // MARK: - 底部栏
 
     private func setupBottomBar() {
-        bottomBar.backgroundColor = .appCardBackground
+        // 透明容器叠在 webView 上方，与 TemplateSelectorViewController 统一
+        bottomBar.backgroundColor = .clear
+        bottomBar.isUserInteractionEnabled = true
         bottomBar.translatesAutoresizingMaskIntoConstraints = false
-
-        let sep = UIView()
-        sep.backgroundColor = UIColor.separator.withAlphaComponent(0.3)
-        sep.translatesAutoresizingMaskIntoConstraints = false
-        bottomBar.addSubview(sep)
-
         view.addSubview(bottomBar)
+
+        // 渐变遮罩：顶部透明 → 底部不透明，自然过渡无分割线
+        let gradBg = CAGradientLayer()
+        gradBg.colors    = [UIColor.appBackgroundPrimary.withAlphaComponent(0).cgColor,
+                            UIColor.appBackgroundPrimary.withAlphaComponent(0.92).cgColor,
+                            UIColor.appBackgroundPrimary.cgColor]
+        gradBg.locations  = [0, 0.45, 1]
+        gradBg.startPoint = CGPoint(x: 0.5, y: 0)
+        gradBg.endPoint   = CGPoint(x: 0.5, y: 1)
+        bottomBar.layer.insertSublayer(gradBg, at: 0)
+        bottomGradLayer = gradBg
+
         NSLayoutConstraint.activate([
             bottomBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            sep.topAnchor.constraint(equalTo: bottomBar.topAnchor),
-            sep.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor),
-            sep.trailingAnchor.constraint(equalTo: bottomBar.trailingAnchor),
-            sep.heightAnchor.constraint(equalToConstant: 0.5),
         ])
 
         // 保存到本地按钮（主题色背景）
@@ -208,7 +214,7 @@ class PPTPreviewViewController: UIViewController {
             webView.topAnchor.constraint(equalTo: view.topAnchor),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: bottomBar.topAnchor),
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
     }
 
