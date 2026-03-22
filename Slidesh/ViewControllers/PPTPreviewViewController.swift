@@ -146,7 +146,7 @@ class PPTPreviewViewController: UIViewController {
         }
 
         NSLayoutConstraint.activate([
-            leftView.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 12),
+            leftView.topAnchor.constraint(equalTo: bottomBar.topAnchor, constant: 48),
             leftView.leadingAnchor.constraint(equalTo: bottomBar.leadingAnchor, constant: 16),
             leftView.heightAnchor.constraint(equalToConstant: 52),
             leftView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -12),

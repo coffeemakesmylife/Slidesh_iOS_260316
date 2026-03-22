@@ -275,6 +275,9 @@ extension MyWorksViewController: UICollectionViewDataSource {
         } else {
             let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: "OutlineCell", for: indexPath) as! UICollectionViewListCell
+            var bg = UIBackgroundConfiguration.listGroupedCell()
+            bg.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+            cell.backgroundConfiguration = bg
             if outlines.isEmpty {
                 var cfg = cell.defaultContentConfiguration()
                 cfg.text = "暂无大纲记录"
