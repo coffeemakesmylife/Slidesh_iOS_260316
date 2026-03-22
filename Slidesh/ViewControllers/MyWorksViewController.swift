@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import Kingfisher
 
 // MARK: - PPT 网格 Cell
 
@@ -15,7 +16,6 @@ private class PPTGridCell: UICollectionViewCell {
     private let coverView  = UIImageView()
     private let titleLabel = UILabel()
     private let dateLabel  = UILabel()
-    private var imageTask:  URLSessionDataTask?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -30,7 +30,6 @@ private class PPTGridCell: UICollectionViewCell {
         coverView.backgroundColor = .systemGray5
         coverView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         coverView.layer.cornerRadius  = 14
-        coverView.image     = UIImage(systemName: "doc.richtext.fill")
         coverView.tintColor = .appPrimary.withAlphaComponent(0.4)
         coverView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -69,9 +68,8 @@ private class PPTGridCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        imageTask?.cancel()
-        imageTask = nil
-        coverView.image = UIImage(systemName: "doc.richtext.fill")
+        coverView.kf.cancelDownloadTask()
+        coverView.image = nil
     }
 
     func configure(with info: PPTInfo) {
@@ -83,11 +81,11 @@ private class PPTGridCell: UICollectionViewCell {
             dateLabel.text = info.createTime
         }
         if let urlStr = info.coverUrl, !urlStr.isEmpty, let url = URL(string: urlStr) {
-            imageTask = URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-                guard let data, let img = UIImage(data: data) else { return }
-                DispatchQueue.main.async { self?.coverView.image = img }
-            }
-            imageTask?.resume()
+            // 使用 Kingfisher 加载封面，带缓存和淡入动画，无占位图
+            coverView.kf.setImage(with: url, options: [
+                .transition(.fade(0.25)),
+                .cacheOriginalImage,
+            ])
         }
     }
 }
