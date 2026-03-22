@@ -4,7 +4,6 @@ PODS:
   - lottie-ios (4.6.0)
   - SkeletonView (1.30.4)
   - SnapKit (5.7.1)
-  - ZIPFoundation (0.9.20)
   - ZXRequestBlock (1.0.4)
 
 DEPENDENCIES:
@@ -13,7 +12,6 @@ DEPENDENCIES:
   - lottie-ios
   - SkeletonView
   - SnapKit
-  - ZIPFoundation (~> 0.9)
   - ZXRequestBlock
 
 SPEC REPOS:
@@ -23,7 +21,6 @@ SPEC REPOS:
     - lottie-ios
     - SkeletonView
     - SnapKit
-    - ZIPFoundation
     - ZXRequestBlock
 
 SPEC CHECKSUMS:
@@ -32,9 +29,8 @@ SPEC CHECKSUMS:
   lottie-ios: 8f959969761e9c45d70353667d00af0e5b9cadb3
   SkeletonView: 5a050f6411e697abd4cda0a8d767013399dccd69
   SnapKit: d612e99e678a2d3b95bf60b0705ed0a35c03484a
-  ZIPFoundation: dfd3d681c4053ff7e2f7350bc4e53b5dba3f5351
   ZXRequestBlock: f96e7bf73d7ec2635b7bd2f277f1e1800bd59b31
 
-PODFILE CHECKSUM: 2b47be204866c8e6595256ba1830a63c0ea0788e
+PODFILE CHECKSUM: ee12a2e22b0afe9c268b9955aefc635918937f4d
 
 COCOAPODS: 1.16.2

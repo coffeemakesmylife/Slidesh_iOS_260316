@@ -7,7 +7,6 @@
 
 import UIKit
 import WebKit
-import ZIPFoundation
 
 class PPTPreviewViewController: UIViewController {
 
@@ -384,125 +383,6 @@ class PPTPreviewViewController: UIViewController {
         }
     }
 
-    // MARK: - PPTX 缩略图注入
-
-    /// 将封面图写入 PPTX ZIP（docProps/thumbnail.jpeg + _rels/.rels + [Content_Types].xml）
-    /// 同时通过 URLResourceValues 写入文件级 thumbnail metadata，失败时回退原文件
-    private func injectThumbnail(into pptxURL: URL, completion: @escaping (URL) -> Void) {
-        guard let coverStr = pptInfo.coverUrl,
-              let coverURL = URL(string: coverStr) else {
-            completion(pptxURL)
-            return
-        }
-
-        URLSession.shared.dataTask(with: coverURL) { [weak self] data, _, error in
-            guard let self else { return }
-            guard error == nil, let data,
-                  let image = UIImage(data: data),
-                  let jpegData = image.jpegData(compressionQuality: 0.85) else {
-                DispatchQueue.main.async { completion(pptxURL) }
-                return
-            }
-
-            let rawName = (self.pptInfo.subject ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            let safeName = rawName.isEmpty ? "presentation" :
-                rawName.components(separatedBy: CharacterSet(charactersIn: "/\\:*?\"<>|"))
-                       .joined(separator: "_")
-            let tmpThumb = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString + ".jpeg")
-            let tmpPPTX  = FileManager.default.temporaryDirectory
-                .appendingPathComponent(safeName + ".pptx")
-
-            do {
-                try jpegData.write(to: tmpThumb)
-                try? FileManager.default.removeItem(at: tmpPPTX)
-                try FileManager.default.copyItem(at: pptxURL, to: tmpPPTX)
-
-                guard let archive = Archive(url: tmpPPTX, accessMode: .update) else {
-                    print("❌ [Thumbnail] Archive 打开失败，跳过 ZIP 注入")
-                    try? FileManager.default.removeItem(at: tmpThumb)
-                    try? FileManager.default.removeItem(at: tmpPPTX)
-                    DispatchQueue.main.async { completion(pptxURL) }
-                    return
-                }
-
-                // 1. 移除旧缩略图文件
-                for name in ["docProps/thumbnail.jpeg", "docProps/thumbnail.jpg",
-                             "docProps/thumbnail.png"] {
-                    if let e = archive[name] { try archive.remove(e) }
-                }
-                // 2. 写入新封面图
-                try archive.addEntry(with: "docProps/thumbnail.jpeg", fileURL: tmpThumb)
-                try? FileManager.default.removeItem(at: tmpThumb)
-
-                // 3. 更新 _rels/.rels：始终移除旧 thumbnail 关系并写入新的
-                let thumbRel = "<Relationship Id=\"rIdThumb\" " +
-                    "Type=\"http://schemas.openxmlformats.org/package/2006/relationships/metadata/thumbnail\" " +
-                    "Target=\"docProps/thumbnail.jpeg\"/>"
-                if let relsEntry = archive["_rels/.rels"] {
-                    var d = Data()
-                    _ = try archive.extract(relsEntry) { d.append($0) }
-                    if var s = String(data: d, encoding: .utf8) {
-                        // 移除所有已有 thumbnail 行（无论指向哪个路径）
-                        let lines = s.components(separatedBy: "\n")
-                        s = lines.filter { !$0.contains("metadata/thumbnail") }
-                                 .joined(separator: "\n")
-                        s = s.replacingOccurrences(of: "</Relationships>",
-                                                   with: "  \(thumbRel)\n</Relationships>")
-                        if let updated = s.data(using: .utf8) {
-                            let tmp = FileManager.default.temporaryDirectory
-                                .appendingPathComponent(UUID().uuidString + ".rels")
-                            try updated.write(to: tmp)
-                            try archive.remove(relsEntry)
-                            try archive.addEntry(with: "_rels/.rels", fileURL: tmp)
-                            try? FileManager.default.removeItem(at: tmp)
-                        }
-                    }
-                } else {
-                    // _rels/.rels 不存在，从零创建
-                    let content = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
-                        "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">\n" +
-                        "  \(thumbRel)\n</Relationships>"
-                    if let d = content.data(using: .utf8) {
-                        let tmp = FileManager.default.temporaryDirectory
-                            .appendingPathComponent(UUID().uuidString + ".rels")
-                        try d.write(to: tmp)
-                        try archive.addEntry(with: "_rels/.rels", fileURL: tmp)
-                        try? FileManager.default.removeItem(at: tmp)
-                    }
-                }
-
-                // 4. 更新 [Content_Types].xml，注册 jpeg MIME
-                if let ctEntry = archive["[Content_Types].xml"] {
-                    var d = Data()
-                    _ = try archive.extract(ctEntry) { d.append($0) }
-                    if var s = String(data: d, encoding: .utf8),
-                       !s.contains("Extension=\"jpeg\"") && !s.contains("Extension=\"jpg\"") {
-                        s = s.replacingOccurrences(
-                            of: "</Types>",
-                            with: "  <Default Extension=\"jpeg\" ContentType=\"image/jpeg\"/>\n</Types>")
-                        if let updated = s.data(using: .utf8) {
-                            let tmp = FileManager.default.temporaryDirectory
-                                .appendingPathComponent(UUID().uuidString + ".xml")
-                            try updated.write(to: tmp)
-                            try archive.remove(ctEntry)
-                            try archive.addEntry(with: "[Content_Types].xml", fileURL: tmp)
-                            try? FileManager.default.removeItem(at: tmp)
-                        }
-                    }
-                }
-
-                DispatchQueue.main.async { completion(tmpPPTX) }
-
-            } catch {
-                print("❌ [Thumbnail] 注入异常: \(error)")
-                try? FileManager.default.removeItem(at: tmpThumb)
-                try? FileManager.default.removeItem(at: tmpPPTX)
-                DispatchQueue.main.async { completion(pptxURL) }
-            }
-        }.resume()
-    }
-
     // MARK: - 加载遮罩
 
     private func showLoadingOverlay(message: String) {
@@ -563,16 +443,14 @@ class PPTPreviewViewController: UIViewController {
         loadingOverlay = nil
     }
 
-    /// 保存到本地：下载 → 注入封面缩略图 → UIDocumentPickerViewController
+    /// 保存到本地：下载后用 UIDocumentPickerViewController 直接打开文件 App
     @objc private func saveTapped() {
         downloadFile(indicator: saveIndicator, activeBtn: saveBtn) { [weak self] destUrl in
             guard let self else { return }
-            self.injectThumbnail(into: destUrl) { finalUrl in
-                let picker = UIDocumentPickerViewController(forExporting: [finalUrl], asCopy: true)
-                picker.delegate = self
-                picker.modalPresentationStyle = .formSheet
-                self.present(picker, animated: true)
-            }
+            let picker = UIDocumentPickerViewController(forExporting: [destUrl], asCopy: true)
+            picker.delegate = self
+            picker.modalPresentationStyle = .formSheet
+            self.present(picker, animated: true)
         }
     }
 
