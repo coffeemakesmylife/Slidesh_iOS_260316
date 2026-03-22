@@ -492,13 +492,6 @@ class PPTPreviewViewController: UIViewController {
                     }
                 }
 
-                // 5. 通过文件级 URLResourceValues 写入缩略图（document picker 会读取此 metadata）
-                if let thumbImage = UIImage(data: jpegData) {
-                    var resValues = URLResourceValues()
-                    resValues.thumbnailDictionaryKey = [.NSThumbnail1024x1024SizeKey: thumbImage]
-                    try? tmpPPTX.setResourceValues(resValues)
-                }
-
                 DispatchQueue.main.async { completion(tmpPPTX) }
 
             } catch {
