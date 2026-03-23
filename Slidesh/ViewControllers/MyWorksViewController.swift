@@ -227,7 +227,8 @@ class MyWorksViewController: UIViewController {
             subitems: [item])
 
         let section = NSCollectionLayoutSection(group: group)
-        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 11, bottom: 8, trailing: 11)
+        // leading/trailing=15 使格子单元格从 x=20(15+5) 开始，与 section header 指示器（x=20）对齐
+        section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 15, bottom: 8, trailing: 15)
         section.boundarySupplementaryItems = [makeSectionHeader()]
         return section
     }
