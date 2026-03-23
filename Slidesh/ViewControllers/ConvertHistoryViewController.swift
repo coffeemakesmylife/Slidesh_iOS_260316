@@ -14,16 +14,20 @@ import SafariServices
 final class ConvertHistoryViewController: UIViewController {
 
     private let tableView = UITableView(frame: .zero, style: .plain)
-    private var records: [ConvertRecord] = []
+
+    // 按日期分组，每组 (dateKey: "yyyy-MM-dd", records: 当天记录按时间倒序)
+    private var sections: [(dateKey: String, records: [ConvertRecord])] = []
 
     // QLPreviewController 数据源缓存
     private var previewURLs: [URL] = []
 
-    // 日期格式化
-    private static let dateFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        return f
+    // 日期分组键（section header 用）
+    private static let dateKeyFormatter: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; return f
+    }()
+    // cell 内时间显示
+    private static let timeFormatter: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "HH:mm"; return f
     }()
 
     // MARK: - 生命周期
@@ -45,24 +49,42 @@ final class ConvertHistoryViewController: UIViewController {
     // MARK: - 数据
 
     private func loadRecords() {
-        records = WorksStore.shared.converts
+        sections = grouped(WorksStore.shared.converts)
         tableView.reloadData()
         updateEmptyState()
     }
 
     @objc private func worksDidUpdate() {
-        records = WorksStore.shared.converts
+        sections = grouped(WorksStore.shared.converts)
         tableView.reloadData()
         updateEmptyState()
+    }
+
+    /// 将平铺记录按 yyyy-MM-dd 分组，组内按时间倒序，组间最新日期在前
+    private func grouped(_ records: [ConvertRecord]) -> [(dateKey: String, records: [ConvertRecord])] {
+        var dict: [String: [ConvertRecord]] = [:]
+        for r in records {
+            let key = Self.dateKeyFormatter.string(from: r.savedAt)
+            dict[key, default: []].append(r)
+        }
+        return dict
+            .map { (dateKey: $0.key, records: $0.value.sorted { $0.savedAt > $1.savedAt }) }
+            .sorted { $0.dateKey > $1.dateKey }
+    }
+
+    // 取某 indexPath 对应的记录
+    private func record(at indexPath: IndexPath) -> ConvertRecord {
+        sections[indexPath.section].records[indexPath.row]
     }
 
     // MARK: - UI
 
     private func setupTableView() {
-        tableView.backgroundColor   = .clear
-        tableView.separatorStyle    = .none
-        tableView.rowHeight         = UITableView.automaticDimension
+        tableView.backgroundColor    = .clear
+        tableView.separatorStyle     = .none
+        tableView.rowHeight          = UITableView.automaticDimension
         tableView.estimatedRowHeight = 80
+        tableView.sectionHeaderTopPadding = 0
         tableView.register(ConvertHistoryCell.self, forCellReuseIdentifier: ConvertHistoryCell.reuseID)
         tableView.dataSource = self
         tableView.delegate   = self
@@ -116,8 +138,9 @@ final class ConvertHistoryViewController: UIViewController {
     }
 
     private func updateEmptyState() {
-        emptyView.isHidden = !records.isEmpty
-        tableView.isHidden = records.isEmpty
+        let isEmpty = sections.isEmpty
+        emptyView.isHidden = !isEmpty
+        tableView.isHidden = isEmpty
     }
 
     // MARK: - 预览
@@ -157,16 +180,24 @@ final class ConvertHistoryViewController: UIViewController {
     // MARK: - 删除
 
     private func deleteRecord(at indexPath: IndexPath) {
-        let record = records[indexPath.row]
-        // 删除本地文件
-        if !record.isRemoteResult {
-            record.resultPaths.forEach {
-                try? FileManager.default.removeItem(at: resolveLocalPath($0))
-            }
+        let rec = record(at: indexPath)
+        if !rec.isRemoteResult {
+            rec.resultPaths.forEach { try? FileManager.default.removeItem(at: resolveLocalPath($0)) }
         }
-        WorksStore.shared.deleteConvert(id: record.id)
-        records.remove(at: indexPath.row)
-        tableView.deleteRows(at: [indexPath], with: .automatic)
+        WorksStore.shared.deleteConvert(id: rec.id)
+
+        // 更新本地数据并做动画
+        var sectionRecords = sections[indexPath.section].records
+        sectionRecords.remove(at: indexPath.row)
+
+        if sectionRecords.isEmpty {
+            // 该天已无记录，删除整个 section
+            sections.remove(at: indexPath.section)
+            tableView.deleteSections(IndexSet(integer: indexPath.section), with: .automatic)
+        } else {
+            sections[indexPath.section] = (sections[indexPath.section].dateKey, sectionRecords)
+            tableView.deleteRows(at: [indexPath], with: .automatic)
+        }
         updateEmptyState()
     }
 }
@@ -175,20 +206,42 @@ final class ConvertHistoryViewController: UIViewController {
 
 extension ConvertHistoryViewController: UITableViewDataSource, UITableViewDelegate {
 
+    func numberOfSections(in tableView: UITableView) -> Int { sections.count }
+
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        records.count
+        sections[section].records.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(
             withIdentifier: ConvertHistoryCell.reuseID, for: indexPath) as! ConvertHistoryCell
-        cell.configure(with: records[indexPath.row], dateFormatter: Self.dateFormatter)
+        cell.configure(with: record(at: indexPath), timeFormatter: Self.timeFormatter)
         return cell
     }
 
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let header = UIView()
+        header.backgroundColor = .clear
+
+        let label = UILabel()
+        label.text      = sections[section].dateKey
+        label.font      = .systemFont(ofSize: 13, weight: .semibold)
+        label.textColor = .appTextSecondary
+        label.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
+            label.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -20),
+            label.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+        ])
+        return header
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { 36 }
+
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        previewRecord(records[indexPath.row])
+        previewRecord(record(at: indexPath))
     }
 
     // 左滑删除
@@ -238,14 +291,14 @@ private final class ConvertHistoryCell: UITableViewCell {
 
     private func setupCard() {
         cardView.backgroundColor    = .appCardBackground.withAlphaComponent(0.7)
-        cardView.layer.cornerRadius = 20
+        cardView.layer.cornerRadius = 24
         cardView.layer.borderWidth  = 1
         cardView.layer.borderColor  = UIColor.appCardBorder.cgColor
         cardView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(cardView)
 
         // 图标背景
-        iconBg.layer.cornerRadius = 14
+        iconBg.layer.cornerRadius = 16
         iconBg.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(iconBg)
 
@@ -341,7 +394,7 @@ private final class ConvertHistoryCell: UITableViewCell {
         ])
     }
 
-    func configure(with record: ConvertRecord, dateFormatter: DateFormatter) {
+    func configure(with record: ConvertRecord, timeFormatter: DateFormatter) {
         // 图标和颜色均来自输出格式
         let (iconName, color) = outputIconInfo(toolKind: record.toolKind, outputFormat: record.outputFormat)
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
@@ -351,7 +404,7 @@ private final class ConvertHistoryCell: UITableViewCell {
 
         titleLabel.text = record.toolTitle
         fileLabel.text  = record.inputFileName
-        dateLabel.text  = dateFormatter.string(from: record.savedAt)
+        dateLabel.text  = timeFormatter.string(from: record.savedAt)
 
         // badge 显示输出格式，颜色与图标一致
         let effectiveFormat = effectiveOutputFormat(toolKind: record.toolKind, outputFormat: record.outputFormat)
