@@ -95,16 +95,29 @@ private class PPTGridCell: UICollectionViewCell {
 
 private class WorksSectionHeader: UICollectionReusableView {
     static let reuseID = "WorksSectionHeader"
+    private let bar        = UIView()
     private let titleLabel = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        titleLabel.font      = .systemFont(ofSize: 13)
-        titleLabel.textColor = .secondaryLabel
+
+        bar.layer.cornerRadius = 2
+        bar.backgroundColor    = .appPrimary
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(bar)
+
+        titleLabel.font      = .systemFont(ofSize: 18, weight: .heavy)
+        titleLabel.textColor = .appTextPrimary
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(titleLabel)
+
         NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            bar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            bar.centerYAnchor.constraint(equalTo: centerYAnchor),
+            bar.widthAnchor.constraint(equalToConstant: 4),
+            bar.heightAnchor.constraint(equalToConstant: 18),
+
+            titleLabel.leadingAnchor.constraint(equalTo: bar.trailingAnchor, constant: 8),
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
