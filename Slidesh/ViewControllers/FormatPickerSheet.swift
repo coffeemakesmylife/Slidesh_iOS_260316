@@ -315,8 +315,8 @@ final class FormatPickerSheet: UIViewController {
         case "PDF":   return ("book.pages.fill",                           .systemRed)
         case "EXCEL": return ("tablecells.fill",                           .systemGreen)
         case "PPT":   return ("tv.fill",                                   .systemOrange)
-        case "PNG":   return ("photo.fill",                                .systemPurple)
-        case "HTML":  return ("globe",                                     .systemTeal)
+        case "PNG":   return ("photo.fill",                                .systemTeal)
+        case "HTML":  return ("globe",                                     .systemPurple)
         case "XML":   return ("chevron.left.forwardslash.chevron.right",   .systemBrown)
         default:      return ("doc.fill",                                  .appPrimary)
         }
