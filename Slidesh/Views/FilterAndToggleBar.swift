@@ -146,7 +146,7 @@ class FilterChipButton: UIControl {
         titleLabel.textColor  = color
         chevronView.tintColor = color
         // CGColor 不跟随 trait 自动更新，在此手动解析当前 trait 下的颜色
-        let borderUIColor: UIColor = isActive ? .appPrimary : .appChipUnselectedBackground
+        let borderUIColor: UIColor = isActive ? .appPrimary : .appTextSecondary
         layer.borderColor = borderUIColor.resolvedColor(with: traitCollection).cgColor
         backgroundColor   = isActive ? .appPrimarySubtle : .clear
     }

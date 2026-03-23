@@ -149,13 +149,23 @@ private class CategoryChipButton: UIControl {
         if selected {
             gradientLayer.isHidden = false
             backgroundColor        = .clear
+            layer.borderWidth      = 0
             layer.borderColor      = UIColor.clear.cgColor
             label.textColor        = .white
         } else {
             gradientLayer.isHidden = true
-            backgroundColor        = .appChipUnselectedBackground
-            layer.borderColor      = UIColor.clear.cgColor
-            label.textColor        = .appChipUnselectedText
+            backgroundColor        = .appCardBackground.withAlphaComponent(0.65)
+            layer.borderWidth      = 1
+            layer.borderColor      = UIColor.appCardBorder.resolvedColor(with: traitCollection).cgColor
+            label.textColor        = .appTextSecondary
+        }
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        // appCardBorder 是动态颜色，主题切换时手动更新 CGColor
+        if gradientLayer.isHidden {
+            layer.borderColor = UIColor.appCardBorder.resolvedColor(with: traitCollection).cgColor
         }
     }
 
