@@ -149,7 +149,7 @@ private class CategoryChipButton: UIControl {
         if selected {
             gradientLayer.isHidden = false
             backgroundColor        = .clear
-            layer.borderWidth      = 1
+            layer.borderWidth      = 1.5
             layer.borderColor      = UIColor.white.withAlphaComponent(0.25).cgColor
             label.textColor        = .white
         } else {
