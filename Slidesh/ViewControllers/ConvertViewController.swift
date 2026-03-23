@@ -7,6 +7,17 @@ import UIKit
 
 // MARK: - 数据模型（顶层，避免 @MainActor 污染 Sendable 约束）
 
+// 每个转换工具对应的 API 类型
+enum ConvertToolKind: String, Sendable {
+    case pdfToWord      // 精选卡，固定输出 WORD
+    case pdfConvert     // PDF 多格式
+    case mergePDF       // 合并 PDF
+    case wordConvert
+    case excelConvert
+    case pptConvert
+    case fileToImage
+}
+
 enum ConvertSection: Int, CaseIterable, Sendable {
     case featured
     case pdfTools
@@ -24,12 +35,17 @@ enum ConvertSection: Int, CaseIterable, Sendable {
 }
 
 struct ConvertToolItem: Hashable, Sendable {
-    let id       = UUID()
-    let title:     String
-    let subTitle:  String
-    let icon:      String   // SF Symbol name
-    let colorName: String   // UIColor 由 UI 层解析，保持 Sendable
-    let isFeatured: Bool
+    let id            = UUID()
+    let title:          String
+    let subTitle:       String
+    let icon:           String   // SF Symbol name
+    let colorName:      String   // UIColor 由 UI 层解析，保持 Sendable
+    let isFeatured:     Bool
+    // 新增字段
+    let kind:           ConvertToolKind
+    let formatOptions:  [String]   // 空 = 无格式选择步骤
+    let acceptedExtensions: [String] // 用于 UTType 文件过滤
+    let allowsMultiple: Bool       // 合并PDF为true
 
     nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
     nonisolated static func == (l: ConvertToolItem, r: ConvertToolItem) -> Bool { l.id == r.id }
@@ -38,25 +54,41 @@ struct ConvertToolItem: Hashable, Sendable {
         .featured: [
             ConvertToolItem(title: "PDF 转 Word",
                             subTitle: "保持排版，精准转换，支持多种 OCR 识别",
-                            icon: "doc.text.fill", colorName: "appPrimary", isFeatured: true),
+                            icon: "doc.text.fill", colorName: "appPrimary", isFeatured: true,
+                            kind: .pdfToWord, formatOptions: [],
+                            acceptedExtensions: ["pdf"], allowsMultiple: false),
         ],
         .pdfTools: [
             ConvertToolItem(title: "PDF 转换器", subTitle: "转为 Word/Excel/PPT/HTML",
-                            icon: "book.pages.fill", colorName: "systemRed", isFeatured: false),
+                            icon: "book.pages.fill", colorName: "systemRed", isFeatured: false,
+                            kind: .pdfConvert,
+                            formatOptions: ["WORD", "XML", "EXCEL", "PPT", "PNG", "HTML"],
+                            acceptedExtensions: ["pdf"], allowsMultiple: false),
             ConvertToolItem(title: "合并 PDF", subTitle: "支持两份或多份文件合并",
-                            icon: "plus.square.fill.on.square.fill", colorName: "systemBlue", isFeatured: false),
+                            icon: "plus.square.fill.on.square.fill", colorName: "systemBlue", isFeatured: false,
+                            kind: .mergePDF, formatOptions: [],
+                            acceptedExtensions: ["pdf"], allowsMultiple: true),
         ],
         .officeTools: [
             ConvertToolItem(title: "Word 转换", subTitle: "转为 PDF/HTML/PNG",
-                            icon: "doc.richtext.fill", colorName: "systemIndigo", isFeatured: false),
+                            icon: "doc.richtext.fill", colorName: "systemIndigo", isFeatured: false,
+                            kind: .wordConvert, formatOptions: ["PDF", "HTML", "PNG"],
+                            acceptedExtensions: ["doc", "docx"], allowsMultiple: false),
             ConvertToolItem(title: "Excel 转换", subTitle: "转为 PDF/HTML/PNG",
-                            icon: "tablecells.fill", colorName: "systemGreen", isFeatured: false),
+                            icon: "tablecells.fill", colorName: "systemGreen", isFeatured: false,
+                            kind: .excelConvert, formatOptions: ["PDF", "HTML", "PNG"],
+                            acceptedExtensions: ["xls", "xlsx"], allowsMultiple: false),
             ConvertToolItem(title: "PPT 转换", subTitle: "转为 PDF/HTML/PNG",
-                            icon: "tv.fill", colorName: "systemOrange", isFeatured: false),
+                            icon: "tv.fill", colorName: "systemOrange", isFeatured: false,
+                            kind: .pptConvert, formatOptions: ["PDF", "HTML", "PNG"],
+                            acceptedExtensions: ["ppt", "pptx"], allowsMultiple: false),
         ],
         .utility: [
             ConvertToolItem(title: "文件转图片", subTitle: "将文档每一页提取为图片",
-                            icon: "photo.on.rectangle.angled.fill", colorName: "systemTeal", isFeatured: false),
+                            icon: "photo.on.rectangle.angled.fill", colorName: "systemTeal", isFeatured: false,
+                            kind: .fileToImage, formatOptions: [],
+                            acceptedExtensions: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"],
+                            allowsMultiple: false),
         ],
     ]
 }
@@ -350,7 +382,7 @@ final class ToolCell: UICollectionViewCell {
 
     private func setup() {
         // 卡片背景：动态颜色，自动适应深/浅模式
-        contentView.backgroundColor = .appCardBackground
+        contentView.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
         contentView.layer.cornerRadius = 26
         contentView.layer.borderWidth  = 1
 
