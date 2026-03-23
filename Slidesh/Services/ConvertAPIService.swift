@@ -18,7 +18,8 @@ final class ConvertAPIService: NSObject {
 
     static let shared = ConvertAPIService()
 
-    private let baseURL = "http://43.156.217.34:8080"
+    // 格式转换服务器（与 PPT 生成服务器不同）
+    private let baseURL = "http://43.163.228.96:8080/open_cat"
 
     // 当前上传任务（用于 cancel）
     private var currentTask: URLSessionDataTask?
@@ -26,6 +27,8 @@ final class ConvertAPIService: NSObject {
     // 上传进度 / 完成回调（delegate 方法中使用）
     private var uploadProgressHandler: ((Double) -> Void)?
     private var completionHandler: ((Result<[URL], Error>) -> Void)?
+    // 当前转换的目标文件扩展名（用于 URL 无扩展时 fallback）
+    private var currentFallbackExt: String = ""
 
     // 每次请求创建独立 URLSession，避免 delegate 永久持有 self
     private var currentSession: URLSession?
@@ -45,6 +48,8 @@ final class ConvertAPIService: NSObject {
         // 保存回调供 delegate 方法使用
         uploadProgressHandler = onUploadProgress
         completionHandler = completion
+        // 推导目标扩展名（URL 无扩展时用作 fallback）
+        currentFallbackExt = fallbackExtension(tool: tool, outputFormat: outputFormat)
 
         // 构建 multipart boundary
         let boundary = "Boundary-\(UUID().uuidString)"
@@ -241,28 +246,28 @@ final class ConvertAPIService: NSObject {
             return
         }
 
-        downloadFiles(from: urlStrings, completion: completion)
+        downloadFiles(from: urlStrings, fallbackExt: currentFallbackExt, completion: completion)
     }
 
     // MARK: - 私有：串行下载结果文件
 
     /// 逐个下载 URL 到临时目录，全部完成后调用 completion(.success([URL]))
+    /// fallbackExt：当 URL 无扩展名时使用（如 "docx"、"pdf"）
     private func downloadFiles(
         from urlStrings: [String],
+        fallbackExt: String = "",
         completion: @escaping (Result<[URL], Error>) -> Void
     ) {
         var results: [URL] = []
 
         func downloadNext(index: Int) {
             guard index < urlStrings.count else {
-                // 全部下载完成
                 DispatchQueue.main.async { completion(.success(results)) }
                 return
             }
 
             let urlString = urlStrings[index]
             guard let url = URL(string: urlString) else {
-                // 跳过无效 URL，继续下一个
                 #if DEBUG
                 print("[ConvertAPI] 无效下载 URL：\(urlString)")
                 #endif
@@ -270,9 +275,19 @@ final class ConvertAPIService: NSObject {
                 return
             }
 
-            URLSession.shared.downloadTask(with: url) { tempURL, _, error in
+            #if DEBUG
+            print("[ConvertAPI] 下载文件：\(url)")
+            #endif
+
+            URLSession.shared.downloadTask(with: url) { tempURL, response, error in
                 if let error = error {
                     DispatchQueue.main.async { completion(.failure(error)) }
+                    return
+                }
+                // 检查 HTTP 状态码，非 2xx 视为下载失败
+                if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                    let err = APIError.serverError("文件下载失败（HTTP \(http.statusCode)），请重试")
+                    DispatchQueue.main.async { completion(.failure(err)) }
                     return
                 }
                 guard let tempURL = tempURL else {
@@ -280,11 +295,13 @@ final class ConvertAPIService: NSObject {
                     return
                 }
 
-                // 移动到临时目录，保留原文件名
-                let fileName = url.lastPathComponent.isEmpty ? "result_\(index)" : url.lastPathComponent
+                // 保留原文件名；若无扩展名则补充 fallbackExt
+                var fileName = url.lastPathComponent.isEmpty ? "result_\(index)" : url.lastPathComponent
+                if url.pathExtension.isEmpty, !fallbackExt.isEmpty {
+                    fileName = "\(fileName).\(fallbackExt)"
+                }
                 let destURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
                 do {
-                    // 目标文件若已存在则先删除
                     if FileManager.default.fileExists(atPath: destURL.path) {
                         try FileManager.default.removeItem(at: destURL)
                     }
@@ -300,6 +317,28 @@ final class ConvertAPIService: NSObject {
         }
 
         downloadNext(index: 0)
+    }
+
+    // MARK: - 私有：目标扩展名推导
+
+    /// 根据工具类型和输出格式推导文件扩展名（大写 format → 小写 ext）
+    private func fallbackExtension(tool: ConvertToolKind, outputFormat: String?) -> String {
+        switch tool {
+        case .pdfToWord:            return "docx"
+        case .mergePDF:             return "pdf"
+        case .fileToImage:          return "png"
+        case .pdfConvert, .wordConvert, .excelConvert, .pptConvert:
+            switch (outputFormat ?? "").uppercased() {
+            case "WORD":  return "docx"
+            case "PDF":   return "pdf"
+            case "EXCEL": return "xlsx"
+            case "PPT":   return "pptx"
+            case "PNG":   return "png"
+            case "HTML":  return "html"
+            case "XML":   return "xml"
+            default:      return ""
+            }
+        }
     }
 
     // MARK: - 私有：MIME 类型映射
