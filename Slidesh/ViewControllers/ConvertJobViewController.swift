@@ -51,11 +51,13 @@ final class ConvertJobViewController: UIViewController {
     private let subLabel     = UILabel()
 
     // 文件卡片（fileSelected 显示）
-    private let fileCardView  = UIView()
-    private let fileIconView  = UIImageView()
-    private let fileNameLabel = UILabel()
-    private let fileSizeLabel = UILabel()
-    private let formatBadge   = UILabel()
+    private let fileCardView   = UIView()
+    private let fileIconView   = UIImageView()
+    private let fileTextStack  = UIStackView()   // 文件名+大小垂直居中组
+    private let fileNameLabel  = UILabel()
+    private let fileSizeLabel  = UILabel()
+    private let formatBadge    = UIView()        // badge 容器，宽度自适应
+    private let formatBadgeLabel = UILabel()     // badge 内部文字
     // 合并PDF文件列表
     private let fileListStack = UIStackView()
 
@@ -205,16 +207,29 @@ final class ConvertJobViewController: UIViewController {
         fileSizeLabel.translatesAutoresizingMaskIntoConstraints = false
         fileCardView.addSubview(fileSizeLabel)
 
-        formatBadge.font            = .systemFont(ofSize: 12, weight: .bold)
+        // badge 容器：圆角背景，宽度由内部文字自适应
         formatBadge.layer.cornerRadius = 8
-        formatBadge.clipsToBounds   = true
-        formatBadge.textAlignment   = .center
-        formatBadge.isHidden        = true
-        // badge 宽度完全由内容决定，不受文件名影响
-        formatBadge.setContentCompressionResistancePriority(.required, for: .horizontal)
-        formatBadge.setContentHuggingPriority(.required, for: .horizontal)
+        formatBadge.clipsToBounds      = true
+        formatBadge.isHidden           = true
         formatBadge.translatesAutoresizingMaskIntoConstraints = false
         fileCardView.addSubview(formatBadge)
+
+        // badge 内部文字
+        formatBadgeLabel.font      = .systemFont(ofSize: 12, weight: .bold)
+        formatBadgeLabel.textAlignment = .center
+        formatBadgeLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        formatBadgeLabel.setContentHuggingPriority(.required, for: .horizontal)
+        formatBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
+        formatBadge.addSubview(formatBadgeLabel)
+
+        // 文件名+大小垂直居中组
+        fileTextStack.axis      = .vertical
+        fileTextStack.spacing   = 4
+        fileTextStack.alignment = .leading
+        fileTextStack.translatesAutoresizingMaskIntoConstraints = false
+        fileTextStack.addArrangedSubview(fileNameLabel)
+        fileTextStack.addArrangedSubview(fileSizeLabel)
+        fileCardView.addSubview(fileTextStack)
 
         fileListStack.axis    = .vertical
         fileListStack.spacing = 8
@@ -232,19 +247,24 @@ final class ConvertJobViewController: UIViewController {
             fileIconView.widthAnchor.constraint(equalToConstant: 36),
             fileIconView.heightAnchor.constraint(equalToConstant: 36),
 
-            fileNameLabel.topAnchor.constraint(equalTo: fileCardView.topAnchor, constant: 16),
-            fileNameLabel.leadingAnchor.constraint(equalTo: fileIconView.trailingAnchor, constant: 12),
-            // 文件名最多延伸到 badge 左侧 8pt，不强制等于（避免拉伸 badge）
-            fileNameLabel.trailingAnchor.constraint(lessThanOrEqualTo: formatBadge.leadingAnchor, constant: -8),
+            // 文件名+大小整体垂直居中
+            fileTextStack.centerYAnchor.constraint(equalTo: fileCardView.centerYAnchor),
+            fileTextStack.leadingAnchor.constraint(equalTo: fileIconView.trailingAnchor, constant: 12),
+            // 文本组最多延伸到 badge 左侧 8pt
+            fileTextStack.trailingAnchor.constraint(lessThanOrEqualTo: formatBadge.leadingAnchor, constant: -8),
+            fileTextStack.topAnchor.constraint(greaterThanOrEqualTo: fileCardView.topAnchor, constant: 14),
+            fileTextStack.bottomAnchor.constraint(lessThanOrEqualTo: fileCardView.bottomAnchor, constant: -14),
 
-            fileSizeLabel.topAnchor.constraint(equalTo: fileNameLabel.bottomAnchor, constant: 4),
-            fileSizeLabel.leadingAnchor.constraint(equalTo: fileNameLabel.leadingAnchor),
-            fileSizeLabel.bottomAnchor.constraint(lessThanOrEqualTo: fileCardView.bottomAnchor, constant: -16),
-
-            // badge 右侧固定，垂直居中，宽度由内容自适应
+            // badge 容器：右侧固定，垂直居中，高度固定
             formatBadge.centerYAnchor.constraint(equalTo: fileCardView.centerYAnchor),
             formatBadge.trailingAnchor.constraint(equalTo: fileCardView.trailingAnchor, constant: -16),
             formatBadge.heightAnchor.constraint(equalToConstant: 28),
+
+            // badge 内部文字：左右各 10pt 等距
+            formatBadgeLabel.topAnchor.constraint(equalTo: formatBadge.topAnchor),
+            formatBadgeLabel.bottomAnchor.constraint(equalTo: formatBadge.bottomAnchor),
+            formatBadgeLabel.leadingAnchor.constraint(equalTo: formatBadge.leadingAnchor, constant: 10),
+            formatBadgeLabel.trailingAnchor.constraint(equalTo: formatBadge.trailingAnchor, constant: -10),
 
             fileListStack.topAnchor.constraint(equalTo: fileIconView.bottomAnchor, constant: 12),
             fileListStack.leadingAnchor.constraint(equalTo: fileCardView.leadingAnchor, constant: 16),
@@ -387,26 +407,24 @@ final class ConvertJobViewController: UIViewController {
             fileCardView.isHidden = false
             subLabel.text = nil
             if tool.allowsMultiple {
-                fileIconView.isHidden  = true
-                fileNameLabel.isHidden = true
-                fileSizeLabel.isHidden = true
-                fileListStack.isHidden = false
+                fileIconView.isHidden   = true
+                fileTextStack.isHidden  = true
+                fileListStack.isHidden  = false
                 rebuildFileList(files: files)
             } else {
-                fileIconView.isHidden  = false
-                fileNameLabel.isHidden = false
-                fileSizeLabel.isHidden = false
-                fileListStack.isHidden = true
+                fileIconView.isHidden   = false
+                fileTextStack.isHidden  = false
+                fileListStack.isHidden  = true
                 fileNameLabel.text = files[0].lastPathComponent
                 fileSizeLabel.text = fileSizeString(url: files[0])
             }
             // 无论单文件还是多文件，outputFormat 存在时都显示格式 badge
             if let fmt = outputFormat {
                 let color = formatBadgeColor(for: fmt)
-                formatBadge.text            = "  → \(fmt)  "
-                formatBadge.textColor       = color
-                formatBadge.backgroundColor = color.withAlphaComponent(0.12)
-                formatBadge.isHidden        = false
+                formatBadgeLabel.text        = "→ \(fmt)"
+                formatBadgeLabel.textColor   = color
+                formatBadge.backgroundColor  = color.withAlphaComponent(0.12)
+                formatBadge.isHidden         = false
             } else {
                 formatBadge.isHidden = true
             }
@@ -686,8 +704,8 @@ final class GradientButton: UIButton {
         gradLayer.startPoint = CGPoint(x: 0, y: 0)
         gradLayer.endPoint   = CGPoint(x: 1, y: 1)
         layer.insertSublayer(gradLayer, at: 0)
-        layer.cornerRadius = 20
-        layer.borderWidth  = 1
+        layer.cornerRadius = 24
+        layer.borderWidth  = 1.5
         layer.borderColor  = UIColor.white.withAlphaComponent(0.25).cgColor
         clipsToBounds = true
         setTitleColor(.white, for: .normal)
