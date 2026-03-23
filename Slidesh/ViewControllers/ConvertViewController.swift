@@ -105,7 +105,7 @@ class ConvertViewController: UIViewController {
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(collectionView)
         NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
@@ -261,7 +261,7 @@ final class FeaturedCell: UICollectionViewCell {
         ])
 
         // 图标背景
-        iconBg.layer.cornerRadius = 14
+        iconBg.layer.cornerRadius = 18
         iconBg.backgroundColor    = UIColor.white.withAlphaComponent(0.22)
         iconBg.translatesAutoresizingMaskIntoConstraints = false
         bgView.addSubview(iconBg)
@@ -354,7 +354,7 @@ final class ToolCell: UICollectionViewCell {
         contentView.layer.cornerRadius = 18
         contentView.layer.borderWidth  = 1
 
-        iconBg.layer.cornerRadius = 12
+        iconBg.layer.cornerRadius = 16
         iconBg.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(iconBg)
 
