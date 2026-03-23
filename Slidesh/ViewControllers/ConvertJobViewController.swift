@@ -206,13 +206,13 @@ final class ConvertJobViewController: UIViewController {
         fileCardView.addSubview(fileSizeLabel)
 
         formatBadge.font            = .systemFont(ofSize: 12, weight: .bold)
-        formatBadge.textColor       = .white
         formatBadge.layer.cornerRadius = 8
         formatBadge.clipsToBounds   = true
         formatBadge.textAlignment   = .center
         formatBadge.isHidden        = true
-        // 防止 badge 被 fileNameLabel 压缩截断
+        // badge 宽度完全由内容决定，不受文件名影响
         formatBadge.setContentCompressionResistancePriority(.required, for: .horizontal)
+        formatBadge.setContentHuggingPriority(.required, for: .horizontal)
         formatBadge.translatesAutoresizingMaskIntoConstraints = false
         fileCardView.addSubview(formatBadge)
 
@@ -234,16 +234,17 @@ final class ConvertJobViewController: UIViewController {
 
             fileNameLabel.topAnchor.constraint(equalTo: fileCardView.topAnchor, constant: 16),
             fileNameLabel.leadingAnchor.constraint(equalTo: fileIconView.trailingAnchor, constant: 12),
-            fileNameLabel.trailingAnchor.constraint(equalTo: formatBadge.leadingAnchor, constant: -8),
+            // 文件名最多延伸到 badge 左侧 8pt，不强制等于（避免拉伸 badge）
+            fileNameLabel.trailingAnchor.constraint(lessThanOrEqualTo: formatBadge.leadingAnchor, constant: -8),
 
             fileSizeLabel.topAnchor.constraint(equalTo: fileNameLabel.bottomAnchor, constant: 4),
             fileSizeLabel.leadingAnchor.constraint(equalTo: fileNameLabel.leadingAnchor),
             fileSizeLabel.bottomAnchor.constraint(lessThanOrEqualTo: fileCardView.bottomAnchor, constant: -16),
 
+            // badge 右侧固定，宽度由内容自适应
             formatBadge.centerYAnchor.constraint(equalTo: fileCardView.topAnchor, constant: 32),
             formatBadge.trailingAnchor.constraint(equalTo: fileCardView.trailingAnchor, constant: -16),
-            formatBadge.widthAnchor.constraint(greaterThanOrEqualToConstant: 48),
-            formatBadge.heightAnchor.constraint(equalToConstant: 24),
+            formatBadge.heightAnchor.constraint(equalToConstant: 28),
 
             fileListStack.topAnchor.constraint(equalTo: fileIconView.bottomAnchor, constant: 12),
             fileListStack.leadingAnchor.constraint(equalTo: fileCardView.leadingAnchor, constant: 16),
@@ -401,8 +402,10 @@ final class ConvertJobViewController: UIViewController {
             }
             // 无论单文件还是多文件，outputFormat 存在时都显示格式 badge
             if let fmt = outputFormat {
-                formatBadge.text            = " → \(fmt) "
-                formatBadge.backgroundColor = formatBadgeColor(for: fmt)
+                let color = formatBadgeColor(for: fmt)
+                formatBadge.text            = "  → \(fmt)  "
+                formatBadge.textColor       = color
+                formatBadge.backgroundColor = color.withAlphaComponent(0.12)
                 formatBadge.isHidden        = false
             } else {
                 formatBadge.isHidden = true
