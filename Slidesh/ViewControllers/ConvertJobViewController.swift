@@ -585,12 +585,13 @@ final class ConvertJobViewController: UIViewController {
                 guard let self else { return }
                 progressFill.layer.removeAllAnimations()
                 progressFill.alpha = 1
-                // 释放安全访问权限
-                files.forEach { $0.stopAccessingSecurityScopedResource() }
                 switch result {
                 case .success(let urls):
+                    // 转换成功后释放安全访问权限
+                    files.forEach { $0.stopAccessingSecurityScopedResource() }
                     state = .success(resultURLs: urls)
                 case .failure(let error):
+                    // 失败时保留访问权限，以便重试时仍可读取文件
                     state = .error(message: error.localizedDescription, lastFiles: files)
                 }
             }
