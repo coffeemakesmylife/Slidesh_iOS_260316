@@ -73,11 +73,7 @@ class ConvertViewController: UIViewController {
         navigationItem.title = "极速转换"
         navigationController?.navigationBar.prefersLargeTitles = true
         view.backgroundColor = .appBackgroundPrimary
-        
-        // 添加网格渐变背景
-        if self.responds(to: Selector(("addMeshGradientBackground"))) {
-            self.perform(Selector(("addMeshGradientBackground")))
-        }
+        addMeshGradientBackground()
 
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
         collectionView.backgroundColor = .clear
@@ -311,53 +307,64 @@ class ToolCardCell: UICollectionViewCell {
 class FeaturedCardCell: ToolCardCell {
     static let featuredReuseIdentifier = "FeaturedCardCell"
 
+    private let gradLayer = CAGradientLayer()
+
     override func setupUI() {
         super.setupUI()
-        
+
         bgView.backgroundColor = .clear
         bgView.layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
-        
-        // 使用渐变背景
-        let gradientLayer = CAGradientLayer()
-        // 深海蓝 → 中蓝，确保白色文字始终可读
-        gradientLayer.colors = [UIColor.appGradientStart.cgColor, UIColor.appGradientMid.cgColor]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint = CGPoint(x: 1, y: 1)
-        gradientLayer.name = "BackgroundGradient"
-        bgView.layer.insertSublayer(gradientLayer, at: 0)
         bgView.layer.masksToBounds = true
         bgView.layer.cornerRadius = 20
-        
+
+        // 渐变背景，颜色随深/浅模式切换
+        gradLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradLayer.endPoint = CGPoint(x: 1, y: 1)
+        bgView.layer.insertSublayer(gradLayer, at: 0)
+
         titleLabel.textColor = .white
         subTitleLabel.textColor = .white.withAlphaComponent(0.8)
-        
         titleLabel.font = .systemFont(ofSize: 24, weight: .heavy)
         subTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-        
+
         iconContainer.backgroundColor = .white.withAlphaComponent(0.2)
         iconImageView.tintColor = .white
-        
-        // 更新图标大小约束
+
         NSLayoutConstraint.deactivate(iconSizeConstraints)
         iconSizeConstraints = [
             iconContainer.widthAnchor.constraint(equalToConstant: 56),
             iconContainer.heightAnchor.constraint(equalToConstant: 56)
         ]
         NSLayoutConstraint.activate(iconSizeConstraints)
-        
-        // 调整图标内容约束（通过遍历或重新激活）
+
         for constraint in iconImageView.constraints {
             if constraint.firstAttribute == .width || constraint.firstAttribute == .height {
                 constraint.constant = 30
             }
         }
+
+        applyGradientColors()
     }
-    
+
+    // 浅色：主色深蓝 → 品牌中蓝；深色：深海蓝 → 中蓝，白色文字在两种模式下均可读
+    private func applyGradientColors() {
+        if traitCollection.userInterfaceStyle == .dark {
+            gradLayer.colors = [UIColor.appGradientStart.cgColor, UIColor.appGradientMid.cgColor]
+        } else {
+            gradLayer.colors = [UIColor.appPrimary.cgColor, UIColor.appPrimaryLight.cgColor]
+        }
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
+            applyGradientColors()
+        }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
-        if let gradient = bgView.layer.sublayers?.first(where: { $0.name == "BackgroundGradient" }) as? CAGradientLayer {
-            gradient.frame = bgView.bounds
-        }
+        gradLayer.frame = bgView.bounds
     }
 }
 
