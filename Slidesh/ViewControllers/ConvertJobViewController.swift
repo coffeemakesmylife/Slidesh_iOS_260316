@@ -207,11 +207,12 @@ final class ConvertJobViewController: UIViewController {
 
         formatBadge.font            = .systemFont(ofSize: 12, weight: .bold)
         formatBadge.textColor       = .white
-        formatBadge.backgroundColor = .appPrimary
         formatBadge.layer.cornerRadius = 8
         formatBadge.clipsToBounds   = true
         formatBadge.textAlignment   = .center
         formatBadge.isHidden        = true
+        // 防止 badge 被 fileNameLabel 压缩截断
+        formatBadge.setContentCompressionResistancePriority(.required, for: .horizontal)
         formatBadge.translatesAutoresizingMaskIntoConstraints = false
         fileCardView.addSubview(formatBadge)
 
@@ -400,8 +401,9 @@ final class ConvertJobViewController: UIViewController {
             }
             // 无论单文件还是多文件，outputFormat 存在时都显示格式 badge
             if let fmt = outputFormat {
-                formatBadge.text    = "→ \(fmt)"
-                formatBadge.isHidden = false
+                formatBadge.text            = " → \(fmt) "
+                formatBadge.backgroundColor = formatBadgeColor(for: fmt)
+                formatBadge.isHidden        = false
             } else {
                 formatBadge.isHidden = true
             }
@@ -615,6 +617,20 @@ final class ConvertJobViewController: UIViewController {
     private func fileSizeString(url: URL) -> String {
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
         return ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .file)
+    }
+
+    // 格式 badge 颜色，与 FormatPickerSheet 图标颜色一致
+    private func formatBadgeColor(for format: String) -> UIColor {
+        switch format.uppercased() {
+        case "WORD":  return .systemIndigo
+        case "PDF":   return .systemRed
+        case "EXCEL": return .systemGreen
+        case "PPT":   return .systemOrange
+        case "PNG":   return .systemTeal
+        case "HTML":  return .systemPurple
+        case "XML":   return .systemBrown
+        default:      return .appPrimary
+        }
     }
 
     // 颜色名解析（ConvertViewController 的同名方法是 private，这里定义独立版本）
