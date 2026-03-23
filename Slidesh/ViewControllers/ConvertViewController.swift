@@ -42,7 +42,7 @@ struct ConvertToolItem: Hashable, Sendable {
         ],
         .pdfTools: [
             ConvertToolItem(title: "PDF 转换器", subTitle: "转为 Word/Excel/PPT/HTML",
-                            icon: "pdf.fill", colorName: "systemRed", isFeatured: false),
+                            icon: "book.pages.fill", colorName: "systemRed", isFeatured: false),
             ConvertToolItem(title: "合并 PDF", subTitle: "支持两份或多份文件合并",
                             icon: "plus.square.fill.on.square.fill", colorName: "systemBlue", isFeatured: false),
         ],
@@ -232,7 +232,7 @@ final class FeaturedCell: UICollectionViewCell {
         contentView.backgroundColor = .clear
 
         // 卡片样式与 VIP 卡片一致
-        bgView.layer.cornerRadius = 20
+        bgView.layer.cornerRadius = 32
         bgView.clipsToBounds      = true
         bgView.layer.borderColor  = UIColor.white.withAlphaComponent(0.25).cgColor
         bgView.layer.borderWidth  = 2.0
@@ -261,7 +261,7 @@ final class FeaturedCell: UICollectionViewCell {
         ])
 
         // 图标背景
-        iconBg.layer.cornerRadius = 18
+        iconBg.layer.cornerRadius = 20
         iconBg.backgroundColor    = UIColor.white.withAlphaComponent(0.22)
         iconBg.translatesAutoresizingMaskIntoConstraints = false
         bgView.addSubview(iconBg)
@@ -351,10 +351,10 @@ final class ToolCell: UICollectionViewCell {
     private func setup() {
         // 卡片背景：动态颜色，自动适应深/浅模式
         contentView.backgroundColor = .appCardBackground
-        contentView.layer.cornerRadius = 18
+        contentView.layer.cornerRadius = 26
         contentView.layer.borderWidth  = 1
 
-        iconBg.layer.cornerRadius = 16
+        iconBg.layer.cornerRadius = 15
         iconBg.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(iconBg)
 
