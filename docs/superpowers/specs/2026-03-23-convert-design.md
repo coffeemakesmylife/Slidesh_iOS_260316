@@ -28,10 +28,12 @@ ConvertViewController 目前仅有静态 UI 展示，点击任何工具卡片只
 
 无 RSA 加密（document convert APIs 为明文，与 PPT 生成 API 不同）。
 
-- **newslist 为 string**：直接作为下载 URL 使用
-- **newslist 为 object**：按以下优先级查找 URL 字段：`"url"` → `"fileUrl"` → `"downloadUrl"` → `"path"`；取第一个非空字符串
-- **fileToImage 特殊情况**：`newslist` 对象中包含图片 URL 数组，查找字段 `"urls"` → `"list"` → `"images"`，提取为 `[String]`；若 newslist 本身就是数组则直接使用
-- 解析失败统一报错："转换结果解析失败，请重试"
+**⚠️ 结构待确认**：`cover_api_doc.md` 仅标注了 `newslist` 的顶层类型（`string` 或 `object`），但未定义 object 内部的字段名，也未确认 string 是否为下载 URL。实现前**必须**用真实文件请求各接口，打印完整响应体以确认实际结构。
+
+实现策略：
+- `ConvertAPIService` 在收到响应后，无论解析成功与否，都在 Debug 模式下将完整 `newslist` 原始值打印到控制台（`print("[ConvertAPI] newslist raw: \(newslist)")`），便于联调时快速确认结构
+- 解析逻辑在联调确认结构后填写，代码中留 `// TODO: confirm newslist schema with real server` 注释
+- 解析失败统一报错："转换结果解析失败，请重试"，并在 Debug 打印原始响应
 
 **注意**：`ConvertAPIService` 完全独立于 `PPTAPIService`，不复用其 RSA 解密逻辑。
 
@@ -71,7 +73,8 @@ ConvertViewController 目前仅有静态 UI 展示，点击任何工具卡片只
 职责：
 - `multipart/form-data` 上传，`URLSession.uploadTask` 获取精确上传进度
 - 根据 `ConvertToolKind` 决定端点和参数
-- 合并 PDF：`files.count == 2` → `mergetwopdf`（字段 `file1`, `file2`）；`files.count >= 3` → `mergemorepdf`（字段名均为 `"files"`，多部分重复 key）
+- 合并 PDF：`files.count == 2` → `mergetwopdf`（字段 `file1`, `file2`）；`files.count >= 3` → `mergemorepdf`
+  - **⚠️ `mergemorepdf` 的 multipart 字段名待确认**：API 文档同时出现 `file`（array）和 `files` 两种描述，相互矛盾（见 `cover_api_doc.md` 第 229 行）。实现时先尝试 `"files"`（重复同名 key），联调时根据服务端实际响应决定，代码留 `// TODO: confirm multipart key name for mergemorepdf ("file" vs "files")` 注释
 - 解析 `newslist` → `[URL]`（所有工具统一返回数组，单文件工具返回单元素数组）
 - 下载结果文件到 `FileManager.default.temporaryDirectory`
 - 复用项目现有 `APIError` 枚举
