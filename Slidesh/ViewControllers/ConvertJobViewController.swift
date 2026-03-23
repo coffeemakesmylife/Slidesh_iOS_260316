@@ -295,6 +295,12 @@ final class ConvertJobViewController: UIViewController {
 
     private var progressFillWidth: NSLayoutConstraint?
 
+    // primaryBtn 顶部约束（根据状态切换）
+    private var primaryBtnTopFromSubLabel:    NSLayoutConstraint?
+    private var primaryBtnTopFromFileCard:    NSLayoutConstraint?
+    private var primaryBtnTopFromProgress:    NSLayoutConstraint?
+    private var primaryBtnTopFromStatusIcon:  NSLayoutConstraint?
+
     private func setupStatusIcon() {
         statusIconView.contentMode = .scaleAspectFit
         statusIconView.isHidden    = true
@@ -324,8 +330,15 @@ final class ConvertJobViewController: UIViewController {
         contentView.addSubview(secondaryBtn)
         secondaryBtn.addTarget(self, action: #selector(didTapSecondary), for: .touchUpInside)
 
+        // 创建四个顶部约束（不在此激活，由 updateUI 按状态切换）
+        primaryBtnTopFromSubLabel   = primaryBtn.topAnchor.constraint(equalTo: subLabel.bottomAnchor, constant: 40)
+        primaryBtnTopFromFileCard   = primaryBtn.topAnchor.constraint(equalTo: fileCardView.bottomAnchor, constant: 32)
+        primaryBtnTopFromProgress   = primaryBtn.topAnchor.constraint(equalTo: progressContainer.bottomAnchor, constant: 32)
+        primaryBtnTopFromStatusIcon = primaryBtn.topAnchor.constraint(equalTo: statusIconView.bottomAnchor, constant: 32)
+        // 默认激活 idle 状态约束
+        primaryBtnTopFromSubLabel?.isActive = true
+
         NSLayoutConstraint.activate([
-            primaryBtn.topAnchor.constraint(equalTo: statusIconView.bottomAnchor, constant: 32),
             primaryBtn.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             primaryBtn.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             primaryBtn.heightAnchor.constraint(equalToConstant: 54),
@@ -346,8 +359,19 @@ final class ConvertJobViewController: UIViewController {
         statusIconView.isHidden    = true
         isModalInPresentation      = false
 
+        // 清理离开 converting 状态时残留的进度动画
+        progressFill.layer.removeAllAnimations()
+        progressFill.alpha = 1
+
+        // 先全部停用顶部约束，再按状态激活正确的那一个
+        primaryBtnTopFromSubLabel?.isActive   = false
+        primaryBtnTopFromFileCard?.isActive   = false
+        primaryBtnTopFromProgress?.isActive   = false
+        primaryBtnTopFromStatusIcon?.isActive = false
+
         switch state {
         case .idle:
+            primaryBtnTopFromSubLabel?.isActive = true
             let hint = tool.allowsMultiple
                 ? "请选择 2 个或更多 PDF 文件"
                 : "支持：\(tool.acceptedExtensions.joined(separator: "、"))"
@@ -357,6 +381,7 @@ final class ConvertJobViewController: UIViewController {
             secondaryBtn.isHidden = true
 
         case .fileSelected(let files):
+            primaryBtnTopFromFileCard?.isActive = true
             fileCardView.isHidden = false
             subLabel.text = nil
             if tool.allowsMultiple {
@@ -386,6 +411,7 @@ final class ConvertJobViewController: UIViewController {
             secondaryBtn.setTitle("重新选择", for: .normal)
 
         case .converting:
+            primaryBtnTopFromProgress?.isActive = true
             progressContainer.isHidden = false
             isModalInPresentation      = true
             subLabel.text              = nil
@@ -395,6 +421,7 @@ final class ConvertJobViewController: UIViewController {
             secondaryBtn.isHidden = true
 
         case .success:
+            primaryBtnTopFromStatusIcon?.isActive = true
             statusIconView.isHidden  = false
             statusIconView.image     = UIImage(systemName: "checkmark.circle.fill")
             statusIconView.tintColor = .appSuccess
@@ -405,6 +432,7 @@ final class ConvertJobViewController: UIViewController {
             secondaryBtn.setTitle("再转一个", for: .normal)
 
         case .error(let message, _):
+            primaryBtnTopFromStatusIcon?.isActive = true
             statusIconView.isHidden  = false
             statusIconView.image     = UIImage(systemName: "exclamationmark.circle.fill")
             statusIconView.tintColor = .appError
@@ -492,6 +520,8 @@ final class ConvertJobViewController: UIViewController {
 
     @objc private func deleteFile(_ sender: UIButton) {
         guard case .fileSelected(var files) = state else { return }
+        // 防止 tag 越界崩溃
+        guard files.indices.contains(sender.tag) else { return }
         files.remove(at: sender.tag)
         state = .fileSelected(files: files)
     }
@@ -555,6 +585,8 @@ final class ConvertJobViewController: UIViewController {
                 guard let self else { return }
                 progressFill.layer.removeAllAnimations()
                 progressFill.alpha = 1
+                // 释放安全访问权限
+                files.forEach { $0.stopAccessingSecurityScopedResource() }
                 switch result {
                 case .success(let urls):
                     state = .success(resultURLs: urls)
