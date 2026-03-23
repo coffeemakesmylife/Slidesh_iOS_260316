@@ -66,8 +66,8 @@ final class FormatPickerSheet: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // 面板初始位置：移到屏幕下方
-        panelView.layoutIfNeeded()
+        // 面板初始位置：移到屏幕下方（用 view.layoutIfNeeded 保证面板已完成布局）
+        view.layoutIfNeeded()
         let offset = panelView.bounds.height + 200
         panelView.transform = CGAffineTransform(translationX: 0, y: offset)
         overlayView.alpha   = 0
@@ -365,13 +365,15 @@ final class FormatPickerSheet: UIViewController {
     // MARK: - 关闭动画
 
     private func animateDismiss(completion: (() -> Void)? = nil) {
-        let animator = UIViewPropertyAnimator(duration: 0.25, curve: .easeIn) {
+        // [weak self] 避免循环引用
+        let animator = UIViewPropertyAnimator(duration: 0.25, curve: .easeIn) { [weak self] in
+            guard let self else { return }
             let offset = self.panelView.bounds.height + 200
             self.panelView.transform = CGAffineTransform(translationX: 0, y: offset)
-            self.overlayView.backgroundColor = .clear
+            self.overlayView.alpha = 0   // 与淡入时对称，使用 alpha 而非 backgroundColor
         }
-        animator.addCompletion { _ in
-            self.dismiss(animated: false) {
+        animator.addCompletion { [weak self] _ in
+            self?.dismiss(animated: false) {
                 completion?()
             }
         }
