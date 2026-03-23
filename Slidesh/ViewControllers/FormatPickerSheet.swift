@@ -108,7 +108,8 @@ final class FormatPickerSheet: UIViewController {
 
     // 面板：圆角仅顶部两角
     private func setupPanel() {
-        panelView.backgroundColor = .appBackgroundTertiary
+        // 用二级背景色（浅色 #EDF0F3，深色 #0D1628），与白色行卡片形成层次
+        panelView.backgroundColor = .appBackgroundSecondary
         panelView.layer.cornerRadius = 24
         panelView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         panelView.layer.masksToBounds = true
@@ -165,7 +166,7 @@ final class FormatPickerSheet: UIViewController {
 
     // 取消按钮
     private func setupCancelButton() {
-        cancelBtn.backgroundColor       = .appCardBackground
+        cancelBtn.backgroundColor       = .appCardBackground  // 与行卡片同色，均在灰色面板上突出
         cancelBtn.layer.cornerRadius    = 16
         cancelBtn.layer.borderWidth     = 1
         cancelBtn.layer.borderColor     = UIColor.appCardBorder.cgColor
@@ -218,8 +219,8 @@ final class FormatPickerSheet: UIViewController {
 
         // 行容器
         let row = UIView()
-        row.backgroundColor     = UIColor.appCardBackground.withAlphaComponent(0.7)
-        row.layer.cornerRadius  = 16
+        row.backgroundColor     = .appCardBackground
+        row.layer.cornerRadius  = 20
         row.layer.borderWidth   = 1
         row.layer.borderColor   = UIColor.appCardBorder.cgColor
         row.layer.masksToBounds = true
@@ -233,7 +234,7 @@ final class FormatPickerSheet: UIViewController {
         // 左侧图标背景
         let iconBg = UIView()
         iconBg.backgroundColor   = color.withAlphaComponent(0.15)
-        iconBg.layer.cornerRadius = 12
+        iconBg.layer.cornerRadius = 15
         iconBg.translatesAutoresizingMaskIntoConstraints = false
         row.addSubview(iconBg)
 
