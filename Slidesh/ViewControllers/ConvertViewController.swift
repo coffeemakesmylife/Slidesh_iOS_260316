@@ -2,12 +2,10 @@
 //  ConvertViewController.swift
 //  Slidesh
 //
-//  Created by ted on 2026/03/22.
-//
 
 import UIKit
 
-// MARK: - 数据模型（顶层类型，避免 @MainActor 污染 Sendable 约束）
+// MARK: - 数据模型（顶层，避免 @MainActor 污染 Sendable 约束）
 
 enum ConvertSection: Int, CaseIterable, Sendable {
     case featured
@@ -29,177 +27,42 @@ struct ConvertToolItem: Hashable, Sendable {
     let id       = UUID()
     let title:     String
     let subTitle:  String
-    let icon:      String  // SF Symbol name
-    let colorName: String  // 存颜色名称，UIColor 由 @MainActor extension 解析
+    let icon:      String   // SF Symbol name
+    let colorName: String   // UIColor 由 UI 层解析，保持 Sendable
     let isFeatured: Bool
 
     nonisolated func hash(into hasher: inout Hasher) { hasher.combine(id) }
-    nonisolated static func == (lhs: ConvertToolItem, rhs: ConvertToolItem) -> Bool { lhs.id == rhs.id }
+    nonisolated static func == (l: ConvertToolItem, r: ConvertToolItem) -> Bool { l.id == r.id }
 
     static let all: [ConvertSection: [ConvertToolItem]] = [
         .featured: [
-            ConvertToolItem(title: "PDF 转 Word", subTitle: "保持排版，精准转换，支持多种 OCR 识别", icon: "doc.text.fill", colorName: "appPrimary", isFeatured: true)
+            ConvertToolItem(title: "PDF 转 Word",
+                            subTitle: "保持排版，精准转换，支持多种 OCR 识别",
+                            icon: "doc.text.fill", colorName: "appPrimary", isFeatured: true),
         ],
         .pdfTools: [
-            ConvertToolItem(title: "PDF 转换器", subTitle: "转为 Word/Excel/PPT/HTML", icon: "pdf.fill", colorName: "systemRed", isFeatured: false),
-            ConvertToolItem(title: "合并 PDF", subTitle: "支持两份或多份文件合并", icon: "plus.square.fill.on.square.fill", colorName: "systemBlue", isFeatured: false)
+            ConvertToolItem(title: "PDF 转换器", subTitle: "转为 Word/Excel/PPT/HTML",
+                            icon: "pdf.fill", colorName: "systemRed", isFeatured: false),
+            ConvertToolItem(title: "合并 PDF", subTitle: "支持两份或多份文件合并",
+                            icon: "plus.square.fill.on.square.fill", colorName: "systemBlue", isFeatured: false),
         ],
         .officeTools: [
-            ConvertToolItem(title: "Word 转换", subTitle: "转为 PDF/HTML/PNG", icon: "doc.richtext.fill", colorName: "systemIndigo", isFeatured: false),
-            ConvertToolItem(title: "Excel 转换", subTitle: "转为 PDF/HTML/PNG", icon: "tablecells.fill", colorName: "systemGreen", isFeatured: false),
-            ConvertToolItem(title: "PPT 转换", subTitle: "转为 PDF/HTML/PNG", icon: "tv.fill", colorName: "systemOrange", isFeatured: false)
+            ConvertToolItem(title: "Word 转换", subTitle: "转为 PDF/HTML/PNG",
+                            icon: "doc.richtext.fill", colorName: "systemIndigo", isFeatured: false),
+            ConvertToolItem(title: "Excel 转换", subTitle: "转为 PDF/HTML/PNG",
+                            icon: "tablecells.fill", colorName: "systemGreen", isFeatured: false),
+            ConvertToolItem(title: "PPT 转换", subTitle: "转为 PDF/HTML/PNG",
+                            icon: "tv.fill", colorName: "systemOrange", isFeatured: false),
         ],
         .utility: [
-            ConvertToolItem(title: "文件转图片", subTitle: "将文档每一页提取为图片", icon: "photo.on.rectangle.angled.fill", colorName: "systemTeal", isFeatured: false)
-        ]
+            ConvertToolItem(title: "文件转图片", subTitle: "将文档每一页提取为图片",
+                            icon: "photo.on.rectangle.angled.fill", colorName: "systemTeal", isFeatured: false),
+        ],
     ]
 }
 
-// MARK: - 格式转换页
-
-class ConvertViewController: UIViewController {
-
-    private var collectionView: UICollectionView!
-    private var dataSource: UICollectionViewDiffableDataSource<ConvertSection, ConvertToolItem>!
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupUI()
-        setupDataSource()
-        applyInitialSnapshot()
-    }
-
-    private func setupUI() {
-        navigationItem.title = "极速转换"
-        navigationController?.navigationBar.prefersLargeTitles = true
-        view.backgroundColor = .appBackgroundPrimary
-        addMeshGradientBackground()
-
-        collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
-        collectionView.backgroundColor = .clear
-        collectionView.delegate = self
-        collectionView.register(ToolCardCell.self, forCellWithReuseIdentifier: ToolCardCell.reuseIdentifier)
-        collectionView.register(FeaturedCardCell.self, forCellWithReuseIdentifier: FeaturedCardCell.featuredReuseIdentifier)
-        collectionView.register(SectionHeaderView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: SectionHeaderView.reuseIdentifier)
-        collectionView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(collectionView)
-
-        NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-    }
-
-    private func createLayout() -> UICollectionViewLayout {
-        return UICollectionViewCompositionalLayout { sectionIndex, layoutEnvironment in
-            let section = ConvertSection(rawValue: sectionIndex)!
-            
-            switch section {
-            case .featured:
-                let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1))
-                let item = NSCollectionLayoutItem(layoutSize: itemSize)
-                
-                let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(180))
-                let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
-                
-                let layoutSection = NSCollectionLayoutSection(group: group)
-                layoutSection.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 20, bottom: 24, trailing: 20)
-                return layoutSection
-                
-            default:
-                let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(0.5), heightDimension: .fractionalHeight(1))
-                let item = NSCollectionLayoutItem(layoutSize: itemSize)
-                item.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8)
-                
-                let groupSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(144))
-                let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
-                
-                let layoutSection = NSCollectionLayoutSection(group: group)
-                layoutSection.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 12, bottom: 24, trailing: 12)
-                
-                let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(56))
-                let header = NSCollectionLayoutBoundarySupplementaryItem(layoutSize: headerSize, elementKind: UICollectionView.elementKindSectionHeader, alignment: .top)
-                header.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 8, bottom: 0, trailing: 8)
-                layoutSection.boundarySupplementaryItems = [header]
-                
-                return layoutSection
-            }
-        }
-    }
-
-    private func setupDataSource() {
-        dataSource = UICollectionViewDiffableDataSource<ConvertSection, ConvertToolItem>(collectionView: collectionView) { (collectionView: UICollectionView, indexPath: IndexPath, item: ConvertToolItem) -> UICollectionViewCell? in
-            if item.isFeatured {
-                let cell = collectionView.dequeueReusableCell(withReuseIdentifier: FeaturedCardCell.featuredReuseIdentifier, for: indexPath) as! FeaturedCardCell
-                cell.configure(with: item)
-                return cell
-            } else {
-                let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ToolCardCell.reuseIdentifier, for: indexPath) as! ToolCardCell
-                cell.configure(with: item)
-                return cell
-            }
-        }
-
-        dataSource.supplementaryViewProvider = { (collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView? in
-            let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: SectionHeaderView.reuseIdentifier, for: indexPath) as! SectionHeaderView
-            let section = ConvertSection(rawValue: indexPath.section)!
-            header.titleLabel.text = section.title
-            return header
-        }
-    }
-
-    private func applyInitialSnapshot() {
-        var snapshot = NSDiffableDataSourceSnapshot<ConvertSection, ConvertToolItem>()
-        snapshot.appendSections(ConvertSection.allCases)
-        for section in ConvertSection.allCases {
-            if let items = ConvertToolItem.all[section] {
-                snapshot.appendItems(items, toSection: section)
-            }
-        }
-        dataSource.apply(snapshot, animatingDifferences: false)
-    }
-}
-
-// MARK: - UICollectionViewDelegate
-
-extension ConvertViewController: UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
-        print("Selected tool: \(item.title)")
-        
-        // 触感反馈
-        let generator = UISelectionFeedbackGenerator()
-        generator.selectionChanged()
-        
-        // TODO: 根据接口文档跳转具体的转换逻辑页面
-        let alert = UIAlertController(title: item.title, message: "功能开发中，敬请期待！", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
-        present(alert, animated: true)
-    }
-    
-    // 增加点击动画响应
-    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if let cell = collectionView.cellForItem(at: indexPath) {
-            UIView.animate(withDuration: 0.2) {
-                cell.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
-            }
-        }
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        if let cell = collectionView.cellForItem(at: indexPath) {
-            UIView.animate(withDuration: 0.2) {
-                cell.transform = .identity
-            }
-        }
-    }
-}
-
-// MARK: - 颜色名称解析（在主线程 UI 层调用）
-
-private func resolveToolColor(name: String) -> UIColor {
+// 文件私有函数，UI 层调用，解析 colorName 到 UIColor
+private func resolveToolColor(_ name: String) -> UIColor {
     switch name {
     case "appPrimary":   return .appPrimary
     case "systemRed":    return .systemRed
@@ -212,63 +75,196 @@ private func resolveToolColor(name: String) -> UIColor {
     }
 }
 
-// MARK: - UI Components
+// MARK: - ConvertViewController
 
-class ToolCardCell: UICollectionViewCell {
-    static let reuseIdentifier = "ToolCardCell"
+class ConvertViewController: UIViewController {
 
-    let bgView = UIView()
-    let iconContainer = UIView()
-    let iconImageView = UIImageView()
-    let titleLabel = UILabel()
-    let subTitleLabel = UILabel()
-    
-    // 约束引用以便子类修改
-    var iconSizeConstraints: [NSLayoutConstraint] = []
+    private var collectionView: UICollectionView!
+    private var dataSource: UICollectionViewDiffableDataSource<ConvertSection, ConvertToolItem>!
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+        setupDataSource()
+        applySnapshot()
+    }
+
+    private func setupUI() {
+        navigationItem.title = "极速转换"
+        navigationController?.navigationBar.prefersLargeTitles = true
+        view.backgroundColor = .appBackgroundPrimary
+        addMeshGradientBackground()
+
+        collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeLayout())
+        collectionView.backgroundColor = .clear
+        collectionView.delegate = self
+        collectionView.register(FeaturedCell.self,  forCellWithReuseIdentifier: FeaturedCell.reuseID)
+        collectionView.register(ToolCell.self,       forCellWithReuseIdentifier: ToolCell.reuseID)
+        collectionView.register(ConvertSectionHeader.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: ConvertSectionHeader.reuseID)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(collectionView)
+        NSLayoutConstraint.activate([
+            collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+        ])
+    }
+
+    private func makeLayout() -> UICollectionViewLayout {
+        UICollectionViewCompositionalLayout { sectionIndex, _ in
+            guard let section = ConvertSection(rawValue: sectionIndex) else { return nil }
+            switch section {
+            case .featured: return Self.featuredSection()
+            default:        return Self.gridSection()
+            }
+        }
+    }
+
+    private static func featuredSection() -> NSCollectionLayoutSection {
+        let item = NSCollectionLayoutItem(
+            layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1)))
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .absolute(180)),
+            subitems: [item])
+        let section = NSCollectionLayoutSection(group: group)
+        section.contentInsets = .init(top: 10, leading: 20, bottom: 24, trailing: 20)
+        return section
+    }
+
+    private static func gridSection() -> NSCollectionLayoutSection {
+        let item = NSCollectionLayoutItem(
+            layoutSize: .init(widthDimension: .fractionalWidth(0.5), heightDimension: .fractionalHeight(1)))
+        item.contentInsets = .init(top: 8, leading: 8, bottom: 8, trailing: 8)
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .absolute(144)),
+            subitems: [item])
+        let section = NSCollectionLayoutSection(group: group)
+        section.contentInsets = .init(top: 0, leading: 12, bottom: 24, trailing: 12)
+        let headerItem = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: .init(widthDimension: .fractionalWidth(1), heightDimension: .absolute(56)),
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top)
+        headerItem.contentInsets = .init(top: 8, leading: 8, bottom: 0, trailing: 8)
+        section.boundarySupplementaryItems = [headerItem]
+        return section
+    }
+
+    private func setupDataSource() {
+        dataSource = .init(collectionView: collectionView) { cv, indexPath, item in
+            if item.isFeatured {
+                let cell = cv.dequeueReusableCell(
+                    withReuseIdentifier: FeaturedCell.reuseID, for: indexPath) as! FeaturedCell
+                cell.configure(with: item)
+                return cell
+            }
+            let cell = cv.dequeueReusableCell(
+                withReuseIdentifier: ToolCell.reuseID, for: indexPath) as! ToolCell
+            cell.configure(with: item)
+            return cell
+        }
+        dataSource.supplementaryViewProvider = { (cv: UICollectionView, kind: String, indexPath: IndexPath) in
+            let header = cv.dequeueReusableSupplementaryView(
+                ofKind: kind, withReuseIdentifier: ConvertSectionHeader.reuseID,
+                for: indexPath) as! ConvertSectionHeader
+            header.configure(title: ConvertSection(rawValue: indexPath.section)?.title)
+            return header
+        }
+    }
+
+    private func applySnapshot() {
+        var snap = NSDiffableDataSourceSnapshot<ConvertSection, ConvertToolItem>()
+        snap.appendSections(ConvertSection.allCases)
+        for section in ConvertSection.allCases {
+            snap.appendItems(ConvertToolItem.all[section] ?? [], toSection: section)
+        }
+        dataSource.apply(snap, animatingDifferences: false)
+    }
+}
+
+// MARK: - UICollectionViewDelegate
+
+extension ConvertViewController: UICollectionViewDelegate {
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
+        UISelectionFeedbackGenerator().selectionChanged()
+        let alert = UIAlertController(title: item.title, message: "功能开发中，敬请期待！", preferredStyle: .alert)
+        alert.addAction(.init(title: "确定", style: .default))
+        present(alert, animated: true)
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
+        UIView.animate(withDuration: 0.18) {
+            collectionView.cellForItem(at: indexPath)?.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+        }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
+        UIView.animate(withDuration: 0.18) {
+            collectionView.cellForItem(at: indexPath)?.transform = .identity
+        }
+    }
+}
+
+// MARK: - FeaturedCell
+// 精选大卡片：深色模式用渐变，浅色模式用主色蓝渐变，文字始终白色确保可读性
+
+final class FeaturedCell: UICollectionViewCell {
+    static let reuseID = "FeaturedCell"
+
+    // bgView 作为渐变容器，独立于 contentView 以便 masksToBounds 精准裁剪
+    private let bgView       = UIView()
+    private let gradLayer    = CAGradientLayer()
+    private let iconBg       = UIView()
+    private let iconView     = UIImageView()
+    private let titleLabel   = UILabel()
+    private let subLabel     = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        setupUI()
+        setup()
     }
+    required init?(coder: NSCoder) { fatalError() }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func setupUI() {
+    private func setup() {
         contentView.backgroundColor = .clear
-        
-        bgView.backgroundColor = .appCardBackground
-        bgView.layer.cornerRadius = 18
-        bgView.layer.borderWidth = 1
-        bgView.layer.borderColor = UIColor.appCardBorder.cgColor
+
+        // 卡片容器：渐变层 + 圆角裁剪
+        bgView.layer.cornerRadius  = 20
+        bgView.layer.masksToBounds = true
+        bgView.layer.borderWidth   = 1
         bgView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(bgView)
 
-        iconContainer.layer.cornerRadius = 12
-        iconContainer.translatesAutoresizingMaskIntoConstraints = false
-        bgView.addSubview(iconContainer)
+        gradLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradLayer.endPoint   = CGPoint(x: 1, y: 1)
+        bgView.layer.insertSublayer(gradLayer, at: 0)
 
-        iconImageView.contentMode = .scaleAspectFit
-        iconImageView.tintColor = .white
-        iconImageView.translatesAutoresizingMaskIntoConstraints = false
-        iconContainer.addSubview(iconImageView)
+        // 图标背景
+        iconBg.layer.cornerRadius  = 14
+        iconBg.backgroundColor     = UIColor.white.withAlphaComponent(0.22)
+        iconBg.translatesAutoresizingMaskIntoConstraints = false
+        bgView.addSubview(iconBg)
 
-        titleLabel.font = .systemFont(ofSize: 16, weight: .bold)
-        titleLabel.textColor = .appTextPrimary
+        iconView.contentMode = .scaleAspectFit
+        iconView.tintColor   = .white
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconBg.addSubview(iconView)
+
+        // 标题 / 副标题：始终白色（背景始终深色系）
+        titleLabel.font          = .systemFont(ofSize: 24, weight: .heavy)
+        titleLabel.textColor     = .white
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         bgView.addSubview(titleLabel)
 
-        subTitleLabel.font = .systemFont(ofSize: 12, weight: .medium)
-        subTitleLabel.textColor = .appTextSecondary
-        subTitleLabel.numberOfLines = 2
-        subTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        bgView.addSubview(subTitleLabel)
-
-        iconSizeConstraints = [
-            iconContainer.widthAnchor.constraint(equalToConstant: 40),
-            iconContainer.heightAnchor.constraint(equalToConstant: 40)
-        ]
+        subLabel.font          = .systemFont(ofSize: 14, weight: .medium)
+        subLabel.textColor     = UIColor.white.withAlphaComponent(0.82)
+        subLabel.numberOfLines = 2
+        subLabel.translatesAutoresizingMaskIntoConstraints = false
+        bgView.addSubview(subLabel)
 
         NSLayoutConstraint.activate([
             bgView.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -276,131 +272,185 @@ class ToolCardCell: UICollectionViewCell {
             bgView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
             bgView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
 
-            iconContainer.topAnchor.constraint(equalTo: bgView.topAnchor, constant: 16),
-            iconContainer.leadingAnchor.constraint(equalTo: bgView.leadingAnchor, constant: 16),
+            iconBg.topAnchor.constraint(equalTo: bgView.topAnchor, constant: 20),
+            iconBg.leadingAnchor.constraint(equalTo: bgView.leadingAnchor, constant: 20),
+            iconBg.widthAnchor.constraint(equalToConstant: 52),
+            iconBg.heightAnchor.constraint(equalToConstant: 52),
 
-            iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
-            iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
-            iconImageView.widthAnchor.constraint(equalToConstant: 22),
-            iconImageView.heightAnchor.constraint(equalToConstant: 22),
+            iconView.centerXAnchor.constraint(equalTo: iconBg.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconBg.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 28),
+            iconView.heightAnchor.constraint(equalToConstant: 28),
 
-            titleLabel.topAnchor.constraint(equalTo: iconContainer.bottomAnchor, constant: 12),
-            titleLabel.leadingAnchor.constraint(equalTo: bgView.leadingAnchor, constant: 16),
-            titleLabel.trailingAnchor.constraint(equalTo: bgView.trailingAnchor, constant: -16),
+            titleLabel.topAnchor.constraint(equalTo: iconBg.bottomAnchor, constant: 14),
+            titleLabel.leadingAnchor.constraint(equalTo: bgView.leadingAnchor, constant: 20),
+            titleLabel.trailingAnchor.constraint(equalTo: bgView.trailingAnchor, constant: -20),
 
-            subTitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
-            subTitleLabel.leadingAnchor.constraint(equalTo: bgView.leadingAnchor, constant: 16),
-            subTitleLabel.trailingAnchor.constraint(equalTo: bgView.trailingAnchor, constant: -16)
-        ] + iconSizeConstraints)
+            subLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 6),
+            subLabel.leadingAnchor.constraint(equalTo: bgView.leadingAnchor, constant: 20),
+            subLabel.trailingAnchor.constraint(equalTo: bgView.trailingAnchor, constant: -20),
+        ])
     }
 
     func configure(with item: ConvertToolItem) {
-        titleLabel.text = item.title
-        subTitleLabel.text = item.subTitle
-        iconImageView.image = UIImage(systemName: item.icon)
-        let color = resolveToolColor(name: item.colorName)
-        iconContainer.backgroundColor = color.withAlphaComponent(0.15)
-        iconImageView.tintColor = color
-    }
-}
-
-class FeaturedCardCell: ToolCardCell {
-    static let featuredReuseIdentifier = "FeaturedCardCell"
-
-    private let gradLayer = CAGradientLayer()
-
-    override func setupUI() {
-        super.setupUI()
-
-        bgView.backgroundColor = .clear
-        bgView.layer.borderColor = UIColor.white.withAlphaComponent(0.2).cgColor
-        bgView.layer.masksToBounds = true
-        bgView.layer.cornerRadius = 20
-
-        // 渐变背景，颜色随深/浅模式切换
-        gradLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradLayer.endPoint = CGPoint(x: 1, y: 1)
-        bgView.layer.insertSublayer(gradLayer, at: 0)
-
-        titleLabel.textColor = .white
-        subTitleLabel.textColor = .white.withAlphaComponent(0.8)
-        titleLabel.font = .systemFont(ofSize: 24, weight: .heavy)
-        subTitleLabel.font = .systemFont(ofSize: 15, weight: .semibold)
-
-        iconContainer.backgroundColor = .white.withAlphaComponent(0.2)
-        iconImageView.tintColor = .white
-
-        NSLayoutConstraint.deactivate(iconSizeConstraints)
-        iconSizeConstraints = [
-            iconContainer.widthAnchor.constraint(equalToConstant: 56),
-            iconContainer.heightAnchor.constraint(equalToConstant: 56)
-        ]
-        NSLayoutConstraint.activate(iconSizeConstraints)
-
-        for constraint in iconImageView.constraints {
-            if constraint.firstAttribute == .width || constraint.firstAttribute == .height {
-                constraint.constant = 30
-            }
-        }
-
-        applyGradientColors()
+        titleLabel.text  = item.title
+        subLabel.text    = item.subTitle
+        iconView.image   = UIImage(systemName: item.icon)
     }
 
-    // 浅色：主色深蓝 → 品牌中蓝；深色：深海蓝 → 中蓝，白色文字在两种模式下均可读
-    private func applyGradientColors() {
-        if traitCollection.userInterfaceStyle == .dark {
-            gradLayer.colors = [UIColor.appGradientStart.cgColor, UIColor.appGradientMid.cgColor]
-        } else {
-            gradLayer.colors = [UIColor.appPrimary.cgColor, UIColor.appPrimaryLight.cgColor]
-        }
-    }
-
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
-        if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
-            applyGradientColors()
-        }
-    }
-
+    // 在 layoutSubviews 里更新渐变：此时 bgView.bounds 已由 AutoLayout 确定
+    // 同时更新颜色，避免 setup 时 traitCollection 尚未注入的问题
     override func layoutSubviews() {
         super.layoutSubviews()
         gradLayer.frame = bgView.bounds
+        updateThemeColors()
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        updateThemeColors()
+    }
+
+    // 浅色：appPrimary(深宝蓝) → appPrimaryLight(中宝蓝)，白字可读
+    // 深色：appGradientStart(深海蓝) → appGradientMid(中蓝)，白字可读
+    private func updateThemeColors() {
+        let tc = traitCollection
+        if tc.userInterfaceStyle == .dark {
+            gradLayer.colors = [
+                UIColor.appGradientStart.cgColor,
+                UIColor.appGradientMid.cgColor,
+            ]
+            bgView.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
+        } else {
+            // resolvedColor 确保从动态 UIColor 中取出正确的浅色值
+            gradLayer.colors = [
+                UIColor.appPrimary.resolvedColor(with: tc).cgColor,
+                UIColor.appPrimaryLight.resolvedColor(with: tc).cgColor,
+            ]
+            bgView.layer.borderColor = UIColor.white.withAlphaComponent(0.20).cgColor
+        }
     }
 }
 
-class SectionHeaderView: UICollectionReusableView {
-    static let reuseIdentifier = "SectionHeaderView"
-    let titleLabel = UILabel()
-    let indicator = UIView()
+// MARK: - ToolCell
+// 工具网格卡片：颜色系统全覆盖，边框随主题更新
+
+final class ToolCell: UICollectionViewCell {
+    static let reuseID = "ToolCell"
+
+    private let iconBg      = UIView()
+    private let iconView    = UIImageView()
+    private let titleLabel  = UILabel()
+    private let subLabel    = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        setupUI()
+        setup()
     }
+    required init?(coder: NSCoder) { fatalError() }
 
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
+    private func setup() {
+        // 卡片背景：动态颜色，自动适应深/浅模式
+        contentView.backgroundColor = .appCardBackground
+        contentView.layer.cornerRadius = 18
+        contentView.layer.borderWidth  = 1
 
-    private func setupUI() {
-        indicator.backgroundColor = .appPrimary
-        indicator.layer.cornerRadius = 2
-        indicator.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(indicator)
+        iconBg.layer.cornerRadius = 12
+        iconBg.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(iconBg)
 
-        titleLabel.font = .systemFont(ofSize: 18, weight: .heavy)
+        iconView.contentMode = .scaleAspectFit
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconBg.addSubview(iconView)
+
+        titleLabel.font      = .systemFont(ofSize: 16, weight: .bold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(titleLabel)
+        contentView.addSubview(titleLabel)
+
+        subLabel.font          = .systemFont(ofSize: 12, weight: .regular)
+        subLabel.textColor     = .appTextSecondary
+        subLabel.numberOfLines = 2
+        subLabel.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(subLabel)
 
         NSLayoutConstraint.activate([
-            indicator.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            indicator.centerYAnchor.constraint(equalTo: centerYAnchor),
-            indicator.widthAnchor.constraint(equalToConstant: 4),
-            indicator.heightAnchor.constraint(equalToConstant: 18),
+            iconBg.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            iconBg.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            iconBg.widthAnchor.constraint(equalToConstant: 40),
+            iconBg.heightAnchor.constraint(equalToConstant: 40),
 
-            titleLabel.leadingAnchor.constraint(equalTo: indicator.trailingAnchor, constant: 8),
-            titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
+            iconView.centerXAnchor.constraint(equalTo: iconBg.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconBg.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 22),
+            iconView.heightAnchor.constraint(equalToConstant: 22),
+
+            titleLabel.topAnchor.constraint(equalTo: iconBg.bottomAnchor, constant: 12),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+
+            subLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            subLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            subLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+        ])
+
+        updateBorderColor()
+    }
+
+    func configure(with item: ConvertToolItem) {
+        let color = resolveToolColor(item.colorName)
+        titleLabel.text = item.title
+        subLabel.text   = item.subTitle
+        iconView.image  = UIImage(systemName: item.icon)
+        iconView.tintColor        = color
+        iconBg.backgroundColor   = color.withAlphaComponent(0.15)
+    }
+
+    // CALayer.borderColor 不支持动态 UIColor，需手动更新
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        updateBorderColor()
+    }
+
+    private func updateBorderColor() {
+        contentView.layer.borderColor = UIColor.appCardBorder.cgColor
+    }
+}
+
+// MARK: - ConvertSectionHeader
+// 分区标题：左侧色块指示器 + 加粗标题，颜色均来自颜色系统
+
+final class ConvertSectionHeader: UICollectionReusableView {
+    static let reuseID = "ConvertSectionHeader"
+
+    private let bar   = UIView()
+    private let label = UILabel()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        bar.layer.cornerRadius = 2
+        bar.backgroundColor    = .appPrimary
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(bar)
+
+        label.font      = .systemFont(ofSize: 18, weight: .heavy)
+        label.textColor = .appTextPrimary
+        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            bar.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
+            bar.centerYAnchor.constraint(equalTo: centerYAnchor),
+            bar.widthAnchor.constraint(equalToConstant: 4),
+            bar.heightAnchor.constraint(equalToConstant: 18),
+
+            label.leadingAnchor.constraint(equalTo: bar.trailingAnchor, constant: 8),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
+            label.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
     }
+    required init?(coder: NSCoder) { fatalError() }
+
+    func configure(title: String?) { label.text = title }
 }
