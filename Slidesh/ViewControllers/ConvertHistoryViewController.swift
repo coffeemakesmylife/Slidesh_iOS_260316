@@ -22,7 +22,7 @@ final class ConvertHistoryViewController: UIViewController {
     // 日期格式化
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "MM-dd HH:mm"
+        f.dateFormat = "yyyy-MM-dd"
         return f
     }()
 
@@ -342,22 +342,24 @@ private final class ConvertHistoryCell: UITableViewCell {
     }
 
     func configure(with record: ConvertRecord, dateFormatter: DateFormatter) {
-        let color = resolveColor(record.toolColorName)
-
-        iconBg.backgroundColor = color.withAlphaComponent(0.15)
+        // 图标和颜色均来自输出格式
+        let (iconName, color) = outputIconInfo(toolKind: record.toolKind, outputFormat: record.outputFormat)
         let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        iconView.image     = UIImage(systemName: record.toolIcon, withConfiguration: config)
+        iconBg.backgroundColor = color.withAlphaComponent(0.15)
+        iconView.image     = UIImage(systemName: iconName, withConfiguration: config)
         iconView.tintColor = color
 
         titleLabel.text = record.toolTitle
         fileLabel.text  = record.inputFileName
         dateLabel.text  = dateFormatter.string(from: record.savedAt)
 
-        if let fmt = record.outputFormat {
-            badgeLabel.text       = fmt
-            badgeLabel.textColor  = color
+        // badge 显示输出格式，颜色与图标一致
+        let effectiveFormat = effectiveOutputFormat(toolKind: record.toolKind, outputFormat: record.outputFormat)
+        if !effectiveFormat.isEmpty {
+            badgeLabel.text           = effectiveFormat
+            badgeLabel.textColor      = color
             badgeView.backgroundColor = color.withAlphaComponent(0.12)
-            badgeView.isHidden    = false
+            badgeView.isHidden        = false
         } else {
             badgeView.isHidden = true
         }
@@ -369,18 +371,28 @@ private final class ConvertHistoryCell: UITableViewCell {
         cardView.layer.borderColor = UIColor.appCardBorder.cgColor
     }
 
-    private func resolveColor(_ name: String) -> UIColor {
-        switch name {
-        case "appPrimary":   return .appPrimary
-        case "systemRed":    return .systemRed
-        case "systemBlue":   return .systemBlue
-        case "systemIndigo": return .systemIndigo
-        case "systemGreen":  return .systemGreen
-        case "systemOrange": return .systemOrange
-        case "systemTeal":   return .systemTeal
-        case "systemPurple": return .systemPurple
-        case "systemBrown":  return .systemBrown
-        default:             return .appPrimary
+    // 根据工具类型和输出格式推导有效的输出格式字符串（用于 badge 文字）
+    private func effectiveOutputFormat(toolKind: String, outputFormat: String?) -> String {
+        switch toolKind {
+        case "pdfToWord":   return "WORD"
+        case "mergePDF":    return "PDF"
+        case "fileToImage": return "PNG"
+        default:            return outputFormat?.uppercased() ?? ""
+        }
+    }
+
+    // 根据输出格式返回对应图标和颜色（与 FormatPickerSheet 保持一致）
+    private func outputIconInfo(toolKind: String, outputFormat: String?) -> (String, UIColor) {
+        let fmt = effectiveOutputFormat(toolKind: toolKind, outputFormat: outputFormat)
+        switch fmt {
+        case "WORD":  return ("doc.richtext.fill",                        .systemIndigo)
+        case "PDF":   return ("book.pages.fill",                          .systemRed)
+        case "EXCEL": return ("tablecells.fill",                          .systemGreen)
+        case "PPT":   return ("tv.fill",                                  .systemOrange)
+        case "PNG":   return ("photo.fill",                               .systemTeal)
+        case "HTML":  return ("globe",                                    .systemPurple)
+        case "XML":   return ("chevron.left.forwardslash.chevron.right",  .systemBrown)
+        default:      return ("doc.fill",                                 .appPrimary)
         }
     }
 }
