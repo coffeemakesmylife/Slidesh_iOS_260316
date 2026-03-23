@@ -91,7 +91,6 @@ class ConvertViewController: UIViewController {
 
     private func setupUI() {
         navigationItem.title = "极速转换"
-        navigationController?.navigationBar.prefersLargeTitles = true
         view.backgroundColor = .appBackgroundPrimary
         addMeshGradientBackground()
 
@@ -210,18 +209,18 @@ extension ConvertViewController: UICollectionViewDelegate {
 }
 
 // MARK: - FeaturedCell
-// 精选大卡片：深色模式用渐变，浅色模式用主色蓝渐变，文字始终白色确保可读性
+// 精选大卡片：与 SettingsViewController VIP 卡片完全相同的渐变和边框，
+// 使用 GradientFrameUpdater 解决初次渲染 frame=0 的问题
 
 final class FeaturedCell: UICollectionViewCell {
     static let reuseID = "FeaturedCell"
 
-    // bgView 作为渐变容器，独立于 contentView 以便 masksToBounds 精准裁剪
-    private let bgView       = UIView()
-    private let gradLayer    = CAGradientLayer()
-    private let iconBg       = UIView()
-    private let iconView     = UIImageView()
-    private let titleLabel   = UILabel()
-    private let subLabel     = UILabel()
+    private let bgView     = UIView()
+    private let gradLayer  = CAGradientLayer()
+    private let iconBg     = UIView()
+    private let iconView   = UIImageView()
+    private let titleLabel = UILabel()
+    private let subLabel   = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -232,20 +231,38 @@ final class FeaturedCell: UICollectionViewCell {
     private func setup() {
         contentView.backgroundColor = .clear
 
-        // 卡片容器：渐变层 + 圆角裁剪
-        bgView.layer.cornerRadius  = 20
-        bgView.layer.masksToBounds = true
-        bgView.layer.borderWidth   = 1
+        // 卡片样式与 VIP 卡片一致
+        bgView.layer.cornerRadius = 20
+        bgView.clipsToBounds      = true
+        bgView.layer.borderColor  = UIColor.white.withAlphaComponent(0.25).cgColor
+        bgView.layer.borderWidth  = 2.0
         bgView.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(bgView)
 
+        // 渐变颜色与 VIP 卡片完全一致，深浅模式均相同
+        gradLayer.colors     = [UIColor.appGradientStart.cgColor,
+                                UIColor.appGradientMid.cgColor,
+                                UIColor.appGradientEnd.cgColor]
+        gradLayer.locations  = [0.0, 0.55, 1.0]
         gradLayer.startPoint = CGPoint(x: 0, y: 0)
         gradLayer.endPoint   = CGPoint(x: 1, y: 1)
         bgView.layer.insertSublayer(gradLayer, at: 0)
 
+        // 用 helper view 的 layoutSubviews 更新 gradLayer.frame，
+        // 保证初次显示时 frame 就正确（与 SettingsViewController 相同方案）
+        let updater = GradientFrameUpdater(gradLayer)
+        updater.translatesAutoresizingMaskIntoConstraints = false
+        bgView.insertSubview(updater, at: 0)
+        NSLayoutConstraint.activate([
+            updater.topAnchor.constraint(equalTo: bgView.topAnchor),
+            updater.leadingAnchor.constraint(equalTo: bgView.leadingAnchor),
+            updater.trailingAnchor.constraint(equalTo: bgView.trailingAnchor),
+            updater.bottomAnchor.constraint(equalTo: bgView.bottomAnchor),
+        ])
+
         // 图标背景
-        iconBg.layer.cornerRadius  = 14
-        iconBg.backgroundColor     = UIColor.white.withAlphaComponent(0.22)
+        iconBg.layer.cornerRadius = 14
+        iconBg.backgroundColor    = UIColor.white.withAlphaComponent(0.22)
         iconBg.translatesAutoresizingMaskIntoConstraints = false
         bgView.addSubview(iconBg)
 
@@ -254,7 +271,6 @@ final class FeaturedCell: UICollectionViewCell {
         iconView.translatesAutoresizingMaskIntoConstraints = false
         iconBg.addSubview(iconView)
 
-        // 标题 / 副标题：始终白色（背景始终深色系）
         titleLabel.font          = .systemFont(ofSize: 24, weight: .heavy)
         titleLabel.textColor     = .white
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -293,42 +309,25 @@ final class FeaturedCell: UICollectionViewCell {
     }
 
     func configure(with item: ConvertToolItem) {
-        titleLabel.text  = item.title
-        subLabel.text    = item.subTitle
-        iconView.image   = UIImage(systemName: item.icon)
+        titleLabel.text = item.title
+        subLabel.text   = item.subTitle
+        iconView.image  = UIImage(systemName: item.icon)
     }
+}
 
-    // 在 layoutSubviews 里更新渐变：此时 bgView.bounds 已由 AutoLayout 确定
-    // 同时更新颜色，避免 setup 时 traitCollection 尚未注入的问题
+// 与 SettingsViewController.GradientFrameUpdateView 相同原理：
+// 通过 AutoLayout 将此 view 撑满容器，layoutSubviews 时更新 gradLayer.frame
+private final class GradientFrameUpdater: UIView {
+    private let grad: CAGradientLayer
+    init(_ grad: CAGradientLayer) {
+        self.grad = grad
+        super.init(frame: .zero)
+        backgroundColor = .clear
+    }
+    required init?(coder: NSCoder) { fatalError() }
     override func layoutSubviews() {
         super.layoutSubviews()
-        gradLayer.frame = bgView.bounds
-        updateThemeColors()
-    }
-
-    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
-        super.traitCollectionDidChange(previous)
-        updateThemeColors()
-    }
-
-    // 浅色：appPrimary(深宝蓝) → appPrimaryLight(中宝蓝)，白字可读
-    // 深色：appGradientStart(深海蓝) → appGradientMid(中蓝)，白字可读
-    private func updateThemeColors() {
-        let tc = traitCollection
-        if tc.userInterfaceStyle == .dark {
-            gradLayer.colors = [
-                UIColor.appGradientStart.cgColor,
-                UIColor.appGradientMid.cgColor,
-            ]
-            bgView.layer.borderColor = UIColor.white.withAlphaComponent(0.18).cgColor
-        } else {
-            // resolvedColor 确保从动态 UIColor 中取出正确的浅色值
-            gradLayer.colors = [
-                UIColor.appPrimary.resolvedColor(with: tc).cgColor,
-                UIColor.appPrimaryLight.resolvedColor(with: tc).cgColor,
-            ]
-            bgView.layer.borderColor = UIColor.white.withAlphaComponent(0.20).cgColor
-        }
+        grad.frame = bounds
     }
 }
 
