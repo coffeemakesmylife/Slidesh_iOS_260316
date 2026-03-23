@@ -223,21 +223,33 @@ extension ConvertHistoryViewController: UITableViewDataSource, UITableViewDelega
         let header = UIView()
         header.backgroundColor = .clear
 
+        let bar = UIView()
+        bar.backgroundColor    = .appPrimary
+        bar.layer.cornerRadius = 2
+        bar.translatesAutoresizingMaskIntoConstraints = false
+        header.addSubview(bar)
+
         let label = UILabel()
         label.text      = sections[section].dateKey
-        label.font      = .systemFont(ofSize: 13, weight: .semibold)
-        label.textColor = .appTextSecondary
+        label.font      = .systemFont(ofSize: 18, weight: .heavy)
+        label.textColor = .appTextPrimary
         label.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(label)
+
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
+            bar.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 20),
+            bar.centerYAnchor.constraint(equalTo: header.centerYAnchor),
+            bar.widthAnchor.constraint(equalToConstant: 4),
+            bar.heightAnchor.constraint(equalToConstant: 18),
+
+            label.leadingAnchor.constraint(equalTo: bar.trailingAnchor, constant: 8),
             label.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: -20),
             label.centerYAnchor.constraint(equalTo: header.centerYAnchor),
         ])
         return header
     }
 
-    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { 36 }
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat { 52 }
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
