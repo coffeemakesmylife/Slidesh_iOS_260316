@@ -325,7 +325,7 @@ final class ConvertJobViewController: UIViewController {
         secondaryBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         secondaryBtn.setTitleColor(.appTextSecondary, for: .normal)
         secondaryBtn.backgroundColor    = .appCardBackground.withAlphaComponent(0.7)
-        secondaryBtn.layer.cornerRadius = 16
+        secondaryBtn.layer.cornerRadius = 20
         secondaryBtn.layer.borderWidth  = 1
         secondaryBtn.layer.borderColor  = UIColor.appCardBorder.cgColor
         secondaryBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -343,12 +343,12 @@ final class ConvertJobViewController: UIViewController {
         NSLayoutConstraint.activate([
             primaryBtn.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             primaryBtn.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            primaryBtn.heightAnchor.constraint(equalToConstant: 54),
+            primaryBtn.heightAnchor.constraint(equalToConstant: 62),
 
             secondaryBtn.topAnchor.constraint(equalTo: primaryBtn.bottomAnchor, constant: 12),
             secondaryBtn.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             secondaryBtn.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            secondaryBtn.heightAnchor.constraint(equalToConstant: 48),
+            secondaryBtn.heightAnchor.constraint(equalToConstant: 56),
             secondaryBtn.bottomAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.bottomAnchor, constant: -20),
         ])
     }
@@ -686,7 +686,9 @@ final class GradientButton: UIButton {
         gradLayer.startPoint = CGPoint(x: 0, y: 0)
         gradLayer.endPoint   = CGPoint(x: 1, y: 1)
         layer.insertSublayer(gradLayer, at: 0)
-        layer.cornerRadius = 16
+        layer.cornerRadius = 20
+        layer.borderWidth  = 1
+        layer.borderColor  = UIColor.white.withAlphaComponent(0.25).cgColor
         clipsToBounds = true
         setTitleColor(.white, for: .normal)
         titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
