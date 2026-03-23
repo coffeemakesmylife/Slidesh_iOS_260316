@@ -136,9 +136,15 @@ class SettingsViewController: UIViewController {
         titleLabel.textColor = .white
 
         let featuresLabel = UILabel()
-        featuresLabel.text = "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 解锁全部模板"
-        featuresLabel.font = .systemFont(ofSize: 14)
-        featuresLabel.textColor = UIColor.white.withAlphaComponent(0.88)
+        let paraStyle = NSMutableParagraphStyle()
+        paraStyle.paragraphSpacing = 8
+        featuresLabel.attributedText = NSAttributedString(
+            string: "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 解锁全部模板",
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 14),
+                .foregroundColor: UIColor.white.withAlphaComponent(0.88),
+                .paragraphStyle: paraStyle,
+            ])
         featuresLabel.numberOfLines = 0
 
         let btn = UIButton(type: .system)
