@@ -267,11 +267,14 @@ final class ConvertJobViewController: UIViewController {
             formatBadgeLabel.leadingAnchor.constraint(equalTo: formatBadge.leadingAnchor, constant: 10),
             formatBadgeLabel.trailingAnchor.constraint(equalTo: formatBadge.trailingAnchor, constant: -10),
 
-            fileListStack.topAnchor.constraint(equalTo: fileIconView.bottomAnchor, constant: 12),
             fileListStack.leadingAnchor.constraint(equalTo: fileCardView.leadingAnchor, constant: 16),
             fileListStack.trailingAnchor.constraint(equalTo: fileCardView.trailingAnchor, constant: -16),
             fileListStack.bottomAnchor.constraint(equalTo: fileCardView.bottomAnchor, constant: -16),
         ])
+
+        // 两条可切换的 top 约束，由 updateUI 按模式激活
+        fileListStackTopFromIcon = fileListStack.topAnchor.constraint(equalTo: fileIconView.bottomAnchor, constant: 12)
+        fileListStackTopFromCard = fileListStack.topAnchor.constraint(equalTo: fileCardView.topAnchor, constant: 16)
     }
 
     private func setupProgressArea() {
@@ -326,6 +329,9 @@ final class ConvertJobViewController: UIViewController {
     // secondaryBtn 顶部约束（成功时跟 shareBtn，其余跟 primaryBtn）
     private var secondaryBtnTopFromPrimary:   NSLayoutConstraint?
     private var secondaryBtnTopFromShare:     NSLayoutConstraint?
+    // fileListStack 顶部约束（单文件视图时跟 icon，多文件时贴卡片顶）
+    private var fileListStackTopFromIcon: NSLayoutConstraint?
+    private var fileListStackTopFromCard: NSLayoutConstraint?
 
     private func setupStatusIcon() {
         statusIconView.contentMode = .scaleAspectFit
@@ -441,9 +447,15 @@ final class ConvertJobViewController: UIViewController {
                 fileIconView.isHidden   = true
                 fileTextStack.isHidden  = true
                 fileListStack.isHidden  = false
+                // 多文件：stack 紧贴卡片顶部，不依赖隐藏的 icon
+                fileListStackTopFromIcon?.isActive = false
+                fileListStackTopFromCard?.isActive = true
                 rebuildFileList(files: files)
             } else {
                 fileIconView.isHidden   = false
+                // 单文件：stack 跟在 icon 下方（实际隐藏，不影响布局）
+                fileListStackTopFromCard?.isActive = false
+                fileListStackTopFromIcon?.isActive = true
                 fileTextStack.isHidden  = false
                 fileListStack.isHidden  = true
                 fileNameLabel.text = files[0].lastPathComponent
