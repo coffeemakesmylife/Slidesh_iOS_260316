@@ -227,7 +227,7 @@ final class ConvertJobViewController: UIViewController {
             fileCardView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             fileCardView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
 
-            fileIconView.topAnchor.constraint(equalTo: fileCardView.topAnchor, constant: 16),
+            fileIconView.centerYAnchor.constraint(equalTo: fileCardView.centerYAnchor),
             fileIconView.leadingAnchor.constraint(equalTo: fileCardView.leadingAnchor, constant: 16),
             fileIconView.widthAnchor.constraint(equalToConstant: 36),
             fileIconView.heightAnchor.constraint(equalToConstant: 36),
@@ -241,8 +241,8 @@ final class ConvertJobViewController: UIViewController {
             fileSizeLabel.leadingAnchor.constraint(equalTo: fileNameLabel.leadingAnchor),
             fileSizeLabel.bottomAnchor.constraint(lessThanOrEqualTo: fileCardView.bottomAnchor, constant: -16),
 
-            // badge 右侧固定，宽度由内容自适应
-            formatBadge.centerYAnchor.constraint(equalTo: fileCardView.topAnchor, constant: 32),
+            // badge 右侧固定，垂直居中，宽度由内容自适应
+            formatBadge.centerYAnchor.constraint(equalTo: fileCardView.centerYAnchor),
             formatBadge.trailingAnchor.constraint(equalTo: fileCardView.trailingAnchor, constant: -16),
             formatBadge.heightAnchor.constraint(equalToConstant: 28),
 
