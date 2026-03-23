@@ -191,15 +191,13 @@ final class FormatPickerSheet: UIViewController {
         let tap = UITapGestureRecognizer(target: self, action: #selector(cancelTapped))
         cancelBtn.addGestureRecognizer(tap)
 
-        // 面板与安全区间距
-        let safeBottom = view.safeAreaInsets.bottom
+        // 使用 safeAreaLayoutGuide 避免 viewDidLoad 时 safeAreaInsets 为零的问题
         NSLayoutConstraint.activate([
             cancelBtn.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: 12),
             cancelBtn.leadingAnchor.constraint(equalTo: panelView.leadingAnchor, constant: 16),
             cancelBtn.trailingAnchor.constraint(equalTo: panelView.trailingAnchor, constant: -16),
             cancelBtn.heightAnchor.constraint(equalToConstant: 52),
-            cancelBtn.bottomAnchor.constraint(equalTo: panelView.bottomAnchor,
-                                              constant: -(max(safeBottom, 16))),
+            cancelBtn.bottomAnchor.constraint(equalTo: panelView.safeAreaLayoutGuide.bottomAnchor, constant: -16),
         ])
     }
 
