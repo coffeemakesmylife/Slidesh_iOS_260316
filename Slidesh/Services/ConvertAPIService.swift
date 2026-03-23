@@ -27,10 +27,8 @@ final class ConvertAPIService: NSObject {
     private var uploadProgressHandler: ((Double) -> Void)?
     private var completionHandler: ((Result<[URL], Error>) -> Void)?
 
-    // URLSession（带 delegate 用于上传进度）
-    private lazy var uploadSession: URLSession = {
-        URLSession(configuration: .default, delegate: self, delegateQueue: nil)
-    }()
+    // 每次请求创建独立 URLSession，避免 delegate 永久持有 self
+    private var currentSession: URLSession?
 
     private override init() { super.init() }
 
@@ -59,7 +57,10 @@ final class ConvertAPIService: NSObject {
             DispatchQueue.main.async { completion(.failure(error)) }
             return
         case .success(let request):
-            let task = uploadSession.dataTask(with: request)
+            // 每次请求创建新 session，避免 delegate 生命周期问题
+            let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
+            currentSession = session
+            let task = session.dataTask(with: request)
             currentTask = task
             task.resume()
         }
@@ -223,7 +224,9 @@ final class ConvertAPIService: NSObject {
                                 ?? dict["images"] as? [String] {
                 urlStrings = arr
             } else {
+                #if DEBUG
                 print("[ConvertAPI] newslist dict 未识别结构：\(dict)")
+                #endif
                 DispatchQueue.main.async { completion(.failure(APIError.serverError("转换结果解析失败，请重试"))) }
                 return
             }
@@ -231,7 +234,9 @@ final class ConvertAPIService: NSObject {
             // newslist 直接是 URL 数组
             urlStrings = arr
         } else {
+            #if DEBUG
             print("[ConvertAPI] newslist 未识别类型：\(String(describing: newslist))")
+            #endif
             DispatchQueue.main.async { completion(.failure(APIError.serverError("转换结果解析失败，请重试"))) }
             return
         }
@@ -258,7 +263,9 @@ final class ConvertAPIService: NSObject {
             let urlString = urlStrings[index]
             guard let url = URL(string: urlString) else {
                 // 跳过无效 URL，继续下一个
+                #if DEBUG
                 print("[ConvertAPI] 无效下载 URL：\(urlString)")
+                #endif
                 downloadNext(index: index + 1)
                 return
             }
@@ -349,7 +356,15 @@ extension ConvertAPIService: URLSessionDataDelegate {
         uploadProgressHandler = nil
         currentTask = nil
 
+        // 完成后使 session 失效，释放 delegate 引用
+        currentSession?.finishTasksAndInvalidate()
+        currentSession = nil
+
         if let error = error {
+            // 用户主动取消，不触发错误回调
+            if (error as NSError).code == NSURLErrorCancelled {
+                return
+            }
             DispatchQueue.main.async { completion?(.failure(error)) }
             return
         }
