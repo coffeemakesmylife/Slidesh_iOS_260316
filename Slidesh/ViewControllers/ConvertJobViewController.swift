@@ -72,6 +72,7 @@ final class ConvertJobViewController: UIViewController {
 
     // 按钮区
     private let primaryBtn    = GradientButton()
+    private let shareBtn      = UIButton(type: .system)   // 成功页「保存 / 分享」
     private let secondaryBtn  = UIButton(type: .system)
 
     // MARK: - 生命周期
@@ -322,6 +323,9 @@ final class ConvertJobViewController: UIViewController {
     private var primaryBtnTopFromFileCard:    NSLayoutConstraint?
     private var primaryBtnTopFromProgress:    NSLayoutConstraint?
     private var primaryBtnTopFromStatusIcon:  NSLayoutConstraint?
+    // secondaryBtn 顶部约束（成功时跟 shareBtn，其余跟 primaryBtn）
+    private var secondaryBtnTopFromPrimary:   NSLayoutConstraint?
+    private var secondaryBtnTopFromShare:     NSLayoutConstraint?
 
     private func setupStatusIcon() {
         statusIconView.contentMode = .scaleAspectFit
@@ -342,6 +346,19 @@ final class ConvertJobViewController: UIViewController {
         contentView.addSubview(primaryBtn)
         primaryBtn.addTarget(self, action: #selector(didTapPrimary), for: .touchUpInside)
 
+        // 「保存 / 分享」按钮（仅成功状态显示）
+        shareBtn.setTitle("保存到本地", for: .normal)
+        shareBtn.titleLabel?.font    = .systemFont(ofSize: 16, weight: .medium)
+        shareBtn.setTitleColor(.appTextSecondary, for: .normal)
+        shareBtn.backgroundColor     = .appCardBackground.withAlphaComponent(0.7)
+        shareBtn.layer.cornerRadius  = 20
+        shareBtn.layer.borderWidth   = 1
+        shareBtn.layer.borderColor   = UIColor.appCardBorder.cgColor
+        shareBtn.isHidden            = true
+        shareBtn.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(shareBtn)
+        shareBtn.addTarget(self, action: #selector(didTapShare), for: .touchUpInside)
+
         secondaryBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .medium)
         secondaryBtn.setTitleColor(.appTextSecondary, for: .normal)
         secondaryBtn.backgroundColor    = .appCardBackground.withAlphaComponent(0.7)
@@ -360,12 +377,21 @@ final class ConvertJobViewController: UIViewController {
         // 默认激活 idle 状态约束
         primaryBtnTopFromSubLabel?.isActive = true
 
+        // secondaryBtn 顶部约束：成功时跟在 shareBtn 下方，其余跟在 primaryBtn 下方
+        secondaryBtnTopFromPrimary = secondaryBtn.topAnchor.constraint(equalTo: primaryBtn.bottomAnchor, constant: 12)
+        secondaryBtnTopFromShare   = secondaryBtn.topAnchor.constraint(equalTo: shareBtn.bottomAnchor, constant: 10)
+        secondaryBtnTopFromPrimary?.isActive = true
+
         NSLayoutConstraint.activate([
             primaryBtn.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             primaryBtn.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             primaryBtn.heightAnchor.constraint(equalToConstant: 62),
 
-            secondaryBtn.topAnchor.constraint(equalTo: primaryBtn.bottomAnchor, constant: 12),
+            shareBtn.topAnchor.constraint(equalTo: primaryBtn.bottomAnchor, constant: 12),
+            shareBtn.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            shareBtn.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            shareBtn.heightAnchor.constraint(equalToConstant: 56),
+
             secondaryBtn.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
             secondaryBtn.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
             secondaryBtn.heightAnchor.constraint(equalToConstant: 56),
@@ -390,6 +416,11 @@ final class ConvertJobViewController: UIViewController {
         primaryBtnTopFromFileCard?.isActive   = false
         primaryBtnTopFromProgress?.isActive   = false
         primaryBtnTopFromStatusIcon?.isActive = false
+
+        // 非成功状态：隐藏「保存到本地」，secondaryBtn 跟在 primaryBtn 下方
+        shareBtn.isHidden = true
+        secondaryBtnTopFromShare?.isActive   = false
+        secondaryBtnTopFromPrimary?.isActive = true
 
         switch state {
         case .idle:
@@ -451,6 +482,10 @@ final class ConvertJobViewController: UIViewController {
             subLabel.text = "转换完成！"
             primaryBtn.setTitle("预览结果", for: .normal)
             primaryBtn.isEnabled = true
+            // 成功时显示「保存到本地」，secondaryBtn 跟在其下方
+            shareBtn.isHidden = false
+            secondaryBtnTopFromPrimary?.isActive = false
+            secondaryBtnTopFromShare?.isActive   = true
             secondaryBtn.isHidden = false
             secondaryBtn.setTitle("再转一个", for: .normal)
 
@@ -582,6 +617,17 @@ final class ConvertJobViewController: UIViewController {
         }
     }
 
+    // 保存到本地：与 PPTPreviewViewController 相同逻辑，UIDocumentPickerViewController(forExporting:)
+    @objc private func didTapShare() {
+        guard case .success(let urls) = state else { return }
+        isExportPicker = true
+        let picker = UIDocumentPickerViewController(forExporting: urls, asCopy: true)
+        picker.delegate = self
+        picker.modalPresentationStyle = .formSheet
+        present(picker, animated: true)
+    }
+    private var isExportPicker = false
+
     // MARK: - 文件选择
 
     private func openFilePicker() {
@@ -675,9 +721,22 @@ final class ConvertJobViewController: UIViewController {
 
 extension ConvertJobViewController: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        // startAccessingSecurityScopedResource 对非安全作用域 URL 返回 false 是正常的，文件仍可访问
-        urls.forEach { _ = $0.startAccessingSecurityScopedResource() }
-        state = .fileSelected(files: urls)
+        if isExportPicker {
+            isExportPicker = false
+            // 导出完成，提示用户
+            let alert = UIAlertController(title: "已保存到文件 App", message: nil, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "好", style: .default))
+            present(alert, animated: true)
+        } else {
+            // 选择输入文件
+            // startAccessingSecurityScopedResource 对非安全作用域 URL 返回 false 是正常的，文件仍可访问
+            urls.forEach { _ = $0.startAccessingSecurityScopedResource() }
+            state = .fileSelected(files: urls)
+        }
+    }
+
+    func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+        isExportPicker = false
     }
 }
 
@@ -704,7 +763,7 @@ final class GradientButton: UIButton {
         gradLayer.startPoint = CGPoint(x: 0, y: 0)
         gradLayer.endPoint   = CGPoint(x: 1, y: 1)
         layer.insertSublayer(gradLayer, at: 0)
-        layer.cornerRadius = 24
+        layer.cornerRadius = 22
         layer.borderWidth  = 1.5
         layer.borderColor  = UIColor.white.withAlphaComponent(0.25).cgColor
         clipsToBounds = true
