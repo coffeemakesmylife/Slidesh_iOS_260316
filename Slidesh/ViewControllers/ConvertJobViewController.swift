@@ -8,6 +8,7 @@
 import UIKit
 import UniformTypeIdentifiers
 import QuickLook
+import SafariServices
 
 final class ConvertJobViewController: UIViewController {
 
@@ -629,14 +630,22 @@ final class ConvertJobViewController: UIViewController {
         }
     }
 
-    // 保存到本地：与 PPTPreviewViewController 相同逻辑，UIDocumentPickerViewController(forExporting:)
+    // 保存到本地 / 分享：本地文件用 DocumentPicker 导出，远程 URL 用 ActivityViewController
     @objc private func didTapShare() {
         guard case .success(let urls) = state else { return }
-        isExportPicker = true
-        let picker = UIDocumentPickerViewController(forExporting: urls, asCopy: true)
-        picker.delegate = self
-        picker.modalPresentationStyle = .formSheet
-        present(picker, animated: true)
+        let localURLs  = urls.filter { $0.isFileURL }
+        let remoteURLs = urls.filter { !$0.isFileURL }
+        if !localURLs.isEmpty {
+            isExportPicker = true
+            let picker = UIDocumentPickerViewController(forExporting: localURLs, asCopy: true)
+            picker.delegate = self
+            picker.modalPresentationStyle = .formSheet
+            present(picker, animated: true)
+        } else if !remoteURLs.isEmpty {
+            let ac = UIActivityViewController(activityItems: remoteURLs, applicationActivities: nil)
+            ac.popoverPresentationController?.sourceView = shareBtn
+            present(ac, animated: true)
+        }
     }
     private var isExportPicker = false
 
@@ -684,11 +693,20 @@ final class ConvertJobViewController: UIViewController {
     private var previewURLs: [URL] = []
 
     private func showPreview(urls: [URL]) {
-        previewURLs = urls
-        let ql = QLPreviewController()
-        ql.dataSource = self
-        ql.currentPreviewItemIndex = 0
-        present(ql, animated: true)
+        let localURLs  = urls.filter { $0.isFileURL }
+        let remoteURLs = urls.filter { !$0.isFileURL }
+        if !localURLs.isEmpty {
+            // 本地文件用 QLPreviewController 预览
+            previewURLs = localURLs
+            let ql = QLPreviewController()
+            ql.dataSource = self
+            ql.currentPreviewItemIndex = 0
+            present(ql, animated: true)
+        } else if let first = remoteURLs.first {
+            // 远程 URL（如合并PDF）用 SFSafariViewController 预览
+            let safari = SFSafariViewController(url: first)
+            present(safari, animated: true)
+        }
     }
 
     // MARK: - 辅助

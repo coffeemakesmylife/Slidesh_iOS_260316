@@ -29,6 +29,8 @@ final class ConvertAPIService: NSObject {
     private var completionHandler: ((Result<[URL], Error>) -> Void)?
     // 当前转换的目标文件扩展名（用于 URL 无扩展时 fallback）
     private var currentFallbackExt: String = ""
+    // 当前工具类型（用于判断是否跳过下载）
+    private var currentTool: ConvertToolKind?
 
     // 每次请求创建独立 URLSession，避免 delegate 永久持有 self
     private var currentSession: URLSession?
@@ -48,6 +50,7 @@ final class ConvertAPIService: NSObject {
         // 保存回调供 delegate 方法使用
         uploadProgressHandler = onUploadProgress
         completionHandler = completion
+        currentTool = tool
         // 推导目标扩展名（URL 无扩展时用作 fallback）
         currentFallbackExt = fallbackExtension(tool: tool, outputFormat: outputFormat)
 
@@ -248,7 +251,27 @@ final class ConvertAPIService: NSObject {
             return
         }
 
-        downloadFiles(from: urlStrings, fallbackExt: currentFallbackExt, completion: completion)
+        // 合并 PDF 服务器不支持直接下载（403），直接将远程 URL 返回给调用方预览
+        if currentTool == .mergePDF {
+            let remoteURLs = urlStrings.compactMap { parseURL(from: $0) }
+            guard !remoteURLs.isEmpty else {
+                DispatchQueue.main.async { completion(.failure(APIError.serverError("转换结果解析失败，请重试"))) }
+                return
+            }
+            DispatchQueue.main.async { completion(.success(remoteURLs)) }
+        } else {
+            downloadFiles(from: urlStrings, fallbackExt: currentFallbackExt, completion: completion)
+        }
+    }
+
+    // MARK: - 私有：URL 解析（兼容含中文的原始 URL 字符串）
+
+    private func parseURL(from string: String) -> URL? {
+        if let url = URL(string: string), url.scheme != nil { return url }
+        // 含中文等非 ASCII 字符时，percent-encode 后再解析
+        guard let encoded = string.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: encoded), url.scheme != nil else { return nil }
+        return url
     }
 
     // MARK: - 私有：串行下载结果文件
