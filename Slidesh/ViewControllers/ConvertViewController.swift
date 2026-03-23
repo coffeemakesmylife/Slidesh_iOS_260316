@@ -131,6 +131,14 @@ class ConvertViewController: UIViewController {
         view.backgroundColor = .appBackgroundPrimary
         addMeshGradientBackground()
 
+        // 右上角：转换记录入口
+        let historyBtn = UIBarButtonItem(
+            image: UIImage(systemName: "clock.arrow.circlepath"),
+            style: .plain,
+            target: self,
+            action: #selector(openHistory))
+        navigationItem.rightBarButtonItem = historyBtn
+
         collectionView = UICollectionView(frame: .zero, collectionViewLayout: makeLayout())
         collectionView.backgroundColor = .clear
         collectionView.delegate = self
@@ -217,6 +225,14 @@ class ConvertViewController: UIViewController {
             snap.appendItems(ConvertToolItem.all[section] ?? [], toSection: section)
         }
         dataSource.apply(snap, animatingDifferences: false)
+    }
+}
+
+// MARK: - Actions
+
+extension ConvertViewController {
+    @objc private func openHistory() {
+        navigationController?.pushViewController(ConvertHistoryViewController(), animated: true)
     }
 }
 

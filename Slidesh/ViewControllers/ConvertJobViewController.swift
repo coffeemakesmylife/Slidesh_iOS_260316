@@ -677,15 +677,66 @@ final class ConvertJobViewController: UIViewController {
                 progressFill.alpha = 1
                 switch result {
                 case .success(let urls):
-                    // 转换成功后释放安全访问权限
                     files.forEach { $0.stopAccessingSecurityScopedResource() }
+                    saveConvertRecord(inputFiles: files, resultURLs: urls)
                     state = .success(resultURLs: urls)
                 case .failure(let error):
-                    // 失败时保留访问权限，以便重试时仍可读取文件
                     state = .error(message: error.localizedDescription, lastFiles: files)
                 }
             }
         )
+    }
+
+    // MARK: - 转换记录持久化
+
+    private func saveConvertRecord(inputFiles: [URL], resultURLs: [URL]) {
+        // 输入文件描述
+        let inputName: String
+        if inputFiles.count == 1 {
+            inputName = inputFiles[0].lastPathComponent
+        } else {
+            inputName = "\(inputFiles[0].lastPathComponent) 等 \(inputFiles.count) 个文件"
+        }
+
+        // 结果路径：本地文件复制到永久目录；远程 URL 直接存字符串
+        var resultPaths: [String] = []
+        let isRemote = resultURLs.first.map { !$0.isFileURL } ?? false
+
+        if isRemote {
+            resultPaths = resultURLs.compactMap { $0.absoluteString }
+        } else {
+            resultPaths = resultURLs.compactMap { copyToConvertResults(url: $0) }
+        }
+
+        let record = ConvertRecord(
+            id: UUID().uuidString,
+            toolKind: tool.kind.rawValue,
+            toolTitle: tool.title,
+            toolIcon: tool.icon,
+            toolColorName: tool.colorName,
+            inputFileName: inputName,
+            outputFormat: outputFormat,
+            resultPaths: resultPaths,
+            isRemoteResult: isRemote,
+            savedAt: Date()
+        )
+        WorksStore.shared.saveConvert(record)
+    }
+
+    /// 将临时文件复制到 Documents/convert_results/，返回文件名（nil 表示失败）
+    private func copyToConvertResults(url: URL) -> String? {
+        let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("convert_results", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        // 避免同名冲突，在文件名前加时间戳前缀
+        let name = "\(Int(Date().timeIntervalSince1970))_\(url.lastPathComponent)"
+        let dest = dir.appendingPathComponent(name)
+        do {
+            try FileManager.default.copyItem(at: url, to: dest)
+            return name
+        } catch {
+            return nil
+        }
     }
 
     // MARK: - 预览
