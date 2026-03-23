@@ -167,7 +167,7 @@ final class FormatPickerSheet: UIViewController {
     // 取消按钮
     private func setupCancelButton() {
         cancelBtn.backgroundColor       = .appCardBackground  // 与行卡片同色，均在灰色面板上突出
-        cancelBtn.layer.cornerRadius    = 16
+        cancelBtn.layer.cornerRadius    = 18
         cancelBtn.layer.borderWidth     = 1
         cancelBtn.layer.borderColor     = UIColor.appCardBorder.cgColor
         cancelBtn.layer.masksToBounds   = true

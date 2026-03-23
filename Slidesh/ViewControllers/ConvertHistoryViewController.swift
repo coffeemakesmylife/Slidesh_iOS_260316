@@ -231,7 +231,7 @@ extension ConvertHistoryViewController: UITableViewDataSource, UITableViewDelega
 
         let label = UILabel()
         label.text      = sections[section].dateKey
-        label.font      = .systemFont(ofSize: 18, weight: .heavy)
+        label.font      = .systemFont(ofSize: 16, weight: .bold)
         label.textColor = .appTextPrimary
         label.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(label)
