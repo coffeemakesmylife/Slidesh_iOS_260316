@@ -18,10 +18,8 @@ final class ConvertAPIService: NSObject {
 
     static let shared = ConvertAPIService()
 
-    // 文档格式转换服务器（PDF/Word/Excel/PPT 转换）
+    // 统一文档格式转换服务器
     private let convertBaseURL = "http://43.163.228.96:8080/open_cat"
-    // 合并 PDF 服务器（独立接口）
-    private let mergeBaseURL   = "http://43.156.217.34:8080"
 
     // 当前上传任务（用于 cancel）
     private var currentTask: URLSessionDataTask?
@@ -89,7 +87,7 @@ final class ConvertAPIService: NSObject {
         boundary: String
     ) -> Result<URLRequest, Error> {
         // 合并 PDF 使用独立服务器，其余使用 convert 服务器
-        let selectedBase = (tool == .mergePDF) ? mergeBaseURL : convertBaseURL
+        let selectedBase = convertBaseURL
         // 确定接口路径和表单字段
         let path: String
         var body = Data()
