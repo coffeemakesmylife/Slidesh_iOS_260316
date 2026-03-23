@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import UniformTypeIdentifiers
 
 // MARK: - 数据模型（顶层，避免 @MainActor 污染 Sendable 约束）
 
@@ -114,6 +115,10 @@ class ConvertViewController: UIViewController {
     private var collectionView: UICollectionView!
     private var dataSource: UICollectionViewDiffableDataSource<ConvertSection, ConvertToolItem>!
 
+    // 文件选择过程中暂存工具和格式
+    private var pendingTool:   ConvertToolItem?
+    private var pendingFormat: String?
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -222,9 +227,32 @@ extension ConvertViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
         UISelectionFeedbackGenerator().selectionChanged()
-        let alert = UIAlertController(title: item.title, message: "功能开发中，敬请期待！", preferredStyle: .alert)
-        alert.addAction(.init(title: "确定", style: .default))
-        present(alert, animated: true)
+
+        if item.formatOptions.isEmpty {
+            // 无格式选项：直接选文件
+            pendingTool   = item
+            pendingFormat = nil
+            openDocumentPicker(for: item)
+        } else {
+            // 有格式选项：先弹格式选择面板
+            let sheet = FormatPickerSheet(formats: item.formatOptions)
+            sheet.onSelect = { [weak self] format in
+                guard let self else { return }
+                self.pendingTool   = item
+                self.pendingFormat = format
+                self.openDocumentPicker(for: item)
+            }
+            present(sheet, animated: false)
+        }
+    }
+
+    private func openDocumentPicker(for item: ConvertToolItem) {
+        let types = item.acceptedExtensions.compactMap { UTType(filenameExtension: $0) }
+        let picker = UIDocumentPickerViewController(
+            forOpeningContentTypes: types.isEmpty ? [.item] : types)
+        picker.allowsMultipleSelection = item.allowsMultiple
+        picker.delegate = self
+        present(picker, animated: true)
     }
 
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
@@ -237,6 +265,20 @@ extension ConvertViewController: UICollectionViewDelegate {
         UIView.animate(withDuration: 0.18) {
             collectionView.cellForItem(at: indexPath)?.transform = .identity
         }
+    }
+}
+
+// MARK: - UIDocumentPickerDelegate
+
+extension ConvertViewController: UIDocumentPickerDelegate {
+    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+        guard let tool = pendingTool else { return }
+        urls.forEach { _ = $0.startAccessingSecurityScopedResource() }
+        let jobVC = ConvertJobViewController(tool: tool, outputFormat: pendingFormat)
+        jobVC.prefillFiles(urls)
+        navigationController?.pushViewController(jobVC, animated: true)
+        pendingTool   = nil
+        pendingFormat = nil
     }
 }
 
