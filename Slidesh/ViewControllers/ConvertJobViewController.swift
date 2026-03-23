@@ -372,10 +372,13 @@ final class ConvertJobViewController: UIViewController {
                 fileListStack.isHidden = true
                 fileNameLabel.text = files[0].lastPathComponent
                 fileSizeLabel.text = fileSizeString(url: files[0])
-                if let fmt = outputFormat {
-                    formatBadge.text     = "→ \(fmt)"
-                    formatBadge.isHidden = false
-                }
+            }
+            // 无论单文件还是多文件，outputFormat 存在时都显示格式 badge
+            if let fmt = outputFormat {
+                formatBadge.text    = "→ \(fmt)"
+                formatBadge.isHidden = false
+            } else {
+                formatBadge.isHidden = true
             }
             primaryBtn.setTitle("开始转换", for: .normal)
             primaryBtn.isEnabled = !tool.allowsMultiple || files.count >= 2
@@ -387,7 +390,6 @@ final class ConvertJobViewController: UIViewController {
             isModalInPresentation      = true
             subLabel.text              = nil
             setUploadProgress(0)
-            progressLabel.text = "正在上传..."
             primaryBtn.setTitle("取消", for: .normal)
             primaryBtn.isEnabled = true
             secondaryBtn.isHidden = true
@@ -506,7 +508,7 @@ final class ConvertJobViewController: UIViewController {
             startConversion(files: files)
         case .converting:
             ConvertAPIService.shared.cancel()
-            state = lastConvertedFiles.isEmpty ? .idle : .fileSelected(files: lastConvertedFiles)
+            state = .fileSelected(files: lastConvertedFiles)
         case .success(let urls):
             showPreview(urls: urls)
         case .error(_, let files):
@@ -518,7 +520,6 @@ final class ConvertJobViewController: UIViewController {
         switch state {
         case .fileSelected:
             state = .idle
-            openFilePicker()
         case .success:
             state = .idle
         case .error:
@@ -604,8 +605,9 @@ final class ConvertJobViewController: UIViewController {
 
 extension ConvertJobViewController: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        let accessible = urls.filter { $0.startAccessingSecurityScopedResource() }
-        state = .fileSelected(files: accessible.isEmpty ? urls : accessible)
+        // startAccessingSecurityScopedResource 对非安全作用域 URL 返回 false 是正常的，文件仍可访问
+        urls.forEach { _ = $0.startAccessingSecurityScopedResource() }
+        state = .fileSelected(files: urls)
     }
 }
 
