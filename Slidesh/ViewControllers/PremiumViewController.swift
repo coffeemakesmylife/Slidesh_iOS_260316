@@ -40,7 +40,8 @@ class PremiumViewController: UIViewController {
     private let disclaimerLabel = UILabel()
     
     // 底部浮动交互条
-    private let bottomBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+    private let bottomBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+    private let blurFadeMask   = CAGradientLayer()  // 顶部渐入遮罩
     private let subscribeButton = AnimatedGradientButton()
     private let autoRenewTipLabel = UILabel()
     
@@ -58,6 +59,11 @@ class PremiumViewController: UIViewController {
         
         // 初始更新选中状态
         updateSelection()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateBlurFadeMask()
     }
 
     private func setupBackground() {
@@ -128,12 +134,16 @@ class PremiumViewController: UIViewController {
         autoRenewTipLabel.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(autoRenewTipLabel)
         
+        // blur view 从按钮容器顶部上方 60pt 开始，给渐入过渡留空间
+        let fadeHeight: CGFloat = 60
+
         NSLayoutConstraint.activate([
             bottomBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomBlurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             bottomBlurView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
-            container.topAnchor.constraint(equalTo: bottomBlurView.topAnchor),
+            bottomBlurView.topAnchor.constraint(equalTo: container.topAnchor, constant: -fadeHeight),
+
+            container.topAnchor.constraint(equalTo: bottomBlurView.topAnchor, constant: fadeHeight),
             container.leadingAnchor.constraint(equalTo: bottomBlurView.leadingAnchor),
             container.trailingAnchor.constraint(equalTo: bottomBlurView.trailingAnchor),
             container.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
@@ -149,10 +159,26 @@ class PremiumViewController: UIViewController {
             autoRenewTipLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12) // padding bottom
         ])
         
+        // 顶部渐入遮罩：从透明到不透明，让内容滑入时有模糊渐变过渡
+        blurFadeMask.colors    = [UIColor.clear.cgColor, UIColor.black.cgColor]
+        blurFadeMask.startPoint = CGPoint(x: 0.5, y: 0)
+        blurFadeMask.endPoint   = CGPoint(x: 0.5, y: 1)
+        // 渐变只发生在顶部 fadeHeight 区域（约占总高度的一部分，运行时通过 viewDidLayoutSubviews 精确计算）
+        bottomBlurView.layer.mask = blurFadeMask
+
         // 为 scrollView 增加底部内容 inset，避免内容被 fixed 底栏遮挡
         view.layoutIfNeeded()
         let bottomHeight = bottomBlurView.bounds.height
         scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: bottomHeight + 20, right: 0)
+        updateBlurFadeMask()
+    }
+
+    private func updateBlurFadeMask() {
+        guard bottomBlurView.bounds.height > 0 else { return }
+        blurFadeMask.frame = bottomBlurView.bounds
+        // 渐变区只占顶部 fadeHeight（60pt），之后完全不透明
+        let fadeRatio = 60.0 / bottomBlurView.bounds.height
+        blurFadeMask.locations = [0, NSNumber(value: fadeRatio)]
     }
     
     private func setupContent() {
