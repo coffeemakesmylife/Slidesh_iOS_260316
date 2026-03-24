@@ -364,7 +364,7 @@ private class PremiumPlanCardView: UIView {
         gradientBorderLayer.colors    = [UIColor.appGradientStart.cgColor,
                                          UIColor.appGradientMid.cgColor,
                                          UIColor.appGradientEnd.cgColor]
-        gradientBorderLayer.locations = [0.0, 0.55, 1.0]
+        gradientBorderLayer.locations = [0.0, 0.25, 1.0]
         gradientBorderLayer.startPoint = CGPoint(x: 0, y: 0)
         gradientBorderLayer.endPoint   = CGPoint(x: 1, y: 1)
         gradientBorderLayer.isHidden   = true
