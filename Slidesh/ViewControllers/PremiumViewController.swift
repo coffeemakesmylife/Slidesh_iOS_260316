@@ -17,11 +17,12 @@ struct PremiumPlan: Equatable {
     let priceStr: String
     let priceDouble: Double
     let subtext: String
+    let disclaimer: String
     
     static let allPlans: [PremiumPlan] = [
-        PremiumPlan(id: "week", title: "周卡订阅", tag: nil, priceStr: "¥12.00", priceDouble: 12.00, subtext: "每周仅 ¥12.00"),
-        PremiumPlan(id: "month", title: "月卡订阅", tag: "最受欢迎", priceStr: "¥38.00", priceDouble: 38.00, subtext: "每天低至 ¥1.26"),
-        PremiumPlan(id: "year", title: "年卡订阅", tag: "限时折扣", priceStr: "¥198.00", priceDouble: 198.00, subtext: "每月低至 ¥16.50")
+        PremiumPlan(id: "week", title: "周订阅", tag: nil, priceStr: "¥12.00", priceDouble: 12.00, subtext: "每天低至 ¥1.71", disclaimer: "每天仅¥1.7无限次使用，到期自动续期，随时可取消"),
+        PremiumPlan(id: "month", title: "月订阅", tag: "限时折扣", priceStr: "¥18.00", priceDouble: 18.00, subtext: "每天低至 ¥0.60", disclaimer: "首月¥18，之后¥38每月包含无限次使用，随时可取消"),
+        PremiumPlan(id: "year", title: "年订阅", tag: "最受欢迎", priceStr: "¥198.00", priceDouble: 198.00, subtext: "每月低至 ¥16.50", disclaimer: "每年包含无限次使用，到期自动续期，随时可取消")
     ]
 }
 
@@ -36,6 +37,7 @@ class PremiumViewController: UIViewController {
     private let headerLabel = UILabel()
     private let subHeaderLabel = UILabel()
     private let cardsStackView = UIStackView()
+    private let disclaimerLabel = UILabel()
     
     // 底部浮动交互条
     private let bottomBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
@@ -108,9 +110,9 @@ class PremiumViewController: UIViewController {
         bottomBlurView.contentView.addSubview(container)
         
         // 订阅大按钮
-        subscribeButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .bold)
+        subscribeButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         subscribeButton.setTitleColor(.white, for: .normal)
-        subscribeButton.layer.cornerRadius = 28
+        subscribeButton.layer.cornerRadius = 30
         subscribeButton.clipsToBounds = true
         subscribeButton.addTarget(self, action: #selector(subscribeTapped), for: .touchUpInside)
         subscribeButton.translatesAutoresizingMaskIntoConstraints = false
@@ -137,7 +139,7 @@ class PremiumViewController: UIViewController {
             subscribeButton.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
             subscribeButton.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 24),
             subscribeButton.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -24),
-            subscribeButton.heightAnchor.constraint(equalToConstant: 56),
+            subscribeButton.heightAnchor.constraint(equalToConstant: 60),
             
             autoRenewTipLabel.topAnchor.constraint(equalTo: subscribeButton.bottomAnchor, constant: 12),
             autoRenewTipLabel.leadingAnchor.constraint(equalTo: container.leadingAnchor),
@@ -191,11 +193,10 @@ class PremiumViewController: UIViewController {
         
         contentView.addSubview(mainStack)
         
-        // iOS SafeArea 上边距大概是 44 到 59，关闭按钮在NavigationBar，所以只需少量上边距
-        let topPadding: CGFloat = 20
+        // 为了错开 NavigationBar，添加上边距
         
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: topPadding),
+            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 160),
             mainStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             mainStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40)
@@ -203,12 +204,10 @@ class PremiumViewController: UIViewController {
     }
     
     private func createLegalStack() -> UIStackView {
-        let disclaimer = UILabel()
-        disclaimer.text = "每月包含无限次使用，服务将自动续期，随时可取消"
-        disclaimer.font = .systemFont(ofSize: 12)
-        disclaimer.textColor = .appTextSecondary
-        disclaimer.textAlignment = .center
-        disclaimer.numberOfLines = 0
+        disclaimerLabel.font = .systemFont(ofSize: 12)
+        disclaimerLabel.textColor = .appTextSecondary
+        disclaimerLabel.textAlignment = .center
+        disclaimerLabel.numberOfLines = 0
         
         let termsBtn = createLinkButton(title: "用户协议") { [weak self] in
             self?.openSafari(url: URL(string: "https://example.com/terms")!)
@@ -228,7 +227,7 @@ class PremiumViewController: UIViewController {
         linksRow.alignment = .center
         linksRow.distribution = .equalCentering
         
-        let container = UIStackView(arrangedSubviews: [disclaimer, linksRow])
+        let container = UIStackView(arrangedSubviews: [disclaimerLabel, linksRow])
         container.axis = .vertical
         container.spacing = 8
         container.alignment = .center
@@ -263,6 +262,9 @@ class PremiumViewController: UIViewController {
             let isSelected = (card.plan.id == selectedPlan.id)
             card.setSelected(isSelected, animated: true)
         }
+        
+        // 更新底部的 disclaimer
+        disclaimerLabel.text = selectedPlan.disclaimer
         
         // 更新大按钮字样
         let btnText = "\(selectedPlan.priceStr) 立即体验"
@@ -321,12 +323,16 @@ private class PremiumPlanCardView: UIView {
     
     let plan: PremiumPlan
     
+    private var isCurrentlySelected = false
+    
     private let radioIcon = UIImageView()
     private let titleLabel = UILabel()
     private let tagLabel = UILabel()
     private let tagContainer = UIView()
     private let priceLabel = UILabel()
     private let subtextLabel = UILabel()
+    
+    private let priceStackView = UIStackView()
     
     init(plan: PremiumPlan) {
         self.plan = plan
@@ -338,13 +344,13 @@ private class PremiumPlanCardView: UIView {
     
     private func setupUI() {
         backgroundColor = .appCardBackground
-        layer.cornerRadius = 28
+        layer.cornerRadius = 32
         layer.borderWidth = 1.0
-        layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.4).cgColor
+        layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.2).cgColor
         
         // 分别增加阴影效果
         layer.shadowColor = UIColor.black.cgColor
-        layer.shadowOpacity = 0.04
+        layer.shadowOpacity = 0.06
         layer.shadowOffset = CGSize(width: 0, height: 4)
         layer.shadowRadius = 8
         
@@ -354,18 +360,17 @@ private class PremiumPlanCardView: UIView {
         addSubview(radioIcon)
         
         titleLabel.text = plan.title
-        titleLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        titleLabel.font = .systemFont(ofSize: 22, weight: .semibold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(titleLabel)
         
         if let tagStr = plan.tag {
             tagLabel.text = tagStr
-            tagLabel.font = .systemFont(ofSize: 10, weight: .semibold)
-            tagLabel.textColor = .white
+            tagLabel.font = .systemFont(ofSize: 9, weight: .medium)
             tagLabel.translatesAutoresizingMaskIntoConstraints = false
             
-            tagContainer.backgroundColor = .appPrimary.withAlphaComponent(0.6)
+            tagContainer.backgroundColor = .appPrimary.withAlphaComponent(0.4)
             tagContainer.layer.cornerRadius = 6
             tagContainer.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMinYCorner] // 默认全圆角
             tagContainer.clipsToBounds = true
@@ -375,8 +380,8 @@ private class PremiumPlanCardView: UIView {
             addSubview(tagContainer)
             
             NSLayoutConstraint.activate([
-                tagLabel.topAnchor.constraint(equalTo: tagContainer.topAnchor, constant: 2),
-                tagLabel.bottomAnchor.constraint(equalTo: tagContainer.bottomAnchor, constant: -2),
+                tagLabel.topAnchor.constraint(equalTo: tagContainer.topAnchor, constant: 4),
+                tagLabel.bottomAnchor.constraint(equalTo: tagContainer.bottomAnchor, constant: -4),
                 tagLabel.leadingAnchor.constraint(equalTo: tagContainer.leadingAnchor, constant: 6),
                 tagLabel.trailingAnchor.constraint(equalTo: tagContainer.trailingAnchor, constant: -6),
                 
@@ -385,30 +390,37 @@ private class PremiumPlanCardView: UIView {
             ])
             
             // 为了让 tag 贴靠更紧凑，如果是最受欢迎类型可以染特殊的颜色
+            // 为了让 tag 贴靠更紧凑，采用明亮鲜艳的实色
             if tagStr == "限时折扣" {
-                tagContainer.backgroundColor = .systemPurple.withAlphaComponent(0.6)
+                tagContainer.backgroundColor = UIColor(red: 1.0, green: 0.4, blue: 0.6, alpha: 0.2) // 明亮粉红色
+                tagLabel.textColor = UIColor(red: 1.0, green: 0.4, blue: 0.6, alpha: 1.0)
             } else {
-                tagContainer.backgroundColor = .appPrimary.withAlphaComponent(0.6)
+                tagContainer.backgroundColor = UIColor(red: 0.2, green: 0.6, blue: 1.0, alpha: 0.2) // 明亮蓝色
+                tagLabel.textColor = UIColor(red: 0.2, green: 0.6, blue: 1.0, alpha: 1.0)
             }
         }
         
         priceLabel.text = plan.priceStr
-        if let desc = UIFont.systemFont(ofSize: 26, weight: .bold).fontDescriptor.withDesign(.rounded) {
-            priceLabel.font = UIFont(descriptor: desc, size: 26)
+        if let desc = UIFont.systemFont(ofSize: 21, weight: .semibold).fontDescriptor.withDesign(.rounded) {
+            priceLabel.font = UIFont(descriptor: desc, size: 21)
         } else {
-            priceLabel.font = .systemFont(ofSize: 26, weight: .bold)
+            priceLabel.font = .systemFont(ofSize: 21, weight: .semibold)
         }
         priceLabel.textColor = .appTextPrimary
         priceLabel.textAlignment = .right
-        priceLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(priceLabel)
         
         subtextLabel.text = plan.subtext
         subtextLabel.font = .systemFont(ofSize: 12, weight: .medium)
         subtextLabel.textColor = .appTextSecondary
         subtextLabel.textAlignment = .right
-        subtextLabel.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(subtextLabel)
+        
+        priceStackView.axis = .vertical
+        priceStackView.spacing = 8
+        priceStackView.alignment = .trailing
+        priceStackView.addArrangedSubview(priceLabel)
+        priceStackView.addArrangedSubview(subtextLabel)
+        priceStackView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(priceStackView)
         
         NSLayoutConstraint.activate([
             heightAnchor.constraint(equalToConstant: 104),
@@ -418,33 +430,31 @@ private class PremiumPlanCardView: UIView {
             radioIcon.widthAnchor.constraint(equalToConstant: 24),
             radioIcon.heightAnchor.constraint(equalToConstant: 24),
             
-            titleLabel.leadingAnchor.constraint(equalTo: radioIcon.trailingAnchor, constant: 16),
+            titleLabel.leadingAnchor.constraint(equalTo: radioIcon.trailingAnchor, constant: 20),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor, constant: plan.tag != nil ? 6 : 0),
             
-            priceLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            priceLabel.topAnchor.constraint(equalTo: topAnchor, constant: 20),
-            
-            subtextLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
-            subtextLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -20)
+            priceStackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -30),
+            priceStackView.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
         
         setSelected(false, animated: false)
     }
     
     func setSelected(_ isSelected: Bool, animated: Bool) {
+        self.isCurrentlySelected = isSelected
         let duration = animated ? 0.25 : 0.0
         UIView.animate(withDuration: duration) {
             if isSelected {
-                self.layer.borderWidth = 2.5
+                self.layer.borderWidth = 1.5
                 self.layer.borderColor = UIColor.appPrimary.cgColor
-                self.backgroundColor = UIColor.appPrimary.withAlphaComponent(0.06)
+                self.backgroundColor = .appCardBackground
                 // SF Symbol checkmark 选中
                 let config = UIImage.SymbolConfiguration(weight: .bold)
                 self.radioIcon.image = UIImage(systemName: "checkmark.circle.fill", withConfiguration: config)
                 self.radioIcon.tintColor = .appPrimary
             } else {
                 self.layer.borderWidth = 1.0
-                self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.4).cgColor
+                self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.2).cgColor
                 self.backgroundColor = .appCardBackground
                 // SF Symbol 空心圆
                 let config = UIImage.SymbolConfiguration(weight: .light)
@@ -458,8 +468,8 @@ private class PremiumPlanCardView: UIView {
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         // Check if currently selected, if not, update border to standard theme color
-        if self.backgroundColor == .appCardBackground {
-            self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.4).cgColor
+        if !isCurrentlySelected {
+            self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.2).cgColor
         } else {
             self.layer.borderColor = UIColor.appPrimary.cgColor
         }
