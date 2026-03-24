@@ -410,7 +410,7 @@ class PremiumViewController: UIViewController {
                     break // 用户主动取消，无需提示
 
                 case .pending:
-                    // Ask to Buy 等待家长审批
+                    // 交易待处理：可能是 Ask to Buy 等待家长审批，或支付尚未完成
                     await MainActor.run {
                         self.showAlert(title: "订阅待处理", message: "您的订阅正在等待审批，批准后即可使用。")
                     }
