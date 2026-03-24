@@ -336,6 +336,8 @@ private class PremiumPlanCardView: UIView {
 
     private let priceStackView = UIStackView()
 
+    // 选中态底部光晕背景
+    private let selectedBgGradient  = CAGradientLayer()
     // 渐变边框（选中态）
     private let gradientBorderLayer = CAGradientLayer()
     private let gradientBorderMask  = CAShapeLayer()
@@ -359,6 +361,14 @@ private class PremiumPlanCardView: UIView {
         layer.shadowOpacity = 0.06
         layer.shadowOffset = CGSize(width: 0, height: 4)
         layer.shadowRadius = 8
+
+        // 底部光晕背景（从下往上：品牌蓝 → 透明），默认隐藏
+        selectedBgGradient.colors      = [UIColor.appGradientEnd.withAlphaComponent(0.18).cgColor,
+                                           UIColor.clear.cgColor]
+        selectedBgGradient.startPoint  = CGPoint(x: 0.5, y: 1.0)
+        selectedBgGradient.endPoint    = CGPoint(x: 0.5, y: 0.0)
+        selectedBgGradient.isHidden    = true
+        layer.insertSublayer(selectedBgGradient, at: 0)
 
         // 渐变边框层（默认隐藏，选中时显示）
         gradientBorderLayer.colors    = [UIColor.appGradientStart.cgColor,
@@ -460,6 +470,7 @@ private class PremiumPlanCardView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
+        selectedBgGradient.frame  = bounds
         gradientBorderLayer.frame = bounds
         // 镂空环形 mask：外圈 - 内圈（inset = 边框宽度）
         let borderWidth: CGFloat = 2.0
@@ -476,10 +487,11 @@ private class PremiumPlanCardView: UIView {
         self.isCurrentlySelected = isSelected
         let duration = animated ? 0.25 : 0.0
 
-        // 渐变边框层无法通过 UIView.animate 驱动，直接更新
+        // CALayer 属性无法通过 UIView.animate 驱动，用 CATransaction 控制
         CATransaction.begin()
         CATransaction.setAnimationDuration(duration)
         gradientBorderLayer.isHidden = !isSelected
+        selectedBgGradient.isHidden  = !isSelected
         CATransaction.commit()
 
         UIView.animate(withDuration: duration) {
