@@ -111,6 +111,8 @@ class PremiumViewController: UIViewController {
         
         // 订阅大按钮
         subscribeButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        subscribeButton.layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
+        subscribeButton.layer.borderWidth = 2.0
         subscribeButton.setTitleColor(.white, for: .normal)
         subscribeButton.layer.cornerRadius = 30
         subscribeButton.clipsToBounds = true
@@ -346,7 +348,7 @@ private class PremiumPlanCardView: UIView {
         backgroundColor = .appCardBackground
         layer.cornerRadius = 32
         layer.borderWidth = 1.0
-        layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.2).cgColor
+        layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
         
         // 分别增加阴影效果
         layer.shadowColor = UIColor.black.cgColor
@@ -447,15 +449,15 @@ private class PremiumPlanCardView: UIView {
             if isSelected {
                 self.layer.borderWidth = 1.5
                 self.layer.borderColor = UIColor.appPrimary.cgColor
-                self.backgroundColor = .appCardBackground
+                self.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
                 // SF Symbol checkmark 选中
                 let config = UIImage.SymbolConfiguration(weight: .bold)
                 self.radioIcon.image = UIImage(systemName: "checkmark.circle.fill", withConfiguration: config)
                 self.radioIcon.tintColor = .appPrimary
             } else {
                 self.layer.borderWidth = 1.0
-                self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.2).cgColor
-                self.backgroundColor = .appCardBackground
+                self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
+                self.backgroundColor = .appCardBackground.withAlphaComponent(0.6)
                 // SF Symbol 空心圆
                 let config = UIImage.SymbolConfiguration(weight: .light)
                 self.radioIcon.image = UIImage(systemName: "circle", withConfiguration: config)
@@ -469,7 +471,7 @@ private class PremiumPlanCardView: UIView {
         super.traitCollectionDidChange(previousTraitCollection)
         // Check if currently selected, if not, update border to standard theme color
         if !isCurrentlySelected {
-            self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.2).cgColor
+            self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
         } else {
             self.layer.borderColor = UIColor.appPrimary.cgColor
         }
