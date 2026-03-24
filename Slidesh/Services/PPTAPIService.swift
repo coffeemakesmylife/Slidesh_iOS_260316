@@ -13,8 +13,9 @@ class PPTAPIService {
     static let shared = PPTAPIService()
     private init() {}
 
-    private let appId   = "6744651694"
-    private let baseURL = "http://43.156.217.34:8080"
+    private let appId = AppConfig.appId
+    // 运行时从 AppConfig 读取（由 StartupViewController 拉取配置后写入）
+    private var baseURL: String { AppConfig.pptBaseURL }
 
     // RSA 公钥——用于解密服务端用私钥签名的响应数据
     private let publicKey = """

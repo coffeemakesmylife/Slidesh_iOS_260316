@@ -18,8 +18,8 @@ final class ConvertAPIService: NSObject {
 
     static let shared = ConvertAPIService()
 
-    // 统一文档格式转换服务器
-    private let convertBaseURL = "http://43.163.228.96:8080/open_cat"
+    // 运行时从 AppConfig 读取（由 StartupViewController 拉取配置后写入）
+    private var convertBaseURL: String { AppConfig.convertBaseURL }
 
     // 当前上传任务（用于 cancel）
     private var currentTask: URLSessionDataTask?

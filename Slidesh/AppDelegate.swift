@@ -23,9 +23,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 从 Keychain 获取或生成用户唯一标识
         userId = generateOrRetrieveUserId()
 
-        // 设置根视图控制器
+        // 设置根视图控制器（由 StartupViewController 完成配置后切换到主界面）
         self.window = UIWindow(frame: UIScreen.main.bounds)
-        window?.rootViewController = CustomTabBarController()
+        window?.rootViewController = StartupViewController()
         window?.makeKeyAndVisible()
 
         // 恢复上次保存的主题（必须在 makeKeyAndVisible 之后）
