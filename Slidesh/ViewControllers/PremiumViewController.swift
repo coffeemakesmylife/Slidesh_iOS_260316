@@ -198,7 +198,7 @@ class PremiumViewController: UIViewController {
         // 为了错开 NavigationBar，添加上边距
         
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 160),
+            mainStack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: UIScreen.main.bounds.height / 6),
             mainStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 24),
             mainStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -24),
             mainStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40)
@@ -486,17 +486,17 @@ private class PremiumPlanCardView: UIView {
             if isSelected {
                 // 选中：渐变层接管边框，背景改为品牌蓝极浅色调
                 self.layer.borderWidth = 0
-                self.backgroundColor = UIColor.appGradientEnd.withAlphaComponent(0.08)
+                self.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
                 let config = UIImage.SymbolConfiguration(weight: .bold)
                 self.radioIcon.image = UIImage(systemName: "checkmark.circle.fill", withConfiguration: config)
                 self.radioIcon.tintColor = .appPrimary
                 // 价格颜色改为渐变终点色
-                self.priceLabel.textColor = .appGradientEnd
+                self.priceLabel.textColor = .appGradientMid
             } else {
                 // 未选中：普通单色细边框
                 self.layer.borderWidth = 1.0
                 self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
-                self.backgroundColor = .appCardBackground.withAlphaComponent(0.6)
+                self.backgroundColor = .appCardBackground.withAlphaComponent(0.65)
                 let config = UIImage.SymbolConfiguration(weight: .light)
                 self.radioIcon.image = UIImage(systemName: "circle", withConfiguration: config)
                 self.radioIcon.tintColor = .appTextTertiary
