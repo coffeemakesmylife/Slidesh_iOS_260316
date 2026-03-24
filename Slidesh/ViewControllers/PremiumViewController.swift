@@ -322,19 +322,23 @@ class PremiumViewController: UIViewController {
 // MARK: - PremiumPlanCardView
 
 private class PremiumPlanCardView: UIView {
-    
+
     let plan: PremiumPlan
-    
+
     private var isCurrentlySelected = false
-    
+
     private let radioIcon = UIImageView()
     private let titleLabel = UILabel()
     private let tagLabel = UILabel()
     private let tagContainer = UIView()
     private let priceLabel = UILabel()
     private let subtextLabel = UILabel()
-    
+
     private let priceStackView = UIStackView()
+
+    // 渐变边框（选中态）
+    private let gradientBorderLayer = CAGradientLayer()
+    private let gradientBorderMask  = CAShapeLayer()
     
     init(plan: PremiumPlan) {
         self.plan = plan
@@ -349,12 +353,24 @@ private class PremiumPlanCardView: UIView {
         layer.cornerRadius = 32
         layer.borderWidth = 1.0
         layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
-        
-        // 分别增加阴影效果
+
+        // 阴影效果
         layer.shadowColor = UIColor.black.cgColor
         layer.shadowOpacity = 0.06
         layer.shadowOffset = CGSize(width: 0, height: 4)
         layer.shadowRadius = 8
+
+        // 渐变边框层（默认隐藏，选中时显示）
+        gradientBorderLayer.colors    = [UIColor.appGradientStart.cgColor,
+                                         UIColor.appGradientMid.cgColor,
+                                         UIColor.appGradientEnd.cgColor]
+        gradientBorderLayer.locations = [0.0, 0.55, 1.0]
+        gradientBorderLayer.startPoint = CGPoint(x: 0, y: 0)
+        gradientBorderLayer.endPoint   = CGPoint(x: 1, y: 1)
+        gradientBorderLayer.isHidden   = true
+        // mask 用镂空环形路径，只露出边框宽度区域
+        gradientBorderLayer.mask = gradientBorderMask
+        layer.addSublayer(gradientBorderLayer)
         
         radioIcon.contentMode = .scaleAspectFit
         radioIcon.tintColor = .appPrimary
@@ -442,39 +458,56 @@ private class PremiumPlanCardView: UIView {
         setSelected(false, animated: false)
     }
     
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        gradientBorderLayer.frame = bounds
+        // 镂空环形 mask：外圈 - 内圈（inset = 边框宽度）
+        let borderWidth: CGFloat = 2.0
+        let r = layer.cornerRadius
+        let outerPath = UIBezierPath(roundedRect: bounds, cornerRadius: r)
+        let innerRect  = bounds.insetBy(dx: borderWidth, dy: borderWidth)
+        let innerPath  = UIBezierPath(roundedRect: innerRect, cornerRadius: max(r - borderWidth, 0))
+        outerPath.append(innerPath.reversing())
+        gradientBorderMask.path    = outerPath.cgPath
+        gradientBorderMask.fillRule = .evenOdd
+    }
+
     func setSelected(_ isSelected: Bool, animated: Bool) {
         self.isCurrentlySelected = isSelected
         let duration = animated ? 0.25 : 0.0
+
+        // 渐变边框层无法通过 UIView.animate 驱动，直接更新
+        CATransaction.begin()
+        CATransaction.setAnimationDuration(duration)
+        gradientBorderLayer.isHidden = !isSelected
+        CATransaction.commit()
+
         UIView.animate(withDuration: duration) {
             if isSelected {
-                self.layer.borderWidth = 1.5
-                self.layer.borderColor = UIColor.appPrimary.cgColor
+                // 选中：隐藏系统 borderColor（渐变层接管边框显示）
+                self.layer.borderWidth = 0
                 self.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
-                // SF Symbol checkmark 选中
                 let config = UIImage.SymbolConfiguration(weight: .bold)
                 self.radioIcon.image = UIImage(systemName: "checkmark.circle.fill", withConfiguration: config)
                 self.radioIcon.tintColor = .appPrimary
             } else {
+                // 未选中：普通单色细边框
                 self.layer.borderWidth = 1.0
                 self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
                 self.backgroundColor = .appCardBackground.withAlphaComponent(0.6)
-                // SF Symbol 空心圆
                 let config = UIImage.SymbolConfiguration(weight: .light)
                 self.radioIcon.image = UIImage(systemName: "circle", withConfiguration: config)
                 self.radioIcon.tintColor = .appTextTertiary
             }
         }
     }
-    
-    // 覆盖系统特质变化以更新边框颜色
+
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
-        // Check if currently selected, if not, update border to standard theme color
         if !isCurrentlySelected {
-            self.layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
-        } else {
-            self.layer.borderColor = UIColor.appPrimary.cgColor
+            layer.borderColor = UIColor.appCardBorder.withAlphaComponent(0.8).cgColor
         }
+        // 渐变层 CGColor 无需手动更新（appGradientStart/Mid/End 是静态色）
     }
 }
 
