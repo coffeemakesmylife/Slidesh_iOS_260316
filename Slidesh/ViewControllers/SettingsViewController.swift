@@ -154,6 +154,7 @@ class SettingsViewController: UIViewController {
         btn.backgroundColor = .white
         btn.layer.cornerRadius = 14
         btn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 18, bottom: 6, right: 18)
+        btn.addTarget(self, action: #selector(unlockPro), for: .touchUpInside)
 
         let deco = UIImageView(image: UIImage(named: "speak-ai-line")?.withRenderingMode(.alwaysTemplate))
         deco.tintColor = UIColor.white.withAlphaComponent(0.12)
@@ -440,6 +441,13 @@ class SettingsViewController: UIViewController {
     }
 
     // MARK: - 高亮
+
+    @objc private func unlockPro() {
+        let vc = PremiumViewController()
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
+    }
 
     @objc private func rowHighlight(_ sender: UIControl) {
         UIView.animate(withDuration: 0.1) {
