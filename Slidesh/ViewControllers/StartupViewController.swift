@@ -7,6 +7,7 @@
 
 import UIKit
 import Network
+import Alamofire
 
 class StartupViewController: UIViewController {
 
@@ -104,36 +105,39 @@ class StartupViewController: UIViewController {
 
         let uuid = AppDelegate.getCurrentUserId() ?? "temp"
         let params: [String: Any] = [
-            "appId": AppConfig.realAppId,
+            "appId": AppConfig.appId,
             "uuid":  uuid
         ]
 
         // RSA 加密请求参数
         guard let jsonData = try? JSONSerialization.data(withJSONObject: params),
               let jsonStr  = String(data: jsonData, encoding: .utf8),
-              let rsaStr   = RSAHelper.encryptString(jsonStr, publicKey: AppConfig.configPublicKey),
-              let encoded  = rsaStr.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url      = URL(string: AppConfig.configServerURL) else {
+              let rsaStr   = RSAHelper.encryptString(jsonStr, publicKey: AppConfig.configPublicKey) else {
             useFallbackAndProceed()
             return
         }
 
-        var request = URLRequest(url: url, timeoutInterval: 10)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.httpBody = "plainText=\(encoded)".data(using: .utf8)
-
-        URLSession.shared.dataTask(with: request) { [weak self] data, _, error in
-            DispatchQueue.main.async { self?.handleResponse(data: data, error: error) }
-        }.resume()
+        // Alamofire 自动处理百分比编码
+        AF.request(AppConfig.configServerURL,
+                   method: .post,
+                   parameters: ["plainText": rsaStr],
+                   encoding: URLEncoding.default)
+            .validate()
+            .responseData { [weak self] response in
+                guard let self else { return }
+                switch response.result {
+                case .success(let data):
+                    let value = try? JSONSerialization.jsonObject(with: data)
+                    self.handleResponse(value)
+                case .failure:
+                    self.useFallbackAndProceed()
+                }
+            }
     }
 
-    private func handleResponse(data: Data?, error: Error?) {
-        // 网络错误或解析失败时静默使用兜底地址，不阻塞用户
-        guard error == nil,
-              let data     = data,
-              let json     = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let code     = json["code"] as? Int, code == 200,
+    private func handleResponse(_ value: Any?) {
+        guard let json      = value as? [String: Any],
+              let code      = json["code"] as? Int, code == 200,
               let encrypted = json["newslist"] as? String else {
             useFallbackAndProceed()
             return

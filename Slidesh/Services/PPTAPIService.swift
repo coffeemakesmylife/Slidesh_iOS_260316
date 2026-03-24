@@ -14,7 +14,7 @@ class PPTAPIService {
     private init() {}
 
     // 模板及 PPT 生成接口专用 appId，固定不变
-    private let appId   = "6744651694"
+    private let pptAppId   = "6744651694"
     // 运行时从 AppConfig 读取（由 StartupViewController 拉取配置后写入）
     private var baseURL: String { AppConfig.pptBaseURL }
 
@@ -30,7 +30,7 @@ class PPTAPIService {
     /// 创建 PPT 任务（主题输入，type=1），返回 taskId，回调在主线程
     func createTask(subject: String, completion: @escaping (Result<String, Error>) -> Void) {
         let uuid = AppDelegate.getCurrentUserId() ?? "temp"
-        let params = ["type": "1", "appId": appId, "uuid": uuid, "subject": subject]
+        let params = ["type": "1", "appId": pptAppId, "uuid": uuid, "subject": subject]
         post(path: "/v1/api/ai/ppt/v2/createTask", params: params) { result in
             switch result {
             case .failure(let error):
@@ -66,7 +66,7 @@ class PPTAPIService {
 
         var body: [String: Any] = [
             "taskId":   taskId,
-            "appId":    appId,
+            "appId":    pptAppId,
             "uuid":     uuid,
             "language": language,
             "length":   length,
@@ -114,7 +114,7 @@ class PPTAPIService {
         var body: [String: Any] = [
             "taskId":   taskId,
             "markdown": markdown,
-            "appId":    appId,
+            "appId":    pptAppId,
             "uuid":     uuid,
         ]
         if let q = question, !q.isEmpty { body["question"] = q }
@@ -155,7 +155,7 @@ class PPTAPIService {
             "taskId":     taskId,
             "templateId": templateId,
             "markdown":   markdown,
-            "appId":      appId,
+            "appId":      pptAppId,
             "uuid":       uuid,
         ]
         postJSON(path: "/v1/api/ai/ppt/v2/generatePptx", body: body) { result in
@@ -175,7 +175,7 @@ class PPTAPIService {
     func loadPPT(pptId: String, completion: @escaping (Result<PPTInfo, Error>) -> Void) {
         let uuid = AppDelegate.getCurrentUserId() ?? "temp"
         post(path: "/v1/api/ai/ppt/load/\(pptId)",
-             params: ["appId": appId, "uuid": uuid]) { [weak self] result in
+             params: ["appId": pptAppId, "uuid": uuid]) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let raw):
@@ -195,7 +195,7 @@ class PPTAPIService {
                         completion: @escaping (Result<Void, Error>) -> Void) {
         let uuid = AppDelegate.getCurrentUserId() ?? "temp"
         post(path: "/v1/api/ai/ppt/templates-update", params: [
-            "pptId": pptId, "templateId": templateId, "appId": appId, "uuid": uuid,
+            "pptId": pptId, "templateId": templateId, "appId": pptAppId, "uuid": uuid,
         ]) { result in
             switch result {
             case .success: completion(.success(()))
@@ -209,7 +209,7 @@ class PPTAPIService {
                     completion: @escaping (Result<[PPTInfo], Error>) -> Void) {
         let uuid = AppDelegate.getCurrentUserId() ?? "temp"
         post(path: "/v1/api/ai/ppt/list-me", params: [
-            "appId": appId, "uuid": uuid,
+            "appId": pptAppId, "uuid": uuid,
             "currentPage": "\(page)", "pageSize": "\(pageSize)",
         ]) { [weak self] result in
             guard let self else { return }
@@ -226,7 +226,7 @@ class PPTAPIService {
     /// 获取筛选选项（分类 / 风格 / 颜色），回调在主线程
     func fetchOptions(completion: @escaping (Result<[PPTOption], Error>) -> Void) {
         post(path: "/v1/api/ai/ppt/templates-options",
-             params: ["appId": appId, "lang": "zh"]) { [weak self] result in
+             params: ["appId": pptAppId, "lang": "zh"]) { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let raw):
@@ -247,7 +247,7 @@ class PPTAPIService {
         completion: @escaping (Result<[PPTTemplate], Error>) -> Void
     ) {
         var params: [String: String] = [
-            "appId":       appId,
+            "appId":       pptAppId,
             "currentPage": "\(page)",
             "pageSize":    "\(pageSize)"
         ]
