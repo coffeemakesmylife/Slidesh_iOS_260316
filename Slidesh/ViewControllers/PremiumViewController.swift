@@ -336,8 +336,6 @@ private class PremiumPlanCardView: UIView {
 
     private let priceStackView = UIStackView()
 
-    // 选中态底部光晕背景
-    private let selectedBgGradient  = CAGradientLayer()
     // 渐变边框（选中态）
     private let gradientBorderLayer = CAGradientLayer()
     private let gradientBorderMask  = CAShapeLayer()
@@ -361,14 +359,6 @@ private class PremiumPlanCardView: UIView {
         layer.shadowOpacity = 0.06
         layer.shadowOffset = CGSize(width: 0, height: 4)
         layer.shadowRadius = 8
-
-        // 底部光晕背景（从下往上：品牌蓝 → 透明），默认隐藏
-        selectedBgGradient.colors      = [UIColor.appGradientEnd.withAlphaComponent(0.18).cgColor,
-                                           UIColor.clear.cgColor]
-        selectedBgGradient.startPoint  = CGPoint(x: 0.5, y: 1.0)
-        selectedBgGradient.endPoint    = CGPoint(x: 0.5, y: 0.0)
-        selectedBgGradient.isHidden    = true
-        layer.insertSublayer(selectedBgGradient, at: 0)
 
         // 渐变边框层（默认隐藏，选中时显示）
         gradientBorderLayer.colors    = [UIColor.appGradientStart.cgColor,
@@ -470,7 +460,6 @@ private class PremiumPlanCardView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        selectedBgGradient.frame  = bounds
         gradientBorderLayer.frame = bounds
         // 镂空环形 mask：外圈 - 内圈（inset = 边框宽度）
         let borderWidth: CGFloat = 2.0
@@ -491,17 +480,18 @@ private class PremiumPlanCardView: UIView {
         CATransaction.begin()
         CATransaction.setAnimationDuration(duration)
         gradientBorderLayer.isHidden = !isSelected
-        selectedBgGradient.isHidden  = !isSelected
         CATransaction.commit()
 
         UIView.animate(withDuration: duration) {
             if isSelected {
-                // 选中：隐藏系统 borderColor（渐变层接管边框显示）
+                // 选中：渐变层接管边框，背景改为品牌蓝极浅色调
                 self.layer.borderWidth = 0
-                self.backgroundColor = .appCardBackground.withAlphaComponent(0.7)
+                self.backgroundColor = UIColor.appGradientEnd.withAlphaComponent(0.08)
                 let config = UIImage.SymbolConfiguration(weight: .bold)
                 self.radioIcon.image = UIImage(systemName: "checkmark.circle.fill", withConfiguration: config)
                 self.radioIcon.tintColor = .appPrimary
+                // 价格颜色改为渐变终点色
+                self.priceLabel.textColor = .appGradientEnd
             } else {
                 // 未选中：普通单色细边框
                 self.layer.borderWidth = 1.0
@@ -510,6 +500,7 @@ private class PremiumPlanCardView: UIView {
                 let config = UIImage.SymbolConfiguration(weight: .light)
                 self.radioIcon.image = UIImage(systemName: "circle", withConfiguration: config)
                 self.radioIcon.tintColor = .appTextTertiary
+                self.priceLabel.textColor = .appTextPrimary
             }
         }
     }
