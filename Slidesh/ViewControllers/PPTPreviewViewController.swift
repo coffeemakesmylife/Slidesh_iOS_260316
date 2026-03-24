@@ -19,13 +19,13 @@ class PPTPreviewViewController: UIViewController {
     private let progressBar = UIProgressView(progressViewStyle: .bar)
     private var progressObservation: NSKeyValueObservation?
 
-    private let bottomBar         = UIView()
+    private let bottomBar         = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+    private let blurFadeMask      = CAGradientLayer()         // 顶部渐入遮罩
     private let saveBtn           = UIButton(type: .custom)   // 保存到本地
     private let shareBtn          = UIButton(type: .custom)   // 分享（非换模板场景）
     private let changeTemplateBtn = UIButton(type: .custom)   // 换模板（换模板场景）
     private var shareBtnContainer: UIView?
     private var shareBtnGrad:      CAGradientLayer?
-    private var bottomGradLayer:   CAGradientLayer?
 
     // 下载任务（保存到本地 / 分享共用）
     private var downloadTask: URLSessionDownloadTask?
@@ -59,8 +59,8 @@ class PPTPreviewViewController: UIViewController {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        shareBtnGrad?.frame   = shareBtnContainer?.bounds ?? .zero
-        bottomGradLayer?.frame = bottomBar.bounds
+        shareBtnGrad?.frame = shareBtnContainer?.bounds ?? .zero
+        updateBlurFadeMask()
         changeTemplateBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
     }
 
@@ -83,22 +83,15 @@ class PPTPreviewViewController: UIViewController {
     // MARK: - 底部栏
 
     private func setupBottomBar() {
-        // 透明容器叠在 webView 上方，与 TemplateSelectorViewController 统一
-        bottomBar.backgroundColor = .clear
-        bottomBar.isUserInteractionEnabled = true
+        // 毛玻璃底部栏，叠在 webView 上方
         bottomBar.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(bottomBar)
 
-        // 渐变遮罩：顶部透明 → 底部不透明，自然过渡无分割线
-        let gradBg = CAGradientLayer()
-        gradBg.colors    = [UIColor.appBackgroundPrimary.withAlphaComponent(0).cgColor,
-                            UIColor.appBackgroundPrimary.withAlphaComponent(0.92).cgColor,
-                            UIColor.appBackgroundPrimary.cgColor]
-        gradBg.locations  = [0, 0.45, 1]
-        gradBg.startPoint = CGPoint(x: 0.5, y: 0)
-        gradBg.endPoint   = CGPoint(x: 0.5, y: 1)
-        bottomBar.layer.insertSublayer(gradBg, at: 0)
-        bottomGradLayer = gradBg
+        // 顶部渐入遮罩：从透明到不透明，滚动时内容自然模糊消失
+        blurFadeMask.colors     = [UIColor.clear.cgColor, UIColor.black.cgColor]
+        blurFadeMask.startPoint = CGPoint(x: 0.5, y: 0)
+        blurFadeMask.endPoint   = CGPoint(x: 0.5, y: 1)
+        bottomBar.layer.mask    = blurFadeMask
 
         NSLayoutConstraint.activate([
             bottomBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -115,7 +108,7 @@ class PPTPreviewViewController: UIViewController {
         saveBtn.clipsToBounds = true
         saveBtn.translatesAutoresizingMaskIntoConstraints = false
         saveBtn.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
-        bottomBar.addSubview(saveBtn)
+        bottomBar.contentView.addSubview(saveBtn)
 
         // 左侧：换模板场景用 changeTemplateBtn（无渐变），否则用 shareBtn 容器
         let leftView: UIView
@@ -130,12 +123,12 @@ class PPTPreviewViewController: UIViewController {
             changeTemplateBtn.clipsToBounds = true
             changeTemplateBtn.translatesAutoresizingMaskIntoConstraints = false
             changeTemplateBtn.addTarget(self, action: #selector(changeTemplateTapped), for: .touchUpInside)
-            bottomBar.addSubview(changeTemplateBtn)
+            bottomBar.contentView.addSubview(changeTemplateBtn)
             leftView = changeTemplateBtn
         } else {
             let shareContainer = makeGradientContainer(alpha: 0.8, grad: &shareBtnGrad)
             shareBtnContainer = shareContainer
-            bottomBar.addSubview(shareContainer)
+            bottomBar.contentView.addSubview(shareContainer)
             shareBtn.setTitle("分享", for: .normal)
             shareBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
             shareBtn.setTitleColor(.white, for: .normal)
@@ -174,12 +167,20 @@ class PPTPreviewViewController: UIViewController {
             indicator.color = .white
             indicator.hidesWhenStopped = true
             indicator.translatesAutoresizingMaskIntoConstraints = false
-            bottomBar.addSubview(indicator)
+            bottomBar.contentView.addSubview(indicator)
             NSLayoutConstraint.activate([
                 indicator.centerXAnchor.constraint(equalTo: container.centerXAnchor),
                 indicator.centerYAnchor.constraint(equalTo: container.centerYAnchor),
             ])
         }
+    }
+
+    private func updateBlurFadeMask() {
+        guard bottomBar.bounds.height > 0 else { return }
+        blurFadeMask.frame = bottomBar.bounds
+        // 顶部 48pt 为渐变过渡区，之后完全不透明
+        let fadeRatio = 48.0 / bottomBar.bounds.height
+        blurFadeMask.locations = [0, NSNumber(value: fadeRatio)]
     }
 
     /// 创建渐变容器 UIView（与 NewProjectViewController 统一写法）
