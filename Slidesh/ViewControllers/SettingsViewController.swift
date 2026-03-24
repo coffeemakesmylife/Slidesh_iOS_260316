@@ -60,6 +60,8 @@ class SettingsViewController: UIViewController {
 
     private func buildSections() {
         let vipCard = makeVIPCard()
+        let cardTap = UITapGestureRecognizer(target: self, action: #selector(unlockPro))
+        vipCard.addGestureRecognizer(cardTap)
 
         // Section 2：主题（上下 chevron 选择）+ 切换应用图标
         let section2 = makeCard(rows: [
