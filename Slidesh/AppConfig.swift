@@ -9,16 +9,18 @@ import Foundation
 
 struct AppConfig {
 
-    // TODO: 上线前替换为正式 appId（当前为测试 ID）
-    static let appId = "6744651694"
+    /// 上线时使用的正式 appId，用于配置拉取请求
+    /// TODO: 替换为服务端分配的正式 appId
+    static let realAppId = "REPLACE_WITH_REAL_APP_ID"
 
     // TODO: 替换为正式的配置分发服务器地址
     static let configServerURL = "http://8.134.126.1:8080/api/app/host/list"
 
-    // TODO: 替换为配置分发服务器对应的 RSA 公钥（用于加密请求 + 解密响应）
+    /// 配置分发服务器（host/list 接口）专用 RSA 公钥，与 PPT 服务公钥相互独立
+    /// TODO: 替换为配置分发服务器对应的 RSA 公钥
     static let configPublicKey = """
     -----BEGIN PUBLIC KEY-----
-    MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCZjwQxE/33I+E+WWPNbvcrq/yPHVFGXOonC8evV2OkCs7rDCCXCW2pwoy5MF5cfDVXqoLzkP4L3X8kXgsEribUztfpp3I34BSushpfrHLghbTKr6WGWTl+jOmNQgHNertkdDd1pLshneVcV7JGBWsP2yZ4uwmYSqBQgK8idk58PwIDAQAB
+    REPLACE_WITH_CONFIG_SERVER_PUBLIC_KEY
     -----END PUBLIC KEY-----
     """
 

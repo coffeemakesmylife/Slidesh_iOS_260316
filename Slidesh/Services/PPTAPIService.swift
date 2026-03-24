@@ -13,7 +13,8 @@ class PPTAPIService {
     static let shared = PPTAPIService()
     private init() {}
 
-    private let appId = AppConfig.appId
+    // 模板及 PPT 生成接口专用 appId，固定不变
+    private let appId   = "6744651694"
     // 运行时从 AppConfig 读取（由 StartupViewController 拉取配置后写入）
     private var baseURL: String { AppConfig.pptBaseURL }
 

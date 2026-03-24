@@ -104,7 +104,7 @@ class StartupViewController: UIViewController {
 
         let uuid = AppDelegate.getCurrentUserId() ?? "temp"
         let params: [String: Any] = [
-            "appId": AppConfig.appId,
+            "appId": AppConfig.realAppId,
             "uuid":  uuid
         ]
 
