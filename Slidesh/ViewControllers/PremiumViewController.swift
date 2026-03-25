@@ -60,6 +60,9 @@ class PremiumViewController: UIViewController {
     private var cardViews: [PremiumPlanCardView] = []
     private var selectedPlan: PremiumPlan = PremiumPlan.allPlans[1] // 默认选中月卡
 
+    // 购买成功回调（由 PaywallSheet 设置，购买完成后调用）
+    var onPurchased: (() -> Void)?
+
     // StoreKit 2：已加载的产品（productID → Product）
     private var storeProducts: [String: Product] = [:]
     // 监听后台交易更新（如家庭共享、Ask to Buy 审批通过等）
@@ -404,7 +407,16 @@ class PremiumViewController: UIViewController {
                         return
                     }
                     await transaction.finish()
-                    await MainActor.run { self.dismiss(animated: true) }
+                    // 先刷新 Premium 缓存，确保回调触发时 consumeIfAvailable 直接返回 true
+                    await QuotaManager.shared.refreshPremiumStatus()
+                    let callback = self.onPurchased
+                    await MainActor.run {
+                        // self.dismiss 会关闭包含 PremiumVC 的 NavigationController
+                        // 动画完成后调用 callback，此时 PaywallSheet 再 dismiss 自身
+                        self.dismiss(animated: true) {
+                            callback?()
+                        }
+                    }
 
                 case .userCancelled:
                     break // 用户主动取消，无需提示
