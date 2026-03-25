@@ -133,7 +133,7 @@ class SettingsViewController: UIViewController {
         card.layer.insertSublayer(gradient, at: 0)
 
         let titleLabel = UILabel()
-        titleLabel.text = "解锁 Pro 会员"
+        titleLabel.text = "升级 Pro 会员"
         titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
         titleLabel.textColor = .white
 
@@ -150,7 +150,7 @@ class SettingsViewController: UIViewController {
         featuresLabel.numberOfLines = 0
 
         let btn = UIButton(type: .system)
-        btn.setTitle("立即解锁", for: .normal)
+        btn.setTitle("立即升级", for: .normal)
         btn.setTitleColor(.appPrimary, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         btn.backgroundColor = .white

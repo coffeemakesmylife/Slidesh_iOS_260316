@@ -11,7 +11,7 @@ struct AppConfig {
 
     /// 上线时使用的正式 appId，用于配置拉取请求
     /// TODO: 替换为服务端分配的正式 appId
-    static let realAppId = "REPLACE_WITH_REAL_APP_ID"
+    static let appId = "REPLACE_WITH_REAL_APP_ID"
 
     // TODO: 替换为正式的配置分发服务器地址
     static let configServerURL = "http://8.134.126.1:8080/api/app/host/list"
@@ -20,7 +20,7 @@ struct AppConfig {
     /// TODO: 替换为配置分发服务器对应的 RSA 公钥
     static let configPublicKey = """
     -----BEGIN PUBLIC KEY-----
-    REPLACE_WITH_CONFIG_SERVER_PUBLIC_KEY
+    MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC80suK11DAidjBJIzvi9g9n8ACxvDoBqKj1t5PZiMkEJA7EsuHCeZVWktXn3dTYM7WSUPjmqBx5L7nfC0QdTU+5Ih988+GS3xgDm2gkVYRmONfvH7WWUVfoWGflPNCdmUffW7E6qRX3DVb9Tr2CvubpLouVXaSsnE3GwMWrtV+pQIDAQAB
     -----END PUBLIC KEY-----
     """
 
