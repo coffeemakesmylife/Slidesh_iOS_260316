@@ -18,8 +18,8 @@ final class ConvertAPIService: NSObject {
 
     static let shared = ConvertAPIService()
 
-    // 运行时从 AppConfig 读取（由 StartupViewController 拉取配置后写入）
-    private var convertBaseURL: String { AppConfig.convertBaseURL }
+    // 运行时从 AppConfig 读取，拼接 /open_cat 前缀路径
+    private var convertBaseURL: String { AppConfig.convertBaseURL + "/open_cat" }
 
     // 当前上传任务（用于 cancel）
     private var currentTask: URLSessionDataTask?
