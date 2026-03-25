@@ -255,7 +255,7 @@ class FeedbackViewController: UIViewController {
             parameters["contact"] = finalContact
         }
 
-        let urlString = "\(AppConfig.pptBaseURL)/v1/api/ai/chat/feedback"
+        let urlString = "\(AppConfig.configBaseURL)/v1/api/ai/chat/feedback"
         guard let url = URL(string: urlString) else {
             showAlert(title: "错误", message: "无效的请求地址")
             return

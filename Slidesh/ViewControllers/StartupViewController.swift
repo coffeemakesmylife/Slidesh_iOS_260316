@@ -154,9 +154,11 @@ class StartupViewController: UIViewController {
     }
 
     /// 解析 host 列表：保存 URL，触发应用配置请求，首次启动额外请求引导开关
+    /// ipOrPort: 1=配置/通知/反馈 2=格式转换 3=PPT生成
     private func processHostList(_ hostList: [[String: Any]]) {
-        var pptBase:     String?
+        var configBase:  String?
         var convertBase: String?
+        var pptBase:     String?
 
         for item in hostList {
             guard let ipOrPort = item["ipOrPort"] as? Int,
@@ -168,8 +170,8 @@ class StartupViewController: UIViewController {
 
             switch ipOrPort {
             case 1:
-                pptBase = full
-                print("✅ 获取 pptBaseURL: \(full)")
+                configBase = full
+                print("✅ 获取 configBaseURL: \(full)")
                 fetchAllConfigs(full)
                 if isFirstLaunch {
                     print("📱 首次启动 - 请求引导开关配置")
@@ -178,12 +180,15 @@ class StartupViewController: UIViewController {
             case 2:
                 convertBase = full
                 print("✅ 获取 convertBaseURL: \(full)")
+            case 3:
+                pptBase = full
+                print("✅ 获取 pptBaseURL: \(full)")
             default:
                 break
             }
         }
 
-        AppConfig.save(pptBase: pptBase, convertBase: convertBase)
+        AppConfig.save(configBase: configBase, convertBase: convertBase, pptBase: pptBase)
     }
 
     /// 拉取所有应用开关配置（每次启动都调用）
@@ -327,8 +332,9 @@ class StartupViewController: UIViewController {
                 else { return }
 
                 // 后台只更新 URL 和应用配置，不触发导航
-                var pptBase: String?
+                var configBase:  String?
                 var convertBase: String?
+                var pptBase:     String?
                 for item in hostList {
                     guard let ipOrPort = item["ipOrPort"] as? Int,
                           let host     = item["host"]     as? String else { continue }
@@ -336,12 +342,13 @@ class StartupViewController: UIViewController {
                     let port   = item["port"] as? String ?? ""
                     let full   = port.isEmpty ? prefix : "\(prefix):\(port)"
                     switch ipOrPort {
-                    case 1: pptBase = full;     self.fetchAllConfigs(full)
+                    case 1: configBase  = full; self.fetchAllConfigs(full)
                     case 2: convertBase = full
+                    case 3: pptBase     = full
                     default: break
                     }
                 }
-                AppConfig.save(pptBase: pptBase, convertBase: convertBase)
+                AppConfig.save(configBase: configBase, convertBase: convertBase, pptBase: pptBase)
                 print("✅ 后台配置刷新完成")
             }
     }
