@@ -135,6 +135,8 @@ class OutlineViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // 每次显示时刷新 Premium 状态，确保购买后立即生效
+        Task { await QuotaManager.shared.refreshPremiumStatus() }
         // 导航栏改为透明背景，与 SettingsViewController 一致
         let appearance = UINavigationBarAppearance()
         appearance.configureWithTransparentBackground()
@@ -679,6 +681,14 @@ class OutlineViewController: UIViewController {
     }
 
     @objc private func regenerateTapped() {
+        // 重写大纲与生成大纲共享 aiOutline 配额
+        guard QuotaManager.shared.consumeIfAvailable(.aiOutline) else {
+            PaywallSheet.show(from: self) { [weak self] in
+                // 购买成功后 isPremium == true，再次调用 consumeIfAvailable 直接通过不消耗
+                self?.regenerateTapped()
+            }
+            return
+        }
         // 取消当前请求，重置状态，重新启动流式生成
         sseTask?.cancel()
         accumulatedMarkdown = ""
@@ -792,6 +802,15 @@ class OutlineViewController: UIViewController {
     // MARK: - 挑选 PPT 模板
 
     @objc private func templateTapped() {
+        // 生成PPT配额检查（免费用户仅1次机会，上限最严格）
+        guard QuotaManager.shared.consumeIfAvailable(.pptGenerate) else {
+            PaywallSheet.show(from: self) { [weak self] in
+                // PremiumVC 在触发 onPurchased 前已调用 refreshPremiumStatus()，
+                // 确保 isPremium == true，re-dispatch 时 consumeIfAvailable 直接通过不消耗
+                self?.templateTapped()
+            }
+            return
+        }
         guard !sections.isEmpty else { return }
 
         let currentMarkdown = reconstructMarkdown()
