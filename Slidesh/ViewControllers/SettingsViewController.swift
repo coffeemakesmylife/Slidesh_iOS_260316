@@ -30,9 +30,9 @@ class SettingsViewController: UIViewController {
         [UIColor.appGradientStart.cgColor, UIColor.appGradientMid.cgColor, UIColor.appGradientEnd.cgColor]
     }
     private var premiumGradientColors: [CGColor] {
-        [UIColor(red: 0.72, green: 0.42, blue: 0.02, alpha: 1).cgColor,  // 深金
+        [UIColor(red: 1.00, green: 0.82, blue: 0.28, alpha: 1).cgColor,  // 亮金
          UIColor(red: 0.92, green: 0.60, blue: 0.08, alpha: 1).cgColor,  // 琥珀
-         UIColor(red: 1.00, green: 0.82, blue: 0.28, alpha: 1).cgColor]  // 亮金
+         UIColor(red: 0.72, green: 0.42, blue: 0.02, alpha: 1).cgColor]  // 深金
     }
     private var premiumButtonTitleColor: UIColor {
         UIColor(red: 0.60, green: 0.32, blue: 0.00, alpha: 1)            // 深棕金，搭配白色按钮背景
