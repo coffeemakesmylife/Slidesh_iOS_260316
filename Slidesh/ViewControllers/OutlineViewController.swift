@@ -683,10 +683,11 @@ class OutlineViewController: UIViewController {
     @objc private func regenerateTapped() {
         // 重写大纲与生成大纲共享 aiOutline 配额
         guard QuotaManager.shared.consumeIfAvailable(.aiOutline) else {
-            PaywallSheet.show(from: self) { [weak self] in
-                // 购买成功后 isPremium == true，再次调用 consumeIfAvailable 直接通过不消耗
-                self?.regenerateTapped()
-            }
+            let premiumVC = PremiumViewController()
+            premiumVC.onPurchased = { [weak self] in self?.regenerateTapped() }
+            let nav = UINavigationController(rootViewController: premiumVC)
+            nav.modalPresentationStyle = .fullScreen
+            present(nav, animated: true)
             return
         }
         // 取消当前请求，重置状态，重新启动流式生成
@@ -804,11 +805,11 @@ class OutlineViewController: UIViewController {
     @objc private func templateTapped() {
         // 生成PPT配额检查（免费用户仅1次机会，上限最严格）
         guard QuotaManager.shared.consumeIfAvailable(.pptGenerate) else {
-            PaywallSheet.show(from: self) { [weak self] in
-                // PremiumVC 在触发 onPurchased 前已调用 refreshPremiumStatus()，
-                // 确保 isPremium == true，re-dispatch 时 consumeIfAvailable 直接通过不消耗
-                self?.templateTapped()
-            }
+            let premiumVC = PremiumViewController()
+            premiumVC.onPurchased = { [weak self] in self?.templateTapped() }
+            let nav = UINavigationController(rootViewController: premiumVC)
+            nav.modalPresentationStyle = .fullScreen
+            present(nav, animated: true)
             return
         }
         guard !sections.isEmpty else { return }

@@ -515,10 +515,11 @@ class NewProjectViewController: UIViewController {
     private func startAIGeneration() {
         // 检查 AI 大纲配额
         guard QuotaManager.shared.consumeIfAvailable(.aiOutline) else {
-            PaywallSheet.show(from: self) { [weak self] in
-                // 购买成功后 isPremium == true，再次调用 consumeIfAvailable 直接通过不消耗
-                self?.startAIGeneration()
-            }
+            let premiumVC = PremiumViewController()
+            premiumVC.onPurchased = { [weak self] in self?.startAIGeneration() }
+            let nav = UINavigationController(rootViewController: premiumVC)
+            nav.modalPresentationStyle = .fullScreen
+            present(nav, animated: true)
             return
         }
         view.endEditing(true)

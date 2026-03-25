@@ -466,9 +466,12 @@ class SettingsViewController: UIViewController {
 
         let card = makeCard(rows: [
             makeDebugPremiumToggleRow(),
-            makeRow(sfSymbol: "creditcard", title: "显示 PaywallSheet") { [weak self] in
+            makeRow(sfSymbol: "creditcard", title: "显示付费界面") { [weak self] in
                 guard let self else { return }
-                PaywallSheet.show(from: self) { }
+                let premiumVC = PremiumViewController()
+                let nav = UINavigationController(rootViewController: premiumVC)
+                nav.modalPresentationStyle = .fullScreen
+                present(nav, animated: true)
             },
             makeRow(sfSymbol: "arrow.counterclockwise", title: "重置所有配额") { [weak self] in
                 QuotaManager.shared.debugResetAllQuotas()

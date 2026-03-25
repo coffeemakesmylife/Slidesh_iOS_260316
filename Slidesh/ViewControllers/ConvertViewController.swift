@@ -251,9 +251,11 @@ extension ConvertViewController: UICollectionViewDelegate {
 
         // 检查格式转换配额
         guard QuotaManager.shared.consumeIfAvailable(.convert) else {
-            PaywallSheet.show(from: self) { [weak self] in
-                self?.startConvertFlow(for: item)
-            }
+            let premiumVC = PremiumViewController()
+            premiumVC.onPurchased = { [weak self] in self?.startConvertFlow(for: item) }
+            let nav = UINavigationController(rootViewController: premiumVC)
+            nav.modalPresentationStyle = .fullScreen
+            present(nav, animated: true)
             return
         }
         startConvertFlow(for: item)
