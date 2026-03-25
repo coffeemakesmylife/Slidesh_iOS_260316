@@ -50,11 +50,16 @@ class StartupViewController: UIViewController {
         if isFirstLaunch {
             // 首次启动：用 NWPathMonitor 触发网络权限弹窗，等到联网后拉取配置再进入
             startNetworkMonitoring()
-        } else {
-            // 非首次启动：使用已缓存的配置直接进入，后台异步刷新供下次使用
-            fetchHostConfigInBackground()
-            proceed()
         }
+        // 非首次启动逻辑移至 viewDidAppear，确保 view.window 不为 nil
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !isFirstLaunch, !isConfigured else { return }
+        // 非首次启动：使用已缓存的配置直接进入，后台异步刷新供下次使用
+        fetchHostConfigInBackground()
+        proceed()
     }
 
     deinit {
