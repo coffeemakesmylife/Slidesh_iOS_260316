@@ -66,6 +66,11 @@ class NewProjectViewController: UIViewController {
         setupKeyboardObservers()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        Task { await QuotaManager.shared.refreshPremiumStatus() }
+    }
+
     // MARK: - 导航栏
 
     private func setupNav() {
@@ -508,6 +513,14 @@ class NewProjectViewController: UIViewController {
     }
 
     private func startAIGeneration() {
+        // 检查 AI 大纲配额
+        guard QuotaManager.shared.consumeIfAvailable(.aiOutline) else {
+            PaywallSheet.show(from: self) { [weak self] in
+                // 购买成功后 isPremium == true，再次调用 consumeIfAvailable 直接通过不消耗
+                self?.startAIGeneration()
+            }
+            return
+        }
         view.endEditing(true)
         setGenerating(true)
 

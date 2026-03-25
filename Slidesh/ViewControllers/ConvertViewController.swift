@@ -126,6 +126,11 @@ class ConvertViewController: UIViewController {
         applySnapshot()
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        Task { await QuotaManager.shared.refreshPremiumStatus() }
+    }
+
     private func setupUI() {
         navigationItem.title = "极速转换"
         view.backgroundColor = .appBackgroundPrimary
@@ -244,6 +249,13 @@ extension ConvertViewController: UICollectionViewDelegate {
         guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
         UISelectionFeedbackGenerator().selectionChanged()
 
+        // 检查格式转换配额
+        guard QuotaManager.shared.consumeIfAvailable(.convert) else {
+            PaywallSheet.show(from: self) { [weak self] in
+                self?.startConvertFlow(for: item)
+            }
+            return
+        }
         startConvertFlow(for: item)
     }
 
