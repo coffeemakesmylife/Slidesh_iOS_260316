@@ -76,4 +76,20 @@ class QuotaManager {
         let used = Int(KeychainHelper.load(key: feature.keychainKey) ?? "0") ?? 0
         return max(0, feature.limit - used)
     }
+
+    // MARK: - Debug 专用
+
+    #if DEBUG
+    /// 直接覆盖 Premium 状态（仅 Debug 构建可用）
+    func debugSetPremium(_ value: Bool) {
+        isPremium = value
+    }
+
+    /// 将所有功能的 Keychain 配额计数重置为 0
+    func debugResetAllQuotas() {
+        for feature in [QuotaFeature.aiOutline, .convert, .pptGenerate] {
+            _ = KeychainHelper.save(key: feature.keychainKey, data: "0")
+        }
+    }
+    #endif
 }

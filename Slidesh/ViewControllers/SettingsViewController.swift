@@ -100,7 +100,11 @@ class SettingsViewController: UIViewController {
             },
         ])
 
-        let stack = UIStackView(arrangedSubviews: [vipCard, section2, section3, section4])
+        var sections: [UIView] = [vipCard, section2, section3, section4]
+        #if DEBUG
+        sections.append(makeDebugSection())
+        #endif
+        let stack = UIStackView(arrangedSubviews: sections)
         stack.axis = .vertical
         stack.spacing = 16
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -450,6 +454,83 @@ class SettingsViewController: UIViewController {
         nav.modalPresentationStyle = .fullScreen
         present(nav, animated: true)
     }
+
+    // MARK: - Debug 区域
+
+    #if DEBUG
+    private func makeDebugSection() -> UIView {
+        let header = UILabel()
+        header.text = "DEBUG"
+        header.font = .systemFont(ofSize: 11, weight: .semibold)
+        header.textColor = .systemOrange
+
+        let card = makeCard(rows: [
+            makeDebugPremiumToggleRow(),
+            makeRow(sfSymbol: "creditcard", title: "显示 PaywallSheet") { [weak self] in
+                guard let self else { return }
+                PaywallSheet.show(from: self) { }
+            },
+            makeRow(sfSymbol: "arrow.counterclockwise", title: "重置所有配额") { [weak self] in
+                QuotaManager.shared.debugResetAllQuotas()
+                let alert = UIAlertController(title: "已重置", message: "所有功能配额已归零", preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "好", style: .default))
+                self?.present(alert, animated: true)
+            },
+        ])
+
+        let container = UIStackView(arrangedSubviews: [header, card])
+        container.axis = .vertical
+        container.spacing = 6
+        return container
+    }
+
+    private func makeDebugPremiumToggleRow() -> UIView {
+        let row = UIView()
+
+        let icon = UIImageView(image: UIImage(systemName: "crown.fill"))
+        icon.tintColor = .systemOrange
+        icon.contentMode = .scaleAspectFit
+        icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        icon.isUserInteractionEnabled = false
+
+        let label = UILabel()
+        label.text = "Premium 状态"
+        label.font = .systemFont(ofSize: 16)
+        label.textColor = .appTextPrimary
+        label.isUserInteractionEnabled = false
+
+        let toggle = UISwitch()
+        toggle.isOn = QuotaManager.shared.isPremium
+        toggle.onTintColor = .systemOrange
+        toggle.addTarget(self, action: #selector(debugPremiumToggled(_:)), for: .valueChanged)
+
+        [icon, label, toggle].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            row.addSubview($0)
+        }
+
+        NSLayoutConstraint.activate([
+            icon.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            icon.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 16),
+            icon.widthAnchor.constraint(equalToConstant: 24),
+            icon.heightAnchor.constraint(equalToConstant: 24),
+
+            label.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            label.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
+
+            toggle.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            toggle.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
+        ])
+
+        return row
+    }
+
+    @objc private func debugPremiumToggled(_ sender: UISwitch) {
+        QuotaManager.shared.debugSetPremium(sender.isOn)
+    }
+    #endif
+
+    // MARK: - 高亮
 
     @objc private func rowHighlight(_ sender: UIControl) {
         UIView.animate(withDuration: 0.1) {
