@@ -52,7 +52,7 @@ class StartupViewController: UIViewController {
             startNetworkMonitoring()
         } else {
             // 非首次启动：使用已缓存的配置直接进入，后台异步刷新供下次使用
-            fetchConfigInBackground()
+            fetchHostConfigInBackground()
             proceed()
         }
     }
@@ -82,7 +82,7 @@ class StartupViewController: UIViewController {
                 guard let self, !self.isConfigured else { return }
                 if path.status == .satisfied {
                     self.hideError()
-                    self.fetchConfig()
+                    self.fetchHostConfiguration()
                 } else {
                     self.showError()
                 }
@@ -96,119 +96,253 @@ class StartupViewController: UIViewController {
         networkMonitor = nil
     }
 
-    // MARK: - 配置拉取
+    // MARK: - 服务器配置获取
 
-    private func fetchConfig() {
+    /// 首次启动阻塞式拉取 host/list（含 code 参数）
+    private func fetchHostConfiguration() {
         guard !isConfigured else { return }
         showLoading()
 
-        let uuid = AppDelegate.getCurrentUserId() ?? "temp"
-        let params: [String: Any] = [
+        guard let uuid = AppDelegate.getCurrentUserId() else {
+            print("❌ 无法获取用户ID")
+            normalHost()
+            return
+        }
+
+        let parameters: [String: Any] = [
+            "code":  "19436650565",
             "appId": AppConfig.appId,
             "uuid":  uuid
         ]
 
-        // RSA 加密请求参数
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: params),
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: parameters),
               let jsonStr  = String(data: jsonData, encoding: .utf8),
               let rsaStr   = RSAHelper.encryptString(jsonStr, publicKey: AppConfig.configPublicKey) else {
-            useFallbackAndProceed()
+            print("❌ RSA 加密失败")
+            normalHost()
             return
         }
 
-        // Alamofire 自动处理百分比编码
         AF.request(AppConfig.configServerURL,
                    method: .post,
                    parameters: ["plainText": rsaStr],
                    encoding: URLEncoding.default)
             .validate()
-            .responseData { [weak self] response in
+            .responseJSON { [weak self] response in
                 guard let self else { return }
                 switch response.result {
-                case .success(let data):
-                    let value = try? JSONSerialization.jsonObject(with: data)
-                    self.handleResponse(value)
-                case .failure:
-                    self.useFallbackAndProceed()
+                case .success(let value):
+                    guard let dict      = value as? [String: Any],
+                          let code      = dict["code"] as? Int, code == 200,
+                          let rsaStr    = dict["newslist"] as? String,
+                          let decoded   = rsaStr.removingPercentEncoding,
+                          let decrypted = RSAHelper.decryptString(decoded, publicKey: AppConfig.configPublicKey),
+                          let listData  = decrypted.data(using: .utf8),
+                          let hostList  = try? JSONSerialization.jsonObject(with: listData) as? [[String: Any]] else {
+                        print("❌ 服务器响应解析失败")
+                        self.normalHost()
+                        return
+                    }
+                    print("✅ 成功获取服务器配置列表")
+                    self.processHostList(hostList)
+                    self.handleConfigurationSuccess()
+                case .failure(let error):
+                    print("❌ 网络请求失败: \(error)")
+                    self.normalHost()
                 }
             }
     }
 
-    private func handleResponse(_ value: Any?) {
-        guard let json      = value as? [String: Any],
-              let code      = json["code"] as? Int, code == 200,
-              let encrypted = json["newslist"] as? String else {
-            useFallbackAndProceed()
-            return
-        }
-
-        let decoded = encrypted.removingPercentEncoding ?? encrypted
-        guard let decrypted = RSAHelper.decryptString(decoded, publicKey: AppConfig.configPublicKey),
-              let listData  = decrypted.data(using: .utf8),
-              let hostList  = try? JSONSerialization.jsonObject(with: listData) as? [[String: Any]] else {
-            useFallbackAndProceed()
-            return
-        }
-
-        saveURLs(from: hostList)
-        proceed()
-    }
-
-    /// 解析 host 列表并保存到 AppConfig（ipOrPort 1=ppt服务, 2=convert服务）
-    private func saveURLs(from hostList: [[String: Any]]) {
+    /// 解析 host 列表：保存 URL，触发应用配置请求，首次启动额外请求引导开关
+    private func processHostList(_ hostList: [[String: Any]]) {
         var pptBase:     String?
         var convertBase: String?
 
         for item in hostList {
-            guard let type = item["ipOrPort"] as? Int,
-                  let host = item["host"]    as? String else { continue }
-            let prefix  = host.hasPrefix("http") ? host : "http://\(host)"
-            let portStr = item["port"] as? String ?? ""
-            let full    = portStr.isEmpty ? prefix : "\(prefix):\(portStr)"
+            guard let ipOrPort = item["ipOrPort"] as? Int,
+                  let host     = item["host"]     as? String else { continue }
 
-            switch type {
-            case 1: pptBase     = full
-            case 2: convertBase = full
-            default: break
+            let prefix = host.hasPrefix("http") ? host : "http://\(host)"
+            let port   = item["port"] as? String ?? ""
+            let full   = port.isEmpty ? prefix : "\(prefix):\(port)"
+
+            switch ipOrPort {
+            case 1:
+                pptBase = full
+                print("✅ 获取 pptBaseURL: \(full)")
+                fetchAllConfigs(full)
+                if isFirstLaunch {
+                    print("📱 首次启动 - 请求引导开关配置")
+                    fetchSubscriptionGuideConfig(full)
+                }
+            case 2:
+                convertBase = full
+                print("✅ 获取 convertBaseURL: \(full)")
+            default:
+                break
             }
         }
 
         AppConfig.save(pptBase: pptBase, convertBase: convertBase)
     }
 
-    private func useFallbackAndProceed() {
-        // 拉取失败：保留上次已保存的地址（或兜底值），直接继续
+    /// 拉取所有应用开关配置（每次启动都调用）
+    private func fetchAllConfigs(_ baseUrl: String) {
+        let version = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+            .replacingOccurrences(of: ".", with: "")
+        let parameters: [String: Any] = ["appId": AppConfig.appId, "version": version]
+
+        print("📤 请求应用配置: \(baseUrl)/v1/api/ai/chat/notice/new")
+
+        AF.request("\(baseUrl)/v1/api/ai/chat/notice/new",
+                   method: .post, parameters: parameters, encoding: URLEncoding.default)
+            .validate()
+            .responseJSON { [weak self] response in
+                guard let self else { return }
+                switch response.result {
+                case .success(let value):
+                    guard let dict     = value as? [String: Any],
+                          let code     = dict["code"] as? Int, code == 200,
+                          let newslist = dict["newslist"] as? [[String: Any]] else {
+                        self.setDefaultConfigs(); return
+                    }
+                    self.processAllConfigs(newslist)
+                case .failure:
+                    self.setDefaultConfigs()
+                }
+            }
+    }
+
+    /// 解析并保存各 type 开关值
+    private func processAllConfigs(_ newslist: [[String: Any]]) {
+        for item in newslist {
+            guard let type  = item["type"]  as? Int,
+                  let title = item["title"] as? String else { continue }
+            switch type {
+            case 4: UserDefaults.standard.set(title == "1", forKey: "enable_rating_trial_restore")
+            case 5: UserDefaults.standard.set(title == "1", forKey: "enable_rating_reward_prompt")
+            case 6: UserDefaults.standard.set(title == "1", forKey: "enable_star_or_comment")
+            case 7: UserDefaults.standard.set(Int(title) ?? 0,  forKey: "free_trial_count")
+            case 8: UserDefaults.standard.set(Int(title) ?? 10, forKey: "vip_daily_limit")
+            case 9: UserDefaults.standard.set(Int(title) ?? 0,  forKey: "guided_subscription_plan")
+            default: break
+            }
+        }
+        UserDefaults.standard.synchronize()
+        print("✅ 应用配置已保存")
+    }
+
+    /// 应用配置请求失败时设置保守默认值
+    private func setDefaultConfigs() {
+        let defaults: [String: Any] = [
+            "enable_rating_trial_restore": false,
+            "enable_rating_reward_prompt": false,
+            "enable_star_or_comment":      false,
+            "free_trial_count":            0,
+            "vip_daily_limit":             10,
+            "guided_subscription_plan":    0,
+        ]
+        defaults.forEach { UserDefaults.standard.set($0.value, forKey: $0.key) }
+        UserDefaults.standard.synchronize()
+        print("⚠️ 已设置默认配置值")
+    }
+
+    /// 首次启动：请求引导开关（type=3），决定后续路由
+    private func fetchSubscriptionGuideConfig(_ baseUrl: String) {
+        let version = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
+            .replacingOccurrences(of: ".", with: "")
+        let parameters: [String: Any] = ["appId": AppConfig.appId, "type": 3, "version": version]
+
+        print("📤 请求引导开关配置")
+
+        AF.request("\(baseUrl)/v1/api/ai/chat/notice",
+                   method: .post, parameters: parameters, encoding: URLEncoding.default)
+            .validate()
+            .responseJSON { [weak self] response in
+                guard let self else { return }
+                switch response.result {
+                case .success(let value):
+                    guard let dict     = value as? [String: Any],
+                          let code     = dict["code"] as? Int, code == 200,
+                          let newslist = dict["newslist"] as? [String: Any],
+                          let title    = newslist["title"] as? String else {
+                        print("❌ 引导开关解析失败，默认继续")
+                        self.proceed()
+                        return
+                    }
+                    // title "1" 可在此扩展付费引导逻辑；当前统一进入主界面
+                    print("✅ 引导开关: \(title)")
+                    self.proceed()
+                case .failure(let error):
+                    print("❌ 引导开关请求失败: \(error)，默认继续")
+                    self.proceed()
+                }
+            }
+    }
+
+    /// 配置拉取失败兜底：使用已缓存或默认地址，继续启动
+    private func normalHost() {
+        print("⚠️ 使用兜底服务器配置")
+        setDefaultConfigs()
         proceed()
     }
 
-    /// 非首次启动：后台静默刷新配置，不阻塞启动，仅更新保存的 URL 供下次使用
-    private func fetchConfigInBackground() {
-        let uuid = AppDelegate.getCurrentUserId() ?? "temp"
-        let params: [String: Any] = ["appId": AppConfig.appId, "uuid": uuid]
-
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: params),
-              let jsonStr  = String(data: jsonData, encoding: .utf8),
-              let rsaStr   = RSAHelper.encryptString(jsonStr, publicKey: AppConfig.configPublicKey) else {
-            return
+    /// 首次启动配置成功：非首次直接 proceed，首次等 fetchSubscriptionGuideConfig 回调
+    private func handleConfigurationSuccess() {
+        print("✅ 服务器配置加载成功")
+        if !isFirstLaunch {
+            proceed()
         }
+    }
+
+    /// 非首次启动后台静默刷新：完整 pipeline 但不触发导航
+    private func fetchHostConfigInBackground() {
+        guard let uuid = AppDelegate.getCurrentUserId() else { return }
+
+        let parameters: [String: Any] = [
+            "code":  "19436650565",
+            "appId": AppConfig.appId,
+            "uuid":  uuid
+        ]
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: parameters),
+              let jsonStr  = String(data: jsonData, encoding: .utf8),
+              let rsaStr   = RSAHelper.encryptString(jsonStr, publicKey: AppConfig.configPublicKey) else { return }
 
         AF.request(AppConfig.configServerURL,
                    method: .post,
                    parameters: ["plainText": rsaStr],
                    encoding: URLEncoding.default)
             .validate()
-            .responseData { [weak self] response in
-                guard let self, case .success(let data) = response.result,
-                      let json      = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                      let code      = json["code"] as? Int, code == 200,
-                      let encrypted = json["newslist"] as? String else { return }
-
-                let decoded = encrypted.removingPercentEncoding ?? encrypted
-                guard let decrypted = RSAHelper.decryptString(decoded, publicKey: AppConfig.configPublicKey),
+            .responseJSON { [weak self] response in
+                guard let self,
+                      case .success(let value) = response.result,
+                      let dict      = value as? [String: Any],
+                      let code      = dict["code"] as? Int, code == 200,
+                      let rsaStr    = dict["newslist"] as? String,
+                      let decoded   = rsaStr.removingPercentEncoding,
+                      let decrypted = RSAHelper.decryptString(decoded, publicKey: AppConfig.configPublicKey),
                       let listData  = decrypted.data(using: .utf8),
-                      let hostList  = try? JSONSerialization.jsonObject(with: listData) as? [[String: Any]] else { return }
+                      let hostList  = try? JSONSerialization.jsonObject(with: listData) as? [[String: Any]]
+                else { return }
 
-                self.saveURLs(from: hostList)
+                // 后台只更新 URL 和应用配置，不触发导航
+                var pptBase: String?
+                var convertBase: String?
+                for item in hostList {
+                    guard let ipOrPort = item["ipOrPort"] as? Int,
+                          let host     = item["host"]     as? String else { continue }
+                    let prefix = host.hasPrefix("http") ? host : "http://\(host)"
+                    let port   = item["port"] as? String ?? ""
+                    let full   = port.isEmpty ? prefix : "\(prefix):\(port)"
+                    switch ipOrPort {
+                    case 1: pptBase = full;     self.fetchAllConfigs(full)
+                    case 2: convertBase = full
+                    default: break
+                    }
+                }
+                AppConfig.save(pptBase: pptBase, convertBase: convertBase)
+                print("✅ 后台配置刷新完成")
             }
     }
 
@@ -245,7 +379,7 @@ class StartupViewController: UIViewController {
 
     @objc private func retryTapped() {
         showLoading()
-        fetchConfig()
+        fetchHostConfiguration()
     }
 
     @objc private func settingsTapped() {
