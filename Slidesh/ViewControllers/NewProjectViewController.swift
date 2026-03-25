@@ -505,8 +505,21 @@ class NewProjectViewController: UIViewController {
         let theme = themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !theme.isEmpty else { themeTextView.becomeFirstResponder(); return }
 
+        // 首次使用 AI 生成前需征得用户数据处理同意
+        guard DataConsentManager.shared.hasConsented else {
+            let consent = DataConsentView(parentVC: self)
+            consent.onConsent = { [weak self] in self?.startAIGeneration() }
+            consent.showInView(view)
+            return
+        }
+        startAIGeneration()
+    }
+
+    private func startAIGeneration() {
         view.endEditing(true)
         setGenerating(true)
+
+        let theme = themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // Step 1：创建任务，获取 taskId
         PPTAPIService.shared.createTask(subject: theme) { [weak self] result in
