@@ -144,7 +144,6 @@ class StartupViewController: UIViewController {
                     }
                     print("✅ 成功获取服务器配置列表")
                     self.processHostList(hostList)
-                    self.handleConfigurationSuccess()
                 case .failure(let error):
                     print("❌ 网络请求失败: \(error)")
                     self.normalHost()
@@ -152,7 +151,7 @@ class StartupViewController: UIViewController {
             }
     }
 
-    /// 解析 host 列表：保存 URL，触发应用配置请求，首次启动额外请求引导开关
+    /// 解析 host 列表：保存 URL，触发应用配置请求，决定跳转时机
     /// ipOrPort: 1=配置/通知/反馈 2=格式转换 3=PPT生成
     private func processHostList(_ hostList: [[String: Any]]) {
         var configBase:  String?
@@ -168,26 +167,26 @@ class StartupViewController: UIViewController {
             let full   = port.isEmpty ? prefix : "\(prefix):\(port)"
 
             switch ipOrPort {
-            case 1:
-                configBase = full
-                print("✅ 获取 configBaseURL: \(full)")
-                fetchAllConfigs(full)
-                if isFirstLaunch {
-                    print("📱 首次启动 - 请求引导开关配置")
-                    fetchSubscriptionGuideConfig(full)
-                }
-            case 2:
-                convertBase = full
-                print("✅ 获取 convertBaseURL: \(full)")
-            case 3:
-                pptBase = full
-                print("✅ 获取 pptBaseURL: \(full)")
-            default:
-                break
+            case 1: configBase  = full; print("✅ 获取 configBaseURL: \(full)")
+            case 2: convertBase = full; print("✅ 获取 convertBaseURL: \(full)")
+            case 3: pptBase     = full; print("✅ 获取 pptBaseURL: \(full)")
+            default: break
             }
         }
 
         AppConfig.save(configBase: configBase, convertBase: convertBase, pptBase: pptBase)
+
+        // fetchAllConfigs 存配置开关，fire-and-forget 不阻塞跳转
+        let base = configBase ?? AppConfig.fallbackConfigBaseURL
+        fetchAllConfigs(base)
+
+        if isFirstLaunch {
+            // 首次启动：等引导开关结果再跳转
+            print("📱 首次启动 - 请求引导开关配置")
+            fetchSubscriptionGuideConfig(base)
+        } else {
+            proceed()
+        }
     }
 
     /// 拉取所有应用开关配置（每次启动都调用）
@@ -289,14 +288,6 @@ class StartupViewController: UIViewController {
         print("⚠️ 使用兜底服务器配置")
         setDefaultConfigs()
         proceed()
-    }
-
-    /// 首次启动配置成功：非首次直接 proceed，首次等 fetchSubscriptionGuideConfig 回调
-    private func handleConfigurationSuccess() {
-        print("✅ 服务器配置加载成功")
-        if !isFirstLaunch {
-            proceed()
-        }
     }
 
     private func proceed() {
