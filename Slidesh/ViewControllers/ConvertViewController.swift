@@ -244,6 +244,10 @@ extension ConvertViewController: UICollectionViewDelegate {
         guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
         UISelectionFeedbackGenerator().selectionChanged()
 
+        startConvertFlow(for: item)
+    }
+
+    private func startConvertFlow(for item: ConvertToolItem) {
         if item.formatOptions.isEmpty {
             // 无格式选项：直接选文件
             pendingTool   = item

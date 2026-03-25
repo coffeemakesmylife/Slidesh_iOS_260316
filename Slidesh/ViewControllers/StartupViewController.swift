@@ -17,11 +17,9 @@ class StartupViewController: UIViewController {
 
     // MARK: - UI
 
-    /// 加载中视图（logo + spinner）
+    /// 加载中视图（仅 spinner）
     private let loadingView = UIView()
-    private let logoImageView = UIImageView()
-    private let appNameLabel  = UILabel()
-    private let spinner       = UIActivityIndicatorView(style: .large)
+    private let spinner     = UIActivityIndicatorView(style: .large)
 
     /// 无网络错误卡片
     private let errorCard         = UIView()
@@ -185,7 +183,20 @@ class StartupViewController: UIViewController {
     private func proceed() {
         isConfigured = true
         stopNetworkMonitoring()
-        navigateToMain()
+
+        // 首次使用前展示数据处理同意弹窗
+        if DataConsentManager.shared.hasConsented {
+            navigateToMain()
+        } else {
+            showConsentView()
+        }
+    }
+
+    private func showConsentView() {
+        let consent = DataConsentView(parentVC: self)
+        consent.onConsent  = { [weak self] in self?.navigateToMain() }
+        consent.onDecline  = { /* 用户拒绝：留在启动页，功能不可用 */ }
+        consent.showInView(view)
     }
 
     // MARK: - 导航
@@ -248,23 +259,7 @@ class StartupViewController: UIViewController {
         loadingView.alpha = 0
         view.addSubview(loadingView)
 
-        // App 图标（SF Symbol）
-        let config = UIImage.SymbolConfiguration(pointSize: 56, weight: .regular)
-        logoImageView.image = UIImage(systemName: "sparkles.rectangle.stack", withConfiguration: config)
-        logoImageView.tintColor = .appGradientMid
-        logoImageView.contentMode = .scaleAspectFit
-        logoImageView.translatesAutoresizingMaskIntoConstraints = false
-        loadingView.addSubview(logoImageView)
-
-        // App 名称
-        appNameLabel.text = "Slidesh"
-        appNameLabel.font = .systemFont(ofSize: 28, weight: .heavy)
-        appNameLabel.textColor = .appTextPrimary
-        appNameLabel.textAlignment = .center
-        appNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        loadingView.addSubview(appNameLabel)
-
-        // 加载指示器
+        // 仅显示加载指示器
         spinner.color = .appTextSecondary
         spinner.hidesWhenStopped = true
         spinner.translatesAutoresizingMaskIntoConstraints = false
@@ -274,15 +269,7 @@ class StartupViewController: UIViewController {
             loadingView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             loadingView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
 
-            logoImageView.topAnchor.constraint(equalTo: loadingView.topAnchor),
-            logoImageView.centerXAnchor.constraint(equalTo: loadingView.centerXAnchor),
-            logoImageView.widthAnchor.constraint(equalToConstant: 72),
-            logoImageView.heightAnchor.constraint(equalToConstant: 72),
-
-            appNameLabel.topAnchor.constraint(equalTo: logoImageView.bottomAnchor, constant: 16),
-            appNameLabel.centerXAnchor.constraint(equalTo: loadingView.centerXAnchor),
-
-            spinner.topAnchor.constraint(equalTo: appNameLabel.bottomAnchor, constant: 24),
+            spinner.topAnchor.constraint(equalTo: loadingView.topAnchor),
             spinner.centerXAnchor.constraint(equalTo: loadingView.centerXAnchor),
             spinner.bottomAnchor.constraint(equalTo: loadingView.bottomAnchor),
         ])
