@@ -19,6 +19,11 @@ class SettingsViewController: UIViewController {
     private weak var themeValueLabel: UILabel?
     private weak var themeButton: UIButton?
 
+    // 会员卡片的引用，用于付费后更新文案
+    private weak var vipTitleLabel: UILabel?
+    private weak var vipFeaturesLabel: UILabel?
+    private weak var vipButton: UIButton?
+
     // 隐私 / 条款链接（替换为正式 URL）
     private let privacyURL = URL(string: "https://example.com/privacy")!
     private let termsURL   = URL(string: "https://example.com/terms")!
@@ -29,6 +34,14 @@ class SettingsViewController: UIViewController {
         addMeshGradientBackground()
         setupScrollView()
         buildSections()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        Task {
+            await QuotaManager.shared.refreshPremiumStatus()
+            updateVIPCard()
+        }
     }
 
     // MARK: - 滚动容器
@@ -140,6 +153,7 @@ class SettingsViewController: UIViewController {
         titleLabel.text = "升级 Pro 会员"
         titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
         titleLabel.textColor = .white
+        vipTitleLabel = titleLabel
 
         let featuresLabel = UILabel()
         let paraStyle = NSMutableParagraphStyle()
@@ -152,6 +166,7 @@ class SettingsViewController: UIViewController {
                 .paragraphStyle: paraStyle,
             ])
         featuresLabel.numberOfLines = 0
+        vipFeaturesLabel = featuresLabel
 
         let btn = UIButton(type: .system)
         btn.setTitle("立即升级", for: .normal)
@@ -161,6 +176,7 @@ class SettingsViewController: UIViewController {
         btn.layer.cornerRadius = 14
         btn.contentEdgeInsets = UIEdgeInsets(top: 6, left: 18, bottom: 6, right: 18)
         btn.addTarget(self, action: #selector(unlockPro), for: .touchUpInside)
+        vipButton = btn
 
         let deco = UIImageView(image: UIImage(named: "speak-ai-line")?.withRenderingMode(.alwaysTemplate))
         deco.tintColor = UIColor.white.withAlphaComponent(0.12)
@@ -447,6 +463,39 @@ class SettingsViewController: UIViewController {
     }
 
     // MARK: - 高亮
+
+    private func updateVIPCard() {
+        let isPremium = QuotaManager.shared.isPremium
+        vipTitleLabel?.text = isPremium ? "Pro 会员" : "升级 Pro 会员"
+
+        let paraStyle = NSMutableParagraphStyle()
+        paraStyle.paragraphSpacing = 8
+        let featuresText = isPremium
+            ? "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 已解锁全部模板"
+            : "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 解锁全部模板"
+        vipFeaturesLabel?.attributedText = NSAttributedString(
+            string: featuresText,
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 14),
+                .foregroundColor: UIColor.white.withAlphaComponent(0.88),
+                .paragraphStyle: paraStyle,
+            ])
+
+        vipButton?.setTitle(isPremium ? "管理订阅" : "立即升级", for: .normal)
+        vipButton?.removeTarget(nil, action: nil, for: .allEvents)
+        if isPremium {
+            vipButton?.addTarget(self, action: #selector(manageSubscription), for: .touchUpInside)
+        } else {
+            vipButton?.addTarget(self, action: #selector(unlockPro), for: .touchUpInside)
+        }
+    }
+
+    @objc private func manageSubscription() {
+        // 跳转到 App Store 订阅管理页
+        if let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
+            UIApplication.shared.open(url)
+        }
+    }
 
     @objc private func unlockPro() {
         let vc = PremiumViewController()
