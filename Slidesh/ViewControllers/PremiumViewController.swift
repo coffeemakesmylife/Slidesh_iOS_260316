@@ -316,7 +316,13 @@ class PremiumViewController: UIViewController {
         guard case .verified(let transaction) = result else { return }
         await transaction.finish()
         // 后台交易完成（如 Ask to Buy 审批），直接关闭界面
-        await MainActor.run { self.dismiss(animated: true) }
+        await QuotaManager.shared.refreshPremiumStatus()
+        let callback = self.onPurchased
+        await MainActor.run {
+            self.dismiss(animated: true) {
+                callback?()
+            }
+        }
     }
 
     /// 从 App Store 加载产品信息，并用真实价格更新 UI

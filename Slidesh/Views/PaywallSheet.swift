@@ -116,6 +116,8 @@ class PaywallSheet: UIViewController {
     // MARK: - 权益轮播
 
     private func startBenefitRotation() {
+        // 防止 viewWillAppear 多次触发时重复注册 Timer
+        rotationTimer?.invalidate()
         rotationTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { [weak self] _ in
             self?.rotateBenefit()
         }
