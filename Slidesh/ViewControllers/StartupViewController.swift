@@ -48,11 +48,12 @@ class StartupViewController: UIViewController {
         checkFirstLaunch()
 
         if isFirstLaunch {
-            // 首次启动：用 NWPathMonitor 触发网络权限弹窗，并等待连接
+            // 首次启动：用 NWPathMonitor 触发网络权限弹窗，等到联网后拉取配置再进入
             startNetworkMonitoring()
         } else {
-            // 非首次启动：直接拉取配置，失败则使用兜底继续
-            fetchConfig()
+            // 非首次启动：使用已缓存的配置直接进入，后台异步刷新供下次使用
+            fetchConfigInBackground()
+            proceed()
         }
     }
 
@@ -178,6 +179,37 @@ class StartupViewController: UIViewController {
     private func useFallbackAndProceed() {
         // 拉取失败：保留上次已保存的地址（或兜底值），直接继续
         proceed()
+    }
+
+    /// 非首次启动：后台静默刷新配置，不阻塞启动，仅更新保存的 URL 供下次使用
+    private func fetchConfigInBackground() {
+        let uuid = AppDelegate.getCurrentUserId() ?? "temp"
+        let params: [String: Any] = ["appId": AppConfig.appId, "uuid": uuid]
+
+        guard let jsonData = try? JSONSerialization.data(withJSONObject: params),
+              let jsonStr  = String(data: jsonData, encoding: .utf8),
+              let rsaStr   = RSAHelper.encryptString(jsonStr, publicKey: AppConfig.configPublicKey) else {
+            return
+        }
+
+        AF.request(AppConfig.configServerURL,
+                   method: .post,
+                   parameters: ["plainText": rsaStr],
+                   encoding: URLEncoding.default)
+            .validate()
+            .responseData { [weak self] response in
+                guard let self, case .success(let data) = response.result,
+                      let json      = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let code      = json["code"] as? Int, code == 200,
+                      let encrypted = json["newslist"] as? String else { return }
+
+                let decoded = encrypted.removingPercentEncoding ?? encrypted
+                guard let decrypted = RSAHelper.decryptString(decoded, publicKey: AppConfig.configPublicKey),
+                      let listData  = decrypted.data(using: .utf8),
+                      let hostList  = try? JSONSerialization.jsonObject(with: listData) as? [[String: Any]] else { return }
+
+                self.saveURLs(from: hostList)
+            }
     }
 
     private func proceed() {
