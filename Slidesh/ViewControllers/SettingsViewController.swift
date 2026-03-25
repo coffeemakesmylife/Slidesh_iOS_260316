@@ -30,9 +30,12 @@ class SettingsViewController: UIViewController {
         [UIColor.appGradientStart.cgColor, UIColor.appGradientMid.cgColor, UIColor.appGradientEnd.cgColor]
     }
     private var premiumGradientColors: [CGColor] {
-        [UIColor(red: 1.00, green: 0.82, blue: 0.28, alpha: 1).cgColor,
-         UIColor(red: 0.92, green: 0.60, blue: 0.08, alpha: 1).cgColor,
-         UIColor(red: 0.72, green: 0.42, blue: 0.02, alpha: 1).cgColor]
+        [UIColor(red: 0.72, green: 0.42, blue: 0.02, alpha: 1).cgColor,  // 深金
+         UIColor(red: 0.92, green: 0.60, blue: 0.08, alpha: 1).cgColor,  // 琥珀
+         UIColor(red: 1.00, green: 0.82, blue: 0.28, alpha: 1).cgColor]  // 亮金
+    }
+    private var premiumButtonTitleColor: UIColor {
+        UIColor(red: 0.60, green: 0.32, blue: 0.00, alpha: 1)            // 深棕金，搭配白色按钮背景
     }
 
     // 隐私 / 条款链接（替换为正式 URL）
@@ -124,10 +127,11 @@ class SettingsViewController: UIViewController {
             },
         ])
 
-        var sections: [UIView] = [vipCard, section2, section3, section4]
+        var sections: [UIView] = []
         #if DEBUG
         sections.append(makeDebugSection())
         #endif
+        sections.append(contentsOf: [vipCard, section2, section3, section4])
         let stack = UIStackView(arrangedSubviews: sections)
         stack.axis = .vertical
         stack.spacing = 16
@@ -506,6 +510,7 @@ class SettingsViewController: UIViewController {
             ])
 
         vipButton?.setTitle(isPremium ? "管理订阅" : "立即升级", for: .normal)
+        vipButton?.setTitleColor(isPremium ? premiumButtonTitleColor : .appPrimary, for: .normal)
         vipButton?.removeTarget(nil, action: nil, for: .allEvents)
         if isPremium {
             vipButton?.addTarget(self, action: #selector(manageSubscription), for: .touchUpInside)
