@@ -23,6 +23,17 @@ class SettingsViewController: UIViewController {
     private weak var vipTitleLabel: UILabel?
     private weak var vipFeaturesLabel: UILabel?
     private weak var vipButton: UIButton?
+    private weak var vipGradientLayer: CAGradientLayer?
+
+    // 渐变色方案
+    private var normalGradientColors: [CGColor] {
+        [UIColor.appGradientStart.cgColor, UIColor.appGradientMid.cgColor, UIColor.appGradientEnd.cgColor]
+    }
+    private var premiumGradientColors: [CGColor] {
+        [UIColor(red: 1.00, green: 0.82, blue: 0.28, alpha: 1).cgColor,
+         UIColor(red: 0.92, green: 0.60, blue: 0.08, alpha: 1).cgColor,
+         UIColor(red: 0.72, green: 0.42, blue: 0.02, alpha: 1).cgColor]
+    }
 
     // 隐私 / 条款链接（替换为正式 URL）
     private let privacyURL = URL(string: "https://example.com/privacy")!
@@ -148,6 +159,7 @@ class SettingsViewController: UIViewController {
         gradient.startPoint = CGPoint(x: 0, y: 0)
         gradient.endPoint   = CGPoint(x: 1, y: 1)
         card.layer.insertSublayer(gradient, at: 0)
+        vipGradientLayer = gradient
 
         let titleLabel = UILabel()
         titleLabel.text = "升级 Pro 会员"
@@ -467,6 +479,18 @@ class SettingsViewController: UIViewController {
     private func updateVIPCard() {
         let isPremium = QuotaManager.shared.isPremium
         vipTitleLabel?.text = isPremium ? "Pro 会员" : "升级 Pro 会员"
+
+        // 渐变色切换动画
+        if let gradient = vipGradientLayer {
+            let newColors = isPremium ? premiumGradientColors : normalGradientColors
+            let anim = CABasicAnimation(keyPath: "colors")
+            anim.fromValue = gradient.colors
+            anim.toValue = newColors
+            anim.duration = 0.6
+            anim.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            gradient.colors = newColors   // 先更新 model layer，动画结束后无闪烁
+            gradient.add(anim, forKey: "gradientColorChange")
+        }
 
         let paraStyle = NSMutableParagraphStyle()
         paraStyle.paragraphSpacing = 8
