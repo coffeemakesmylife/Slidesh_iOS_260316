@@ -105,7 +105,7 @@ class DataConsentView: UIView {
         guard let vc = parentVC else { return }
         let alert = UIAlertController(
             title: "无法继续",
-            message: "不同意数据处理条款将无法使用文件转换和 AI 生成功能。您可以随时在设置中重新查看并同意条款。",
+            message: "不同意数据处理条款将无法使用文件转换和 AI 生成功能。",
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "确认不使用", style: .destructive) { [weak self] _ in
