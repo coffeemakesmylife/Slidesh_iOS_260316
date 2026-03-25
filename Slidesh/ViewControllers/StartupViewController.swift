@@ -48,18 +48,12 @@ class StartupViewController: UIViewController {
         checkFirstLaunch()
 
         if isFirstLaunch {
-            // 首次启动：用 NWPathMonitor 触发网络权限弹窗，等到联网后拉取配置再进入
+            // 首次启动：用 NWPathMonitor 触发网络权限弹窗，联网后拉取配置
             startNetworkMonitoring()
+        } else {
+            // 非首次启动：直接请求 host 配置，loading 等结果后跳转
+            fetchHostConfiguration()
         }
-        // 非首次启动逻辑移至 viewDidAppear，确保 view.window 不为 nil
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        guard !isFirstLaunch, !isConfigured else { return }
-        // 非首次启动：使用已缓存的配置直接进入，后台异步刷新供下次使用
-        fetchHostConfigInBackground()
-        proceed()
     }
 
     deinit {
@@ -305,59 +299,6 @@ class StartupViewController: UIViewController {
         }
     }
 
-    /// 非首次启动后台静默刷新：完整 pipeline 但不触发导航
-    private func fetchHostConfigInBackground() {
-        guard let uuid = AppDelegate.getCurrentUserId() else { return }
-
-        let parameters: [String: Any] = [
-            "code":  "19436650565",
-            "appId": AppConfig.appId,
-            "uuid":  uuid
-        ]
-
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: parameters),
-              let jsonStr  = String(data: jsonData, encoding: .utf8),
-              let rsaStr   = RSAHelper.encryptString(jsonStr, publicKey: AppConfig.configPublicKey) else { return }
-
-        AF.request(AppConfig.configServerURL,
-                   method: .post,
-                   parameters: ["plainText": rsaStr],
-                   encoding: URLEncoding.default)
-            .validate()
-            .responseJSON { [weak self] response in
-                guard let self,
-                      case .success(let value) = response.result,
-                      let dict      = value as? [String: Any],
-                      let code      = dict["code"] as? Int, code == 200,
-                      let rsaStr    = dict["newslist"] as? String,
-                      let decoded   = rsaStr.removingPercentEncoding,
-                      let decrypted = RSAHelper.decryptString(decoded, publicKey: AppConfig.configPublicKey),
-                      let listData  = decrypted.data(using: .utf8),
-                      let hostList  = try? JSONSerialization.jsonObject(with: listData) as? [[String: Any]]
-                else { return }
-
-                // 后台只更新 URL 和应用配置，不触发导航
-                var configBase:  String?
-                var convertBase: String?
-                var pptBase:     String?
-                for item in hostList {
-                    guard let ipOrPort = item["ipOrPort"] as? Int,
-                          let host     = item["host"]     as? String else { continue }
-                    let prefix = host.hasPrefix("http") ? host : "http://\(host)"
-                    let port   = item["port"] as? String ?? ""
-                    let full   = port.isEmpty ? prefix : "\(prefix):\(port)"
-                    switch ipOrPort {
-                    case 1: configBase  = full; self.fetchAllConfigs(full)
-                    case 2: convertBase = full
-                    case 3: pptBase     = full
-                    default: break
-                    }
-                }
-                AppConfig.save(configBase: configBase, convertBase: convertBase, pptBase: pptBase)
-                print("✅ 后台配置刷新完成")
-            }
-    }
-
     private func proceed() {
         isConfigured = true
         stopNetworkMonitoring()
@@ -380,11 +321,13 @@ class StartupViewController: UIViewController {
     // MARK: - 导航
 
     private func navigateToMain() {
-        guard let window = view.window else { return }
-        let main = CustomTabBarController()
-        UIView.transition(with: window, duration: 0.4, options: .transitionCrossDissolve, animations: {
-            window.rootViewController = main
-        })
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let window = self.view.window else { return }
+            let main = CustomTabBarController()
+            UIView.transition(with: window, duration: 0.4, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = main
+            })
+        }
     }
 
     // MARK: - 按钮事件
