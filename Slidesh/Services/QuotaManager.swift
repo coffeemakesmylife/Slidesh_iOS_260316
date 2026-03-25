@@ -30,6 +30,7 @@ enum QuotaFeature {
     }
 }
 
+@MainActor
 class QuotaManager {
     static let shared = QuotaManager()
     private init() {}
@@ -44,14 +45,12 @@ class QuotaManager {
 
     /// 通过 StoreKit 2 Transaction.currentEntitlements 验证有效订阅
     func refreshPremiumStatus() async {
-        var hasPremium = false
-        for await result in Transaction.currentEntitlements {
-            if case .verified(let tx) = result, tx.revocationDate == nil {
-                hasPremium = true
-                break
-            }
+        // 使用 contains 消除跨 await 的可变变量
+        let hasPremium = await Transaction.currentEntitlements.contains { result in
+            guard case .verified(let tx) = result else { return false }
+            return tx.revocationDate == nil
         }
-        await MainActor.run { self.isPremium = hasPremium }
+        isPremium = hasPremium   // @MainActor 类，直接赋值无需 MainActor.run
     }
 
     // MARK: - 配额操作
@@ -65,12 +64,15 @@ class QuotaManager {
         defer { lock.unlock() }
         let used = Int(KeychainHelper.load(key: feature.keychainKey) ?? "0") ?? 0
         guard used < feature.limit else { return false }
-        _ = KeychainHelper.save(key: feature.keychainKey, data: String(used + 1))
+        let saved = KeychainHelper.save(key: feature.keychainKey, data: String(used + 1))
+        if !saved { print("QuotaManager: Keychain 写入失败，key: \(feature.keychainKey)") }
         return true
     }
 
     /// 当前剩余次数（调试用）
     func remaining(_ feature: QuotaFeature) -> Int {
+        lock.lock()
+        defer { lock.unlock() }
         let used = Int(KeychainHelper.load(key: feature.keychainKey) ?? "0") ?? 0
         return max(0, feature.limit - used)
     }
