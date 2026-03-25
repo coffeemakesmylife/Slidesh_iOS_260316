@@ -49,12 +49,9 @@ class DataConsentView: UIView {
     private let iconView       = UIImageView()
     private let titleLabel     = UILabel()
     private let subtitleLabel  = UILabel()
-    private let agreeContainer = UIView()   // 渐变背景容器
-    private let agreeButton    = UIButton(type: .system)
-    private let declineButton  = UIButton(type: .system)
+    private let agreeButton   = UIButton(type: .system)
+    private let declineButton = UIButton(type: .system)
     private lazy var linkTextView = buildLinkTextView()
-    // 渐变层（同意按钮背景）
-    private let gradientLayer  = CAGradientLayer()
 
     private weak var parentVC: UIViewController?
 
@@ -116,14 +113,6 @@ class DataConsentView: UIView {
         })
         alert.addAction(UIAlertAction(title: "重新查看", style: .cancel))
         vc.present(alert, animated: true)
-    }
-
-    // MARK: - layoutSubviews（更新渐变 frame）
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        // gradientLayer 在 agreeContainer.layer 上，需用 agreeContainer.bounds
-        gradientLayer.frame = agreeContainer.bounds
     }
 
     // MARK: - UI 搭建
@@ -227,31 +216,22 @@ class DataConsentView: UIView {
         contentStack.addArrangedSubview(makeSeparator())
         contentStack.addArrangedSubview(linkTextView)
 
-        // 按钮区（使用成员属性 agreeContainer，保证 layoutSubviews 能更新渐变 frame）
-        agreeContainer.layer.cornerRadius = 22
-        agreeContainer.clipsToBounds = true
-
-        gradientLayer.colors    = [UIColor.appGradientStart.cgColor,
-                                   UIColor.appGradientMid.cgColor,
-                                   UIColor.appGradientEnd.cgColor]
-        gradientLayer.locations  = [0.0, 0.55, 1.0]
-        gradientLayer.startPoint = CGPoint(x: 0, y: 0)
-        gradientLayer.endPoint   = CGPoint(x: 1, y: 1)
-        agreeContainer.layer.insertSublayer(gradientLayer, at: 0)
-
+        // 同意按钮：主题色背景
         agreeButton.setTitle("同意并继续", for: .normal)
         agreeButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         agreeButton.setTitleColor(.white, for: .normal)
+        agreeButton.backgroundColor = .appGradientMid
+        agreeButton.layer.cornerRadius = 22
+        agreeButton.clipsToBounds = true
         agreeButton.addTarget(self, action: #selector(agreeTapped), for: .touchUpInside)
         agreeButton.translatesAutoresizingMaskIntoConstraints = false
-        agreeContainer.addSubview(agreeButton)
 
         declineButton.setTitle("不同意", for: .normal)
         declineButton.titleLabel?.font = .systemFont(ofSize: 14)
         declineButton.setTitleColor(.appTextSecondary, for: .normal)
         declineButton.addTarget(self, action: #selector(declineTapped), for: .touchUpInside)
 
-        let buttonStack = UIStackView(arrangedSubviews: [agreeContainer, declineButton])
+        let buttonStack = UIStackView(arrangedSubviews: [agreeButton, declineButton])
         buttonStack.axis = .vertical
         buttonStack.spacing = 8
         buttonStack.translatesAutoresizingMaskIntoConstraints = false
@@ -291,11 +271,7 @@ class DataConsentView: UIView {
             buttonStack.trailingAnchor.constraint(equalTo: cardView.trailingAnchor, constant: -16),
             buttonStack.bottomAnchor.constraint(equalTo: cardView.bottomAnchor, constant: -18),
 
-            agreeContainer.heightAnchor.constraint(equalToConstant: 44),
-            agreeButton.topAnchor.constraint(equalTo: agreeContainer.topAnchor),
-            agreeButton.leadingAnchor.constraint(equalTo: agreeContainer.leadingAnchor),
-            agreeButton.trailingAnchor.constraint(equalTo: agreeContainer.trailingAnchor),
-            agreeButton.bottomAnchor.constraint(equalTo: agreeContainer.bottomAnchor),
+            agreeButton.heightAnchor.constraint(equalToConstant: 44),
 
             declineButton.heightAnchor.constraint(equalToConstant: 36),
         ])
