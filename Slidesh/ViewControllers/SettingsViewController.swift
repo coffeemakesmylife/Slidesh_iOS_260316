@@ -159,7 +159,7 @@ class SettingsViewController: UIViewController {
         let paraStyle = NSMutableParagraphStyle()
         paraStyle.paragraphSpacing = 8
         featuresLabel.attributedText = NSAttributedString(
-            string: "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 解锁全部模板",
+            string: "✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿",
             attributes: [
                 .font: UIFont.systemFont(ofSize: 14),
                 .foregroundColor: UIColor.white.withAlphaComponent(0.88),
@@ -471,8 +471,8 @@ class SettingsViewController: UIViewController {
         let paraStyle = NSMutableParagraphStyle()
         paraStyle.paragraphSpacing = 8
         let featuresText = isPremium
-            ? "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 已解锁全部模板"
-            : "✓ 无限制创建演示文稿\n✓ 无限制高级格式转换\n✓ 解锁全部模板"
+            ? "✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿"
+            : "✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿"
         vipFeaturesLabel?.attributedText = NSAttributedString(
             string: featuresText,
             attributes: [
@@ -579,6 +579,7 @@ class SettingsViewController: UIViewController {
 
     @objc private func debugPremiumToggled(_ sender: UISwitch) {
         QuotaManager.shared.debugSetPremium(sender.isOn)
+        updateVIPCard()
     }
     #endif
 
