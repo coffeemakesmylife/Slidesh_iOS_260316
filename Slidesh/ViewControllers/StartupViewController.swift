@@ -225,9 +225,9 @@ class StartupViewController: UIViewController {
             case 4: UserDefaults.standard.set(title == "1", forKey: "enable_rating_trial_restore")
             case 5: UserDefaults.standard.set(title == "1", forKey: "enable_rating_reward_prompt")
             case 6: UserDefaults.standard.set(title == "1", forKey: "enable_star_or_comment")
-            case 7: UserDefaults.standard.set(Int(title) ?? 0,  forKey: "free_trial_count")
+            case 7: UserDefaults.standard.set(Int(title) ?? 0,  forKey: "guided_subscription_plan") // 0=周 1=月 2=年
             case 8: UserDefaults.standard.set(Int(title) ?? 10, forKey: "vip_daily_limit")
-            case 9: UserDefaults.standard.set(Int(title) ?? 0,  forKey: "guided_subscription_plan")
+            case 9: UserDefaults.standard.set(Int(title) ?? 0,  forKey: "free_trial_count")
             default: break
             }
         }

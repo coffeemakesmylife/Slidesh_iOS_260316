@@ -16,11 +16,14 @@ class OnboardingViewController: UIViewController {
     }
     private let totalSteps = 4
     
-    // 默认展示年费订阅作为最终转化
-    private var yearlyPlan: PremiumPlan {
-        PremiumPlan.allPlans.first(where: { $0.id == "year" }) ?? PremiumPlan.allPlans.last!
+    // 从服务端配置读取引导套餐：0=周 1=月 2=年
+    private var guidedPlan: PremiumPlan {
+        let index = UserDefaults.standard.integer(forKey: "guided_subscription_plan")
+        let ids = ["week", "month", "year"]
+        let id = (0..<ids.count).contains(index) ? ids[index] : "year"
+        return PremiumPlan.allPlans.first(where: { $0.id == id }) ?? PremiumPlan.allPlans.last!
     }
-    private var yearlyProduct: Product?
+    private var guidedProduct: Product?
     
     // MARK: - UI Components
     private let scrollView = UIScrollView()
@@ -88,12 +91,14 @@ class OnboardingViewController: UIViewController {
     // 关闭按钮（左上角，仅第4页显示）
     private let skipButton: UIButton = {
         let btn = UIButton(type: .system)
-        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
+        let config = UIImage.SymbolConfiguration(pointSize: 19, weight: .bold)
         let img = UIImage(systemName: "xmark", withConfiguration: config)
         btn.setImage(img, for: .normal)
         btn.tintColor = .appTextPrimary
-        btn.backgroundColor = UIColor.appBackgroundPrimary.withAlphaComponent(0.8)
-        btn.layer.cornerRadius = 24
+        btn.backgroundColor = UIColor.appBackgroundPrimary.withAlphaComponent(0.7)
+        btn.layer.cornerRadius = 22
+        btn.layer.borderWidth = 1.5
+        btn.layer.borderColor = UIColor.appBackgroundPrimary.cgColor
         btn.layer.shadowColor = UIColor.black.cgColor
         btn.layer.shadowOpacity = 0.15
         btn.layer.shadowOffset = CGSize(width: 0, height: 2)
@@ -151,11 +156,10 @@ class OnboardingViewController: UIViewController {
     
     private func buildFeaturesList() {
         let benefits = [
-            "无限次生成高质量PPT",
+            "无限次生成PPT大纲",
+            "无限制大纲+模板合成PPT",
             "解除所有文件的格式转换限制",
-            "极速服务器响应时间",
-            "纯净无广告创作体验",
-            "随时可取消订阅"
+            "极速服务器响应时间"
         ]
         for text in benefits {
             let row = makeFeatureRow(text: text)
@@ -219,8 +223,8 @@ class OnboardingViewController: UIViewController {
             // 关闭按钮 -> 左上角，仅第4页可见
             skipButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
             skipButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            skipButton.widthAnchor.constraint(equalToConstant: 48),
-            skipButton.heightAnchor.constraint(equalToConstant: 48),
+            skipButton.widthAnchor.constraint(equalToConstant: 44),
+            skipButton.heightAnchor.constraint(equalToConstant: 44),
             
             // 滚动视图
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -256,7 +260,7 @@ class OnboardingViewController: UIViewController {
             featuresContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -40),
 
             // 价格说明在权益列表下方
-            priceLabel.topAnchor.constraint(equalTo: featuresContainer.bottomAnchor, constant: 16),
+            priceLabel.topAnchor.constraint(equalTo: featuresContainer.bottomAnchor, constant: 30),
             priceLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 40),
             priceLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -40),
             priceLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
@@ -308,12 +312,13 @@ class OnboardingViewController: UIViewController {
     
     // MARK: - StoreKit 2
     private func loadProducts() {
+        let plan = guidedPlan
         Task {
             do {
-                let products = try await Product.products(for: [yearlyPlan.productID])
+                let products = try await Product.products(for: [plan.productID])
                 if let pd = products.first {
                     await MainActor.run {
-                        self.yearlyProduct = pd
+                        self.guidedProduct = pd
                         self.refreshContent()
                     }
                 }
@@ -346,8 +351,9 @@ class OnboardingViewController: UIViewController {
             self.skipButton.isHidden = !isLastStep
 
             if isLastStep {
-                let priceText = self.yearlyProduct?.displayPrice ?? self.yearlyPlan.priceStr
-                self.priceLabel.text = "订阅后自动续费，\(priceText)/年，随时可取消"
+                let plan = self.guidedPlan
+                let priceText = self.guidedProduct?.displayPrice ?? plan.priceStr
+                self.priceLabel.text = self.priceLabelText(plan: plan, price: priceText)
             }
         }
         
@@ -359,20 +365,22 @@ class OnboardingViewController: UIViewController {
     }
     
     private func getStepData() -> (title: String, image: UIImage?, buttonTitle: String) {
-        let isPurchased = QuotaManager.shared.isPremium
         switch currentStep {
-        case 0:
-            return ("一键生成专业幻灯片", UIImage(named: "guide_bg_1"), "继续")
-        case 1:
-            return ("解除一切格式转换限制", UIImage(named: "guide_bg_2"), "继续")
-        case 2:
-            return ("随时随地的高效创作", UIImage(named: "guide_bg_3"), "继续")
-        case 3:
-            let priceText = yearlyProduct?.displayPrice ?? yearlyPlan.priceStr
-            let btnText = isPurchased ? "您已是高级版" : "\(priceText) 立即解锁"
-            return ("解锁全部高级特权", UIImage(named: "guide_bg_4"), btnText)
-        default:
-            return ("", nil, "继续")
+        case 0: return ("一键生成专业幻灯片",    UIImage(named: "guide_bg_1"), "继续")
+        case 1: return ("解除一切格式转换限制",   UIImage(named: "guide_bg_2"), "继续")
+        case 2: return ("随时随地的高效创作",     UIImage(named: "guide_bg_3"), "继续")
+        case 3: return ("解锁全部高级特权",       UIImage(named: "guide_bg_4"), "继续")
+        default: return ("", nil, "继续")
+        }
+    }
+
+    /// 按套餐类型定制价格说明文案
+    private func priceLabelText(plan: PremiumPlan, price: String) -> String {
+        switch plan.id {
+        case "week":  return "订阅后每周自动续费 \(price)，随时可取消"
+        case "month": return "首月 \(price)，之后按月自动续费，随时可取消"
+        case "year":  return "订阅后每年自动续费 \(price)，随时可取消"
+        default:      return "订阅后自动续费 \(price)，随时可取消"
         }
     }
     
@@ -394,7 +402,7 @@ class OnboardingViewController: UIViewController {
     }
     
     private func startSubscription() {
-        guard let product = yearlyProduct else {
+        guard let product = guidedProduct else {
             showAlert(title: "提示", message: "产品信息加载中，请稍候重试")
             return
         }
