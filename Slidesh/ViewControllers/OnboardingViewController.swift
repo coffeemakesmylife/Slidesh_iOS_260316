@@ -392,7 +392,8 @@ class OnboardingViewController: UIViewController {
             self.titleLabel.transform = CGAffineTransform(translationX: 0, y: 30)
             UIView.animate(
                 withDuration: 0.55, delay: 0,
-                usingSpringWithDamping: 0.72, initialSpringVelocity: 0.3
+                usingSpringWithDamping: 0.72, initialSpringVelocity: 0.3,
+                options: []
             ) {
                 self.titleLabel.alpha = 1
                 self.titleLabel.transform = .identity
