@@ -20,11 +20,12 @@ class OnboardingViewController: UIViewController {
     private var guidedPlan: PremiumPlan {
         let index = UserDefaults.standard.integer(forKey: "guided_subscription_plan")
         let ids = ["week", "month", "year"]
-        let id = (0..<ids.count).contains(index) ? ids[index] : "year"
+        let id = (0..<ids.count).contains(index) ? ids[index] : "week"
         return PremiumPlan.allPlans.first(where: { $0.id == id }) ?? PremiumPlan.allPlans.last!
     }
     private var guidedProduct: Product?
-    
+    private var titleTopConstraint: NSLayoutConstraint?
+
     // MARK: - UI Components
     private let scrollView = UIScrollView()
     private let contentView = UIView()
@@ -111,7 +112,7 @@ class OnboardingViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         loadProducts()
-        refreshContent()
+        refreshContent(animated: false)
     }
     
     override func viewDidLayoutSubviews() {
@@ -249,8 +250,7 @@ class OnboardingViewController: UIViewController {
             heroGradientView.trailingAnchor.constraint(equalTo: heroImageView.trailingAnchor),
             heroGradientView.bottomAnchor.constraint(equalTo: heroImageView.bottomAnchor),
             
-            // 标题文本
-            titleLabel.topAnchor.constraint(equalTo: heroImageView.bottomAnchor, constant: 24),
+            // 标题文本（constraint 引用留给 refreshContent 动态调整）
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 32),
             titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -32),
             
@@ -283,6 +283,11 @@ class OnboardingViewController: UIViewController {
             actionButton.heightAnchor.constraint(equalToConstant: 60),
             actionButton.bottomAnchor.constraint(equalTo: bottomContainer.bottomAnchor, constant: -16)
         ])
+
+        // 单独保存 title top 约束，供动态调整位置
+        let titleTop = titleLabel.topAnchor.constraint(equalTo: heroImageView.bottomAnchor, constant: 24)
+        titleTop.isActive = true
+        titleTopConstraint = titleTop
     }
     
     private func setupBottomBarAppearance() {
@@ -319,7 +324,7 @@ class OnboardingViewController: UIViewController {
                 if let pd = products.first {
                     await MainActor.run {
                         self.guidedProduct = pd
-                        self.refreshContent()
+                        self.refreshContent(animated: false)
                     }
                 }
             } catch {
@@ -329,38 +334,77 @@ class OnboardingViewController: UIViewController {
     }
     
     // MARK: - Content
-    private func refreshContent() {
+
+    private func refreshContent(animated: Bool = true) {
         let data = getStepData()
-        
-        UIView.transition(with: contentView, duration: 0.3, options: .transitionCrossDissolve) {
-            self.titleLabel.text = data.title
-            
+        let isLastStep = currentStep == totalSteps - 1
+
+        // 前三页：title 垂直居中于图片下方与按钮区域之间
+        // 最后一页：保持紧贴图片下方（24pt）
+        let newTopConstant: CGFloat
+        if isLastStep {
+            newTopConstant = 24
+        } else {
+            let screenH = UIScreen.main.bounds.height
+            let imageH  = screenH * 0.45
+            let barH    = bottomBlurView.bounds.height > 0 ? bottomBlurView.bounds.height : 120
+            let available = screenH - imageH - barH
+            newTopConstant = max(24, available / 2 - 20)
+        }
+
+        // 立即切换显隐（切页时这些元素不在视口中）
+        featuresContainer.isHidden = !isLastStep
+        priceLabel.isHidden        = !isLastStep
+        skipButton.isHidden        = !isLastStep
+        if isLastStep {
+            let plan = guidedPlan
+            let priceText = guidedProduct?.displayPrice ?? plan.priceStr
+            priceLabel.text = priceLabelText(plan: plan, price: priceText)
+        }
+
+        // 图片：cross-dissolve
+        UIView.transition(with: heroImageView, duration: 0.45, options: .transitionCrossDissolve) {
             if let image = data.image {
                 self.heroImageView.image = image
-                self.heroImageView.tintColor = .clear // Use original image coloring
+                self.heroImageView.tintColor = .clear
             } else {
-                // Placeholder
                 let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .light)
                 self.heroImageView.image = UIImage(systemName: "wand.and.stars", withConfiguration: config)
                 self.heroImageView.tintColor = .appPrimary
             }
-            
-            let isLastStep = (self.currentStep == self.totalSteps - 1)
-            self.featuresContainer.isHidden = !isLastStep
-            self.priceLabel.isHidden = !isLastStep
-            self.skipButton.isHidden = !isLastStep
+        }
 
-            if isLastStep {
-                let plan = self.guidedPlan
-                let priceText = self.guidedProduct?.displayPrice ?? plan.priceStr
-                self.priceLabel.text = self.priceLabelText(plan: plan, price: priceText)
+        guard animated else {
+            // 初次加载：直接设置，不执行动画
+            titleLabel.text = data.title
+            titleTopConstraint?.constant = newTopConstant
+            actionButton.setTitle(data.buttonTitle, for: .normal)
+            return
+        }
+
+        // 标题动画：先淡出上移，再从下方弹入新内容
+        UIView.animate(withDuration: 0.18, options: .curveEaseIn) {
+            self.titleLabel.alpha = 0
+            self.titleLabel.transform = CGAffineTransform(translationX: 0, y: -8)
+        } completion: { _ in
+            self.titleLabel.text = data.title
+            self.titleTopConstraint?.constant = newTopConstant
+            self.titleLabel.transform = CGAffineTransform(translationX: 0, y: 30)
+            UIView.animate(
+                withDuration: 0.55, delay: 0,
+                usingSpringWithDamping: 0.72, initialSpringVelocity: 0.3
+            ) {
+                self.titleLabel.alpha = 1
+                self.titleLabel.transform = .identity
+                self.view.layoutIfNeeded()   // 同步驱动约束位移动画
             }
         }
-        
-        UIView.transition(with: actionButton, duration: 0.3, options: .curveEaseInOut) {
+
+        // 按钮文字淡换
+        UIView.transition(with: actionButton, duration: 0.25, options: .transitionCrossDissolve) {
             self.actionButton.setTitle(data.buttonTitle, for: .normal)
         }
-        
+
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
     
@@ -377,10 +421,10 @@ class OnboardingViewController: UIViewController {
     /// 按套餐类型定制价格说明文案
     private func priceLabelText(plan: PremiumPlan, price: String) -> String {
         switch plan.id {
-        case "week":  return "订阅后每周自动续费 \(price)，随时可取消"
-        case "month": return "首月 \(price)，之后按月自动续费，随时可取消"
-        case "year":  return "订阅后每年自动续费 \(price)，随时可取消"
-        default:      return "订阅后自动续费 \(price)，随时可取消"
+        case "week":  return "每周 \(price)自动续费，随时可取消"
+        case "month": return "首月¥18 ，之后\(price)/月自动续费，随时可取消"
+        case "year":  return "每年 \(price)自动续费，随时可取消"
+        default:      return "自动续费 \(price)，随时可取消"
         }
     }
     
