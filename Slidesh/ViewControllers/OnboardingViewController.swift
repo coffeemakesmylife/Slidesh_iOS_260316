@@ -383,7 +383,7 @@ class OnboardingViewController: UIViewController {
         }
 
         // 标题动画：先淡出上移，再从下方弹入新内容
-        UIView.animate(withDuration: 0.18, options: .curveEaseIn) {
+        UIView.animate(withDuration: 0.18, delay: 0, options: .curveEaseIn) {
             self.titleLabel.alpha = 0
             self.titleLabel.transform = CGAffineTransform(translationX: 0, y: -8)
         } completion: { _ in
