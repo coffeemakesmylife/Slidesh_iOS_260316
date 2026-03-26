@@ -96,7 +96,7 @@ class OnboardingViewController: UIViewController {
         let img = UIImage(systemName: "xmark", withConfiguration: config)
         btn.setImage(img, for: .normal)
         btn.tintColor = .appTextPrimary
-        btn.backgroundColor = UIColor.appBackgroundPrimary.withAlphaComponent(0.7)
+        btn.backgroundColor = UIColor.appBackgroundPrimary.withAlphaComponent(0.85)
         btn.layer.cornerRadius = 22
         btn.layer.borderWidth = 1.5
         btn.layer.borderColor = UIColor.appBackgroundPrimary.cgColor

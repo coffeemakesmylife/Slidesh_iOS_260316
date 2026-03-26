@@ -663,7 +663,7 @@ private class PremiumPlanCardView: UIView {
 // MARK: - Animated Gradient Button
 // 自带星光元素的渐变按钮
 
-private class AnimatedGradientButton: UIButton {
+class AnimatedGradientButton: UIButton {
 
     private let gradientLayer = CAGradientLayer()
 
