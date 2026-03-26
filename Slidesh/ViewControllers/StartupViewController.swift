@@ -273,9 +273,13 @@ class StartupViewController: UIViewController {
                         self.proceed()
                         return
                     }
-                    // title "1" 可在此扩展付费引导逻辑；当前统一进入主界面
                     print("✅ 引导开关: \(title)")
-                    self.proceed()
+                    // title == "1" 表示展示引导页
+                    if title == "1" {
+                        self.navigateToOnboarding()
+                    } else {
+                        self.proceed()
+                    }
                 case .failure(let error):
                     print("❌ 引导开关请求失败: \(error)，默认继续")
                     self.proceed()
@@ -317,6 +321,16 @@ class StartupViewController: UIViewController {
             let main = CustomTabBarController()
             UIView.transition(with: window, duration: 0.4, options: .transitionCrossDissolve, animations: {
                 window.rootViewController = main
+            })
+        }
+    }
+
+    private func navigateToOnboarding() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let window = self.view.window else { return }
+            let onboarding = OnboardingViewController()
+            UIView.transition(with: window, duration: 0.4, options: .transitionCrossDissolve, animations: {
+                window.rootViewController = onboarding
             })
         }
     }

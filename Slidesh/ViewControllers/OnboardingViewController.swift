@@ -1,0 +1,416 @@
+//
+//  OnboardingViewController.swift
+//  Slidesh
+//
+//  Created for cultivating user habits and subscription guide
+//
+
+import UIKit
+import StoreKit
+
+class OnboardingViewController: UIViewController {
+    
+    // MARK: - Properties
+    private var currentStep: Int = 0 {
+        didSet { refreshContent() }
+    }
+    private let totalSteps = 4
+    
+    // 默认展示年费订阅作为最终转化
+    private var yearlyPlan: PremiumPlan {
+        PremiumPlan.allPlans.first(where: { $0.id == "year" }) ?? PremiumPlan.allPlans.last!
+    }
+    private var yearlyProduct: Product?
+    
+    // MARK: - UI Components
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
+    
+    private let heroImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        iv.backgroundColor = .clear
+        return iv
+    }()
+    
+    private let heroGradientView: UIView = {
+        let view = UIView()
+        let gradient = CAGradientLayer()
+        gradient.locations = [0.0, 0.5, 0.85, 1.0]
+        gradient.colors = [
+            UIColor.clear.cgColor,
+            UIColor.appBackgroundPrimary.withAlphaComponent(0.2).cgColor,
+            UIColor.appBackgroundPrimary.withAlphaComponent(0.7).cgColor,
+            UIColor.appBackgroundPrimary.cgColor
+        ]
+        view.layer.addSublayer(gradient)
+        view.tag = 999
+        return view
+    }()
+    
+    private let titleLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.font = .systemFont(ofSize: 32, weight: .bold)
+        lbl.textColor = .appTextPrimary
+        lbl.textAlignment = .center
+        lbl.numberOfLines = 0
+        return lbl
+    }()
+    
+    // 仅在第4页（step 3）显示的权益列表
+    private let featuresContainer: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 16
+        stack.distribution = .fill
+        stack.isHidden = true
+        return stack
+    }()
+    
+    // 底部浮动区：与 PremiumViewController 风格一致
+    private let bottomBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemMaterial))
+    private let blurFadeMask = CAGradientLayer()
+    private let bottomContainer = UIView()
+    private let actionButton = AnimatedGradientButton()
+    
+    // 跳过按钮 (右上角)
+    private let skipButton: UIButton = {
+        let btn = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+        let img = UIImage(systemName: "xmark", withConfiguration: config)
+        btn.setImage(img, for: .normal)
+        btn.tintColor = .appTextPrimary
+        btn.backgroundColor = UIColor.appBackgroundPrimary.withAlphaComponent(0.8)
+        btn.layer.cornerRadius = 18
+        
+        // 添加阴影
+        btn.layer.shadowColor = UIColor.black.cgColor
+        btn.layer.shadowOpacity = 0.15
+        btn.layer.shadowOffset = CGSize(width: 0, height: 2)
+        btn.layer.shadowRadius = 4
+        return btn
+    }()
+    
+    // MARK: - Lifecycle
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupUI()
+        loadProducts()
+        refreshContent()
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        if let gradientView = view.viewWithTag(999),
+           let gradient = gradientView.layer.sublayers?.first as? CAGradientLayer {
+            gradient.frame = gradientView.bounds
+        }
+        updateBlurFadeMask()
+    }
+    
+    // MARK: - Setup UI
+    private func setupUI() {
+        view.backgroundColor = .appBackgroundPrimary
+        
+        scrollView.showsVerticalScrollIndicator = false
+        scrollView.contentInsetAdjustmentBehavior = .never
+        
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        
+        contentView.addSubview(heroImageView)
+        contentView.addSubview(heroGradientView)
+        contentView.addSubview(titleLabel)
+        contentView.addSubview(featuresContainer)
+        
+        view.addSubview(bottomBlurView)
+        bottomBlurView.contentView.addSubview(bottomContainer)
+        bottomContainer.addSubview(actionButton)
+        
+        view.addSubview(skipButton)
+        
+        skipButton.addTarget(self, action: #selector(skipTapped), for: .touchUpInside)
+        actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
+        
+        buildFeaturesList()
+        applyConstraints()
+        setupBottomBarAppearance()
+    }
+    
+    private func buildFeaturesList() {
+        let benefits = [
+            "无限次生成高质量PPT",
+            "解除所有文件的格式转换限制",
+            "极速服务器响应时间",
+            "纯净无广告创作体验",
+            "随时可取消订阅"
+        ]
+        for text in benefits {
+            let row = makeFeatureRow(text: text)
+            featuresContainer.addArrangedSubview(row)
+        }
+    }
+    
+    private func makeFeatureRow(text: String) -> UIView {
+        let container = UIView()
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .semibold)
+        let iconView = UIImageView(image: UIImage(systemName: "checkmark.circle.fill", withConfiguration: config))
+        iconView.tintColor = .appPrimary
+        iconView.contentMode = .scaleAspectFit
+        
+        let textLabel = UILabel()
+        textLabel.text = text
+        textLabel.font = .systemFont(ofSize: 16, weight: .medium)
+        textLabel.textColor = .appTextPrimary
+        textLabel.numberOfLines = 0
+        
+        container.addSubview(iconView)
+        container.addSubview(textLabel)
+        
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        textLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            container.heightAnchor.constraint(greaterThanOrEqualToConstant: 28),
+            
+            iconView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            iconView.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 24),
+            iconView.heightAnchor.constraint(equalToConstant: 24),
+            
+            textLabel.leadingAnchor.constraint(equalTo: iconView.trailingAnchor, constant: 12),
+            textLabel.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            textLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
+            textLabel.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4)
+        ])
+        return container
+    }
+    
+    private func applyConstraints() {
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        heroImageView.translatesAutoresizingMaskIntoConstraints = false
+        heroGradientView.translatesAutoresizingMaskIntoConstraints = false
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        featuresContainer.translatesAutoresizingMaskIntoConstraints = false
+        bottomBlurView.translatesAutoresizingMaskIntoConstraints = false
+        bottomContainer.translatesAutoresizingMaskIntoConstraints = false
+        actionButton.translatesAutoresizingMaskIntoConstraints = false
+        skipButton.translatesAutoresizingMaskIntoConstraints = false
+        
+        let screenHeight = UIScreen.main.bounds.height
+        let fadeHeight: CGFloat = 60
+        
+        NSLayoutConstraint.activate([
+            // 跳过按钮 -> 右上角
+            skipButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
+            skipButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            skipButton.widthAnchor.constraint(equalToConstant: 36),
+            skipButton.heightAnchor.constraint(equalToConstant: 36),
+            
+            // 滚动视图
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+            
+            // 顶部图片（占用总屏幕高度的 45%）
+            heroImageView.topAnchor.constraint(equalTo: contentView.topAnchor),
+            heroImageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            heroImageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            heroImageView.heightAnchor.constraint(equalToConstant: screenHeight * 0.45),
+            
+            heroGradientView.topAnchor.constraint(equalTo: heroImageView.topAnchor),
+            heroGradientView.leadingAnchor.constraint(equalTo: heroImageView.leadingAnchor),
+            heroGradientView.trailingAnchor.constraint(equalTo: heroImageView.trailingAnchor),
+            heroGradientView.bottomAnchor.constraint(equalTo: heroImageView.bottomAnchor),
+            
+            // 标题文本
+            titleLabel.topAnchor.constraint(equalTo: heroImageView.bottomAnchor, constant: 24),
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 32),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -32),
+            
+            // 最后一页的权益列表
+            featuresContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 36),
+            featuresContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 40),
+            featuresContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -40),
+            featuresContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
+            
+            // 底部悬浮区
+            bottomBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomBlurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomBlurView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            bottomBlurView.topAnchor.constraint(equalTo: bottomContainer.topAnchor, constant: -fadeHeight),
+            
+            bottomContainer.topAnchor.constraint(equalTo: bottomBlurView.topAnchor, constant: fadeHeight),
+            bottomContainer.leadingAnchor.constraint(equalTo: bottomBlurView.leadingAnchor),
+            bottomContainer.trailingAnchor.constraint(equalTo: bottomBlurView.trailingAnchor),
+            bottomContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            
+            // 操作按钮
+            actionButton.topAnchor.constraint(equalTo: bottomContainer.topAnchor, constant: 16),
+            actionButton.leadingAnchor.constraint(equalTo: bottomContainer.leadingAnchor, constant: 24),
+            actionButton.trailingAnchor.constraint(equalTo: bottomContainer.trailingAnchor, constant: -24),
+            actionButton.heightAnchor.constraint(equalToConstant: 60),
+            actionButton.bottomAnchor.constraint(equalTo: bottomContainer.bottomAnchor, constant: -16)
+        ])
+    }
+    
+    private func setupBottomBarAppearance() {
+        actionButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        actionButton.layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
+        actionButton.layer.borderWidth = 2.0
+        actionButton.setTitleColor(.white, for: .normal)
+        actionButton.layer.cornerRadius = 30
+        actionButton.clipsToBounds = true
+        
+        blurFadeMask.colors = [UIColor.clear.cgColor, UIColor.black.cgColor]
+        blurFadeMask.startPoint = CGPoint(x: 0.5, y: 0)
+        blurFadeMask.endPoint = CGPoint(x: 0.5, y: 1)
+        bottomBlurView.layer.mask = blurFadeMask
+        
+        view.layoutIfNeeded()
+        let bottomHeight = bottomBlurView.bounds.height
+        scrollView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: bottomHeight + 20, right: 0)
+    }
+    
+    private func updateBlurFadeMask() {
+        guard bottomBlurView.bounds.height > 0 else { return }
+        blurFadeMask.frame = bottomBlurView.bounds
+        let fadeRatio = 60.0 / bottomBlurView.bounds.height
+        blurFadeMask.locations = [0, NSNumber(value: fadeRatio)]
+    }
+    
+    // MARK: - StoreKit 2
+    private func loadProducts() {
+        Task {
+            do {
+                let products = try await Product.products(for: [yearlyPlan.productID])
+                if let pd = products.first {
+                    await MainActor.run {
+                        self.yearlyProduct = pd
+                        self.refreshContent()
+                    }
+                }
+            } catch {
+                print("Failed to load products: \(error)")
+            }
+        }
+    }
+    
+    // MARK: - Content
+    private func refreshContent() {
+        let data = getStepData()
+        
+        UIView.transition(with: contentView, duration: 0.3, options: .transitionCrossDissolve) {
+            self.titleLabel.text = data.title
+            
+            if let image = data.image {
+                self.heroImageView.image = image
+                self.heroImageView.tintColor = .clear // Use original image coloring
+            } else {
+                // Placeholder
+                let config = UIImage.SymbolConfiguration(pointSize: 80, weight: .light)
+                self.heroImageView.image = UIImage(systemName: "wand.and.stars", withConfiguration: config)
+                self.heroImageView.tintColor = .appPrimary
+            }
+            
+            let isLastStep = (self.currentStep == self.totalSteps - 1)
+            self.featuresContainer.isHidden = !isLastStep
+        }
+        
+        UIView.transition(with: actionButton, duration: 0.3, options: .curveEaseInOut) {
+            self.actionButton.setTitle(data.buttonTitle, for: .normal)
+        }
+        
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
+    
+    private func getStepData() -> (title: String, image: UIImage?, buttonTitle: String) {
+        let isPurchased = QuotaManager.shared.isPremium
+        switch currentStep {
+        case 0:
+            return ("一键生成专业幻灯片", UIImage(named: "guide_bg_1"), "继续")
+        case 1:
+            return ("解除一切格式转换限制", UIImage(named: "guide_bg_2"), "继续")
+        case 2:
+            return ("随时随地的高效创作", UIImage(named: "guide_bg_3"), "继续")
+        case 3:
+            let priceText = yearlyProduct?.displayPrice ?? yearlyPlan.priceStr
+            let btnText = isPurchased ? "您已是高级版" : "\(priceText) 立即解锁"
+            return ("解锁全部高级特权", UIImage(named: "guide_bg_4"), btnText)
+        default:
+            return ("", nil, "继续")
+        }
+    }
+    
+    // MARK: - Actions
+    @objc private func actionTapped() {
+        if currentStep < totalSteps - 1 {
+            currentStep += 1
+        } else {
+            if QuotaManager.shared.isPremium {
+                navigateToMain()
+            } else {
+                startSubscription()
+            }
+        }
+    }
+    
+    @objc private func skipTapped() {
+        navigateToMain()
+    }
+    
+    private func startSubscription() {
+        guard let product = yearlyProduct else {
+            showAlert(title: "提示", message: "产品信息加载中，请稍候重试")
+            return
+        }
+        
+        actionButton.isEnabled = false
+        Task {
+            defer { Task { @MainActor in self.actionButton.isEnabled = true } }
+            do {
+                let result = try await product.purchase()
+                switch result {
+                case .success(let verification):
+                    guard case .verified(let transaction) = verification else {
+                        await MainActor.run { self.showAlert(title: "验证失败", message: "收据验证未通过，请联系客服。") }
+                        return
+                    }
+                    await transaction.finish()
+                    await QuotaManager.shared.refreshPremiumStatus()
+                    await MainActor.run { self.navigateToMain() }
+                case .userCancelled:
+                    break
+                case .pending:
+                    await MainActor.run { self.showAlert(title: "订阅待处理", message: "您的订阅正在等待审批，批准后即可使用。") }
+                @unknown default:
+                    break
+                }
+            } catch {
+                await MainActor.run { self.showAlert(title: "订阅失败", message: error.localizedDescription) }
+            }
+        }
+    }
+    
+    private func navigateToMain() {
+        guard let window = view.window else { return }
+        UIView.transition(with: window, duration: 0.35, options: .transitionCrossDissolve) {
+            window.rootViewController = CustomTabBarController()
+        }
+    }
+    
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        present(alert, animated: true)
+    }
+}
