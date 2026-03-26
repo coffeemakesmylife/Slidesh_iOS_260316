@@ -73,18 +73,27 @@ class OnboardingViewController: UIViewController {
     private let blurFadeMask = CAGradientLayer()
     private let bottomContainer = UIView()
     private let actionButton = AnimatedGradientButton()
-    
-    // 跳过按钮 (右上角)
+
+    // 订阅价格说明（第4页权益列表下方）
+    private let priceLabel: UILabel = {
+        let lbl = UILabel()
+        lbl.font = .systemFont(ofSize: 13)
+        lbl.textColor = .appTextSecondary
+        lbl.textAlignment = .center
+        lbl.numberOfLines = 0
+        lbl.isHidden = true
+        return lbl
+    }()
+
+    // 关闭按钮（左上角，仅第4页显示）
     private let skipButton: UIButton = {
         let btn = UIButton(type: .system)
-        let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .bold)
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .bold)
         let img = UIImage(systemName: "xmark", withConfiguration: config)
         btn.setImage(img, for: .normal)
         btn.tintColor = .appTextPrimary
         btn.backgroundColor = UIColor.appBackgroundPrimary.withAlphaComponent(0.8)
-        btn.layer.cornerRadius = 18
-        
-        // 添加阴影
+        btn.layer.cornerRadius = 24
         btn.layer.shadowColor = UIColor.black.cgColor
         btn.layer.shadowOpacity = 0.15
         btn.layer.shadowOffset = CGSize(width: 0, height: 2)
@@ -123,6 +132,7 @@ class OnboardingViewController: UIViewController {
         contentView.addSubview(heroGradientView)
         contentView.addSubview(titleLabel)
         contentView.addSubview(featuresContainer)
+        contentView.addSubview(priceLabel)
         
         view.addSubview(bottomBlurView)
         bottomBlurView.contentView.addSubview(bottomContainer)
@@ -130,6 +140,7 @@ class OnboardingViewController: UIViewController {
         
         view.addSubview(skipButton)
         
+        skipButton.isHidden = true  // 初始隐藏，第4页才显示
         skipButton.addTarget(self, action: #selector(skipTapped), for: .touchUpInside)
         actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
         
@@ -201,13 +212,15 @@ class OnboardingViewController: UIViewController {
         
         let screenHeight = UIScreen.main.bounds.height
         let fadeHeight: CGFloat = 60
-        
+
+        priceLabel.translatesAutoresizingMaskIntoConstraints = false
+
         NSLayoutConstraint.activate([
-            // 跳过按钮 -> 右上角
+            // 关闭按钮 -> 左上角，仅第4页可见
             skipButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 16),
-            skipButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            skipButton.widthAnchor.constraint(equalToConstant: 36),
-            skipButton.heightAnchor.constraint(equalToConstant: 36),
+            skipButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            skipButton.widthAnchor.constraint(equalToConstant: 48),
+            skipButton.heightAnchor.constraint(equalToConstant: 48),
             
             // 滚动视图
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -241,7 +254,12 @@ class OnboardingViewController: UIViewController {
             featuresContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 36),
             featuresContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 40),
             featuresContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -40),
-            featuresContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
+
+            // 价格说明在权益列表下方
+            priceLabel.topAnchor.constraint(equalTo: featuresContainer.bottomAnchor, constant: 16),
+            priceLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 40),
+            priceLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -40),
+            priceLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -40),
             
             // 底部悬浮区
             bottomBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -324,6 +342,13 @@ class OnboardingViewController: UIViewController {
             
             let isLastStep = (self.currentStep == self.totalSteps - 1)
             self.featuresContainer.isHidden = !isLastStep
+            self.priceLabel.isHidden = !isLastStep
+            self.skipButton.isHidden = !isLastStep
+
+            if isLastStep {
+                let priceText = self.yearlyProduct?.displayPrice ?? self.yearlyPlan.priceStr
+                self.priceLabel.text = "订阅后自动续费，\(priceText)/年，随时可取消"
+            }
         }
         
         UIView.transition(with: actionButton, duration: 0.3, options: .curveEaseInOut) {
