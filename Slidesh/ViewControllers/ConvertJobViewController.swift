@@ -680,6 +680,8 @@ final class ConvertJobViewController: UIViewController {
                     files.forEach { $0.stopAccessingSecurityScopedResource() }
                     saveConvertRecord(inputFiles: files, resultURLs: urls)
                     state = .success(resultURLs: urls)
+                    // T4：格式转换成功，触发评分引导
+                    RatingManager.shared.trigger(from: .convertSuccess)
                 case .failure(let error):
                     state = .error(message: error.localizedDescription, lastFiles: files)
                 }
