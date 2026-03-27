@@ -671,6 +671,9 @@ class OutlineViewController: UIViewController {
             savedAt:  Date()
         )
         WorksStore.shared.saveOutline(record)
+
+        // T1：大纲生成完成，触发评分引导
+        RatingManager.shared.trigger(from: .outlineGenerated)
     }
 
     // MARK: - Actions
@@ -757,6 +760,9 @@ class OutlineViewController: UIViewController {
         }
         let vc = UIActivityViewController(activityItems: [tmpURL], applicationActivities: nil)
         vc.popoverPresentationController?.sourceView = bottomBar
+
+        // T8：下载大纲，触发评分引导
+        RatingManager.shared.trigger(from: .outlineDownloaded)
         present(vc, animated: true)
     }
 
@@ -791,6 +797,9 @@ class OutlineViewController: UIViewController {
         }
         let vc = UIActivityViewController(activityItems: [tmpURL], applicationActivities: nil)
         vc.popoverPresentationController?.sourceView = bottomBar
+
+        // T8：下载大纲，触发评分引导
+        RatingManager.shared.trigger(from: .outlineDownloaded)
         present(vc, animated: true)
     }
 
