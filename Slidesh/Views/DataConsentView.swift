@@ -174,7 +174,7 @@ class DataConsentView: UIView {
 
         // 各说明区块
         contentStack.addArrangedSubview(makeSection(
-            emoji: "📤",
+            sfSymbol: "arrow.up.doc",
             title: "我们会处理哪些内容",
             items: [
                 "您选择上传的文档文件（PDF、Word、Excel、PPT 等），仅用于本次格式转换",
@@ -184,7 +184,7 @@ class DataConsentView: UIView {
         ))
 
         contentStack.addArrangedSubview(makeSection(
-            emoji: "🔒",
+            sfSymbol: "lock.shield",
             title: "数据安全保障",
             items: [
                 "所有文件上传与下载均通过 HTTPS 加密传输，防止中间人截取",
@@ -194,7 +194,7 @@ class DataConsentView: UIView {
         ))
 
         contentStack.addArrangedSubview(makeSection(
-            emoji: "🤖",
+            sfSymbol: "sparkles",
             title: "AI 功能使用须知",
             items: [
                 "AI 根据您输入的主题自动生成 PPT 内容，生成结果因主题而异",
@@ -204,7 +204,7 @@ class DataConsentView: UIView {
         ))
 
         contentStack.addArrangedSubview(makeSection(
-            emoji: "⚠️",
+            sfSymbol: "exclamationmark.triangle",
             title: "免责声明",
             items: [
                 "文件格式转换由服务器处理，转换效果可能因文件复杂度、排版等因素有所差异",
@@ -286,7 +286,7 @@ class DataConsentView: UIView {
 
     // MARK: - 辅助构建
 
-    private func makeSection(emoji: String, title: String, items: [String]) -> UIView {
+    private func makeSection(sfSymbol: String, title: String, items: [String]) -> UIView {
         let container = UIStackView()
         container.axis = .vertical
         container.spacing = 6
@@ -296,17 +296,18 @@ class DataConsentView: UIView {
         titleRow.spacing = 6
         titleRow.alignment = .center
 
-        let emojiLbl = UILabel()
-        emojiLbl.text = emoji
-        emojiLbl.font = .systemFont(ofSize: 15)
-        emojiLbl.setContentHuggingPriority(.required, for: .horizontal)
+        let iconConfig = UIImage.SymbolConfiguration(pointSize: 13, weight: .semibold)
+        let iconView = UIImageView(image: UIImage(systemName: sfSymbol, withConfiguration: iconConfig))
+        iconView.tintColor = .appGradientMid
+        iconView.contentMode = .scaleAspectFit
+        iconView.setContentHuggingPriority(.required, for: .horizontal)
 
         let titleLbl = UILabel()
         titleLbl.text = title
         titleLbl.font = .systemFont(ofSize: 13, weight: .semibold)
         titleLbl.textColor = .appTextPrimary
 
-        titleRow.addArrangedSubview(emojiLbl)
+        titleRow.addArrangedSubview(iconView)
         titleRow.addArrangedSubview(titleLbl)
         container.addArrangedSubview(titleRow)
 

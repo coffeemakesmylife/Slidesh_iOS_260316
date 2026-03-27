@@ -117,21 +117,22 @@ final class SatisfactionSheet: UIView {
         positiveBtn.setTitle("帮到了，好评 ⭐️", for: .normal)
         positiveBtn.setTitleColor(.appOnPrimary, for: .normal)
         positiveBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
-        positiveBtn.layer.cornerRadius = 17
+        positiveBtn.layer.cornerRadius = 26
         positiveBtn.layer.masksToBounds = true
         positiveBtn.translatesAutoresizingMaskIntoConstraints = false
         positiveBtn.addTarget(self, action: #selector(positiveTapped), for: .touchUpInside)
         cardView.addSubview(positiveBtn)
 
         let posGrad = CAGradientLayer()
-        posGrad.colors = [
-            UIColor.appGradientStart.cgColor,
-            UIColor.appGradientMid.cgColor,
-            UIColor.appGradientEnd.cgColor
-        ]
-        posGrad.startPoint = CGPoint(x: 0, y: 0.5)
-        posGrad.endPoint   = CGPoint(x: 1, y: 0.5)
+        posGrad.colors     = [UIColor.appGradientStart.cgColor,
+                               UIColor.appGradientMid.cgColor,
+                               UIColor.appGradientEnd.cgColor]
+        posGrad.locations  = [0.0, 0.55, 1.0]
+        posGrad.startPoint = CGPoint(x: 0, y: 0)
+        posGrad.endPoint   = CGPoint(x: 1, y: 1)
         positiveBtn.layer.insertSublayer(posGrad, at: 0)
+        positiveBtn.layer.borderColor = UIColor.white.withAlphaComponent(0.25).cgColor
+        positiveBtn.layer.borderWidth = 1.5
         positiveBtnGradient = posGrad
 
         // 负向按钮（灰色文字）
@@ -209,8 +210,12 @@ final class SatisfactionSheet: UIView {
         frame = window.bounds
         window.addSubview(self)
 
-        // 先完成 Auto Layout，确保 cardView.frame 已确定，再设置初始变换
+        // 先完成 Auto Layout，确保所有子视图 frame 已确定
         layoutIfNeeded()
+        // 渐变图层 frame 需要在 layout 后才能拿到正确尺寸
+        positiveBtnGradient?.frame = positiveBtn.bounds
+        iconCardGradient?.frame    = CGRect(origin: .zero, size: CGSize(width: 80, height: 80))
+
         let slideOffset = cardView.bounds.height
         cardView.transform = CGAffineTransform(translationX: 0, y: slideOffset)
 
