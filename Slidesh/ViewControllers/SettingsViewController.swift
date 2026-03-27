@@ -557,6 +557,10 @@ class SettingsViewController: UIViewController {
                 alert.addAction(UIAlertAction(title: "好", style: .default))
                 self?.present(alert, animated: true)
             },
+            makeRow(sfSymbol: "star.bubble", title: "测试评分弹窗（可重复）") { [weak self] in
+                UserDefaults.standard.removeObject(forKey: "rating_has_prompted")
+                RatingManager.shared.presentSatisfactionSheet()
+            },
         ])
 
         let container = UIStackView(arrangedSubviews: [header, card])
