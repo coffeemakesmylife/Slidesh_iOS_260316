@@ -242,6 +242,7 @@ final class SatisfactionSheet: UIView {
     // MARK: - Actions
 
     @objc private func dimTapped() {
+        guard !hasHandledAction else { return }
         dismiss()
     }
 
@@ -254,9 +255,9 @@ final class SatisfactionSheet: UIView {
             self.positiveBtn.alpha = 0.6
         }, completion: { _ in
             UIView.animate(withDuration: 0.15) { self.positiveBtn.alpha = 1 }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                self.dismiss()
-                self.onPositive?()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.dismiss()
+                self?.onPositive?()
             }
         })
     }
@@ -269,9 +270,9 @@ final class SatisfactionSheet: UIView {
             self.negativeBtn.alpha = 0.4
         }, completion: { _ in
             UIView.animate(withDuration: 0.15) { self.negativeBtn.alpha = 1 }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                self.dismiss()
-                self.onNegative?()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in
+                self?.dismiss()
+                self?.onNegative?()
             }
         })
     }
