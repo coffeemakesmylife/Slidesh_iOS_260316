@@ -62,4 +62,10 @@ struct AppConfig {
         if let v = pptBase     { UserDefaults.standard.set(v, forKey: pptBaseURLKey) }
         UserDefaults.standard.synchronize()
     }
+
+    // MARK: - App Store
+
+    /// App Store 评分页直链（enable_star_or_comment == false 时使用）
+    /// TODO: 上线前替换为正式 Apple ID（数字）
+    static let appStoreReviewURL = "https://apps.apple.com/app/id6900000000?action=write-review"
 }
