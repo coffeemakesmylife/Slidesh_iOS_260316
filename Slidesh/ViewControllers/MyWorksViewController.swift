@@ -134,6 +134,8 @@ class MyWorksViewController: UIViewController {
     // PPT 来自服务端 list-me；大纲来自本地 WorksStore
     private var ppts:     [PPTInfo]       = []
     private var outlines: [OutlineRecord] = []
+    // T6：记录进入页面次数，第3次且有作品时触发评分
+    private var visitCount = 0
     private var collectionView: UICollectionView!
 
     private static let dateFormatter: DateFormatter = {
@@ -158,6 +160,15 @@ class MyWorksViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         fetchPPTs()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        visitCount += 1
+        // T6：第3次进入且已有 PPT 作品时触发
+        if visitCount == 3, !ppts.isEmpty {
+            RatingManager.shared.trigger(from: .myWorksThirdVisit)
+        }
     }
 
     deinit { NotificationCenter.default.removeObserver(self) }
