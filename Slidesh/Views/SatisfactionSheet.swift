@@ -41,14 +41,14 @@ final class SatisfactionSheet: UIView {
 
     private func setupViews() {
         // 遮罩
-        dimView.backgroundColor = UIColor.black.withAlphaComponent(0.4)
+        dimView.backgroundColor = .appOverlay
         dimView.alpha = 0
         dimView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(dimView)
         dimView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dimTapped)))
 
         // 卡片（仅上方两角圆角）
-        cardView.backgroundColor = .systemBackground
+        cardView.backgroundColor = .appBackgroundTertiary
         cardView.layer.cornerRadius = 24
         cardView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
         cardView.translatesAutoresizingMaskIntoConstraints = false
@@ -58,7 +58,7 @@ final class SatisfactionSheet: UIView {
 
         // 拖拽指示条
         let pill = UIView()
-        pill.backgroundColor = UIColor.black.withAlphaComponent(0.1)
+        pill.backgroundColor = UIColor.appTextPrimary.withAlphaComponent(0.12)
         pill.layer.cornerRadius = 2
         pill.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(pill)
@@ -72,8 +72,8 @@ final class SatisfactionSheet: UIView {
 
         let iconGrad = CAGradientLayer()
         iconGrad.colors = [
-            UIColor(red: 122/255, green: 89/255,  blue: 255/255, alpha: 1).cgColor,
-            UIColor(red:  66/255, green: 135/255, blue: 245/255, alpha: 1).cgColor
+            UIColor.appGradientStart.cgColor,
+            UIColor.appGradientEnd.cgColor
         ]
         iconGrad.startPoint = CGPoint(x: 0, y: 0)
         iconGrad.endPoint   = CGPoint(x: 1, y: 1)
@@ -96,7 +96,7 @@ final class SatisfactionSheet: UIView {
 
         for _ in 0 ..< 5 {
             let sv = UIImageView(image: UIImage(systemName: "star.fill"))
-            sv.tintColor  = UIColor.systemGray4
+            sv.tintColor  = .appTextTertiary
             sv.transform  = CGAffineTransform(scaleX: 0.7, y: 0.7)
             sv.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 26, weight: .medium)
             sv.translatesAutoresizingMaskIntoConstraints = false
@@ -108,14 +108,14 @@ final class SatisfactionSheet: UIView {
         let titleLabel = UILabel()
         titleLabel.text          = "Slidesh 帮到你了吗？"
         titleLabel.font          = .systemFont(ofSize: 22, weight: .black)
-        titleLabel.textColor     = .label
+        titleLabel.textColor     = .appTextPrimary
         titleLabel.textAlignment = .center
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         cardView.addSubview(titleLabel)
 
         // 正向按钮（渐变背景）
         positiveBtn.setTitle("帮到了，好评 ⭐️", for: .normal)
-        positiveBtn.setTitleColor(UIColor(red: 20/255, green: 30/255, blue: 60/255, alpha: 1), for: .normal)
+        positiveBtn.setTitleColor(.appOnPrimary, for: .normal)
         positiveBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
         positiveBtn.layer.cornerRadius = 17
         positiveBtn.layer.masksToBounds = true
@@ -125,8 +125,9 @@ final class SatisfactionSheet: UIView {
 
         let posGrad = CAGradientLayer()
         posGrad.colors = [
-            UIColor(red: 130/255, green: 100/255, blue: 255/255, alpha: 1).cgColor,
-            UIColor(red:  80/255, green: 160/255, blue: 255/255, alpha: 1).cgColor
+            UIColor.appGradientStart.cgColor,
+            UIColor.appGradientMid.cgColor,
+            UIColor.appGradientEnd.cgColor
         ]
         posGrad.startPoint = CGPoint(x: 0, y: 0.5)
         posGrad.endPoint   = CGPoint(x: 1, y: 0.5)
@@ -135,7 +136,7 @@ final class SatisfactionSheet: UIView {
 
         // 负向按钮（灰色文字）
         negativeBtn.setTitle("有建议，说一下", for: .normal)
-        negativeBtn.setTitleColor(.secondaryLabel, for: .normal)
+        negativeBtn.setTitleColor(.appTextSecondary, for: .normal)
         negativeBtn.titleLabel?.font = .systemFont(ofSize: 13, weight: .medium)
         negativeBtn.translatesAutoresizingMaskIntoConstraints = false
         negativeBtn.addTarget(self, action: #selector(negativeTapped), for: .touchUpInside)
@@ -208,12 +209,14 @@ final class SatisfactionSheet: UIView {
         frame = window.bounds
         window.addSubview(self)
 
-        // 初始状态：卡片在屏幕下方 + 略微缩小
-        cardView.transform = CGAffineTransform(translationX: 0, y: 60).scaledBy(x: 0.98, y: 0.98)
+        // 先完成 Auto Layout，确保 cardView.frame 已确定，再设置初始变换
+        layoutIfNeeded()
+        let slideOffset = cardView.bounds.height
+        cardView.transform = CGAffineTransform(translationX: 0, y: slideOffset)
 
-        UIView.animate(withDuration: 0.35, delay: 0,
-                       usingSpringWithDamping: 0.82, initialSpringVelocity: 0.3,
-                       options: [], animations: {
+        UIView.animate(withDuration: 0.45, delay: 0,
+                       usingSpringWithDamping: 0.78, initialSpringVelocity: 0.2,
+                       options: [.allowUserInteraction], animations: {
             self.dimView.alpha      = 1
             self.cardView.transform = .identity
         })
@@ -231,9 +234,12 @@ final class SatisfactionSheet: UIView {
 
     /// 退场动画后移除
     func dismiss() {
-        UIView.animate(withDuration: 0.25, animations: {
+        let slideOffset = cardView.bounds.height
+        UIView.animate(withDuration: 0.28, delay: 0,
+                       usingSpringWithDamping: 1.0, initialSpringVelocity: 0,
+                       options: [], animations: {
             self.dimView.alpha      = 0
-            self.cardView.transform = CGAffineTransform(translationX: 0, y: 60).scaledBy(x: 0.96, y: 0.96)
+            self.cardView.transform = CGAffineTransform(translationX: 0, y: slideOffset)
         }, completion: { _ in
             self.removeFromSuperview()
         })
