@@ -652,14 +652,14 @@ class TemplateSelectorViewController: UIViewController {
                     )
                     WorksStore.shared.savePPT(record)
                 }
-                let previewVC = PPTPreviewViewController(pptInfo: info)
+                let previewVC = PPTPreviewViewController(pptInfo: info, source: .templateFlow)
                 self.navigationController?.pushViewController(previewVC, animated: true)
             case .failure(let error):
                 print("❌ loadPPT 失败：\(error.localizedDescription)")
                 // loadPPT 失败时仍展示预览页（用空 fileUrl，提示用户）
                 let stub = PPTInfo(pptId: pptId, taskId: nil, subject: nil,
                                    fileUrl: nil, coverUrl: nil, status: nil, total: nil, createTime: nil)
-                let previewVC = PPTPreviewViewController(pptInfo: stub)
+                let previewVC = PPTPreviewViewController(pptInfo: stub, source: .templateFlow)
                 self.navigationController?.pushViewController(previewVC, animated: true)
             }
         }
