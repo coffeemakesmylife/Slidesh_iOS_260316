@@ -78,6 +78,16 @@ class OnboardingViewController: UIViewController {
     private let bottomContainer = UIView()
     private let actionButton = AnimatedGradientButton()
 
+    // 恢复购买按钮（继续按钮下方，仅第4页显示）
+    private let restoreButton: UIButton = {
+        let btn = UIButton(type: .system)
+        btn.setTitle("恢复购买", for: .normal)
+        btn.titleLabel?.font = .systemFont(ofSize: 13)
+        btn.setTitleColor(.appTextSecondary, for: .normal)
+        btn.isHidden = true
+        return btn
+    }()
+
     // 订阅价格说明（第4页权益列表下方）
     private let priceLabel: UILabel = {
         let lbl = UILabel()
@@ -143,12 +153,14 @@ class OnboardingViewController: UIViewController {
         view.addSubview(bottomBlurView)
         bottomBlurView.contentView.addSubview(bottomContainer)
         bottomContainer.addSubview(actionButton)
+        bottomContainer.addSubview(restoreButton)
         
         view.addSubview(skipButton)
         
         skipButton.isHidden = true  // 初始隐藏，第4页才显示
         skipButton.addTarget(self, action: #selector(skipTapped), for: .touchUpInside)
         actionButton.addTarget(self, action: #selector(actionTapped), for: .touchUpInside)
+        restoreButton.addTarget(self, action: #selector(restoreTapped), for: .touchUpInside)
         
         buildFeaturesList()
         applyConstraints()
@@ -219,6 +231,7 @@ class OnboardingViewController: UIViewController {
         let fadeHeight: CGFloat = 60
 
         priceLabel.translatesAutoresizingMaskIntoConstraints = false
+        restoreButton.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             // 关闭按钮 -> 左上角，仅第4页可见
@@ -281,7 +294,11 @@ class OnboardingViewController: UIViewController {
             actionButton.leadingAnchor.constraint(equalTo: bottomContainer.leadingAnchor, constant: 24),
             actionButton.trailingAnchor.constraint(equalTo: bottomContainer.trailingAnchor, constant: -24),
             actionButton.heightAnchor.constraint(equalToConstant: 60),
-            actionButton.bottomAnchor.constraint(equalTo: bottomContainer.bottomAnchor, constant: -16)
+
+            // 恢复购买按钮（继续按钮下方）
+            restoreButton.topAnchor.constraint(equalTo: actionButton.bottomAnchor, constant: 10),
+            restoreButton.centerXAnchor.constraint(equalTo: bottomContainer.centerXAnchor),
+            restoreButton.bottomAnchor.constraint(equalTo: bottomContainer.bottomAnchor, constant: -8)
         ])
 
         // 单独保存 title top 约束，供动态调整位置
@@ -356,6 +373,7 @@ class OnboardingViewController: UIViewController {
         featuresContainer.isHidden = !isLastStep
         priceLabel.isHidden        = !isLastStep
         skipButton.isHidden        = !isLastStep
+        restoreButton.isHidden     = !isLastStep
         if isLastStep {
             let plan = guidedPlan
             let priceText = guidedProduct?.displayPrice ?? plan.priceStr
@@ -444,6 +462,28 @@ class OnboardingViewController: UIViewController {
     
     @objc private func skipTapped() {
         navigateToMain()
+    }
+
+    @objc private func restoreTapped() {
+        restoreButton.isEnabled = false
+        Task {
+            defer { Task { @MainActor in self.restoreButton.isEnabled = true } }
+            do {
+                try await AppStore.sync()
+                await QuotaManager.shared.refreshPremiumStatus()
+                await MainActor.run {
+                    if QuotaManager.shared.isPremium {
+                        self.navigateToMain()
+                    } else {
+                        self.showAlert(title: "未找到购买记录", message: "当前账号没有可恢复的订阅。")
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.showAlert(title: "恢复失败", message: error.localizedDescription)
+                }
+            }
+        }
     }
     
     private func startSubscription() {
