@@ -37,6 +37,7 @@ final class RatingManager {
     /// 触发点调用：检查是否已弹过，未弹过则展示 SatisfactionSheet
     func trigger(from point: TriggerPoint) {
         guard !hasPrompted else { return }
+        hasPrompted = true  // 先占位，防止并发重复触发
         DispatchQueue.main.async { self.presentSatisfactionSheet() }
     }
 
