@@ -8,10 +8,18 @@
 import UIKit
 import WebKit
 
+/// PPT 预览来源，用于区分评分触发时机
+enum PPTPreviewSource {
+    case templateFlow   // 从模板流（TemplateSelectorViewController）进入 → T2
+    case myWorks        // 从我的作品进入 → T7
+    case other          // 其他来源，不触发评分
+}
+
 class PPTPreviewViewController: UIViewController {
 
     private var pptInfo: PPTInfo
     private let canChangeTemplate: Bool
+    private let source: PPTPreviewSource
 
     // MARK: - 子视图
 
@@ -37,9 +45,10 @@ class PPTPreviewViewController: UIViewController {
 
     // MARK: - Init
 
-    init(pptInfo: PPTInfo, canChangeTemplate: Bool = false) {
+    init(pptInfo: PPTInfo, canChangeTemplate: Bool = false, source: PPTPreviewSource = .other) {
         self.pptInfo = pptInfo
         self.canChangeTemplate = canChangeTemplate
+        self.source = source
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -55,6 +64,16 @@ class PPTPreviewViewController: UIViewController {
         setupBottomBar()
         setupProgressBar()
         loadContent()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // 根据来源触发评分
+        switch source {
+        case .templateFlow: RatingManager.shared.trigger(from: .pptPreviewFromTemplate)
+        case .myWorks:      RatingManager.shared.trigger(from: .pptPreviewFromMyWorks)
+        case .other:        break
+        }
     }
 
     override func viewDidLayoutSubviews() {
