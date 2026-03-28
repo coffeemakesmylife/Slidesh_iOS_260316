@@ -33,8 +33,9 @@ class StartupViewController: UIViewController {
 
     private var networkMonitor: NWPathMonitor?
     private let monitorQueue = DispatchQueue(label: "com.slidesh.startup.monitor", qos: .utility)
-    private var isFirstLaunch = false
-    private var isConfigured  = false
+    private var isFirstLaunch        = false
+    private var isConfigured         = false
+    private var shouldShowOnboarding = false   // 首次启动时由服务端决定是否跳引导页
 
     // MARK: - 生命周期
 
@@ -270,12 +271,9 @@ class StartupViewController: UIViewController {
                         return
                     }
                     print("✅ 引导开关: \(title)")
-                    // title == "1" 表示展示引导页
-                    if title == "1" {
-                        self.navigateToOnboarding()
-                    } else {
-                        self.proceed()
-                    }
+                    // title == "1" 表示展示引导页，记录后统一走 proceed() 路由
+                    self.shouldShowOnboarding = (title == "1")
+                    self.proceed()
                 case .failure(let error):
                     print("❌ 引导开关请求失败: \(error)，默认继续")
                     self.proceed()
@@ -304,8 +302,16 @@ class StartupViewController: UIViewController {
 
     private func showConsentView() {
         let consent = DataConsentView(parentVC: self)
-        consent.onConsent  = { [weak self] in self?.navigateToMain() }
-        consent.onDecline  = { /* 用户拒绝：留在启动页，功能不可用 */ }
+        consent.onConsent = { [weak self] in
+            guard let self else { return }
+            // 同意后：首次启动且服务端要求引导页则跳引导页，否则进主界面
+            if self.shouldShowOnboarding {
+                self.navigateToOnboarding()
+            } else {
+                self.navigateToMain()
+            }
+        }
+        consent.onDecline = { /* 用户拒绝：留在启动页，功能不可用 */ }
         consent.showInView(view)
     }
 
