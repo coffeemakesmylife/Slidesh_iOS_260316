@@ -93,7 +93,7 @@ class NewProjectViewController: UIViewController {
         view.addSubview(iconView)
 
         let mainLabel = UILabel()
-        mainLabel.text          = "让 AI 为你创建精美 PPT"
+        mainLabel.text          = "有什么想法，说给 AI 听"
         mainLabel.font          = .systemFont(ofSize: 22, weight: .bold)
         mainLabel.textColor     = .appTextPrimary
         mainLabel.textAlignment = .center
@@ -101,7 +101,7 @@ class NewProjectViewController: UIViewController {
         view.addSubview(mainLabel)
 
         let subLabel = UILabel()
-        subLabel.text          = "输入主题，几秒内生成专业幻灯片"
+        subLabel.text          = "它会帮你整理成一套完整的演示稿"
         subLabel.font          = .systemFont(ofSize: 14)
         subLabel.textColor     = .appTextSecondary
         subLabel.textAlignment = .center

@@ -104,9 +104,12 @@ final class SatisfactionSheet: UIView {
             starViews.append(sv)
         }
 
-        // 标题
+        // 标题（动态读取 App 显示名，避免硬编码）
+        let appName = Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String
+            ?? Bundle.main.infoDictionary?["CFBundleName"] as? String
+            ?? "Slidesh"
         let titleLabel = UILabel()
-        titleLabel.text          = "Slidesh 帮到你了吗？"
+        titleLabel.text          = "\(appName) 帮到你了吗？"
         titleLabel.font          = .systemFont(ofSize: 22, weight: .black)
         titleLabel.textColor     = .appTextPrimary
         titleLabel.textAlignment = .center
@@ -114,7 +117,7 @@ final class SatisfactionSheet: UIView {
         cardView.addSubview(titleLabel)
 
         // 正向按钮（渐变背景）
-        positiveBtn.setTitle("帮到了，好评 ⭐️", for: .normal)
+        positiveBtn.setTitle("帮到了，好评", for: .normal)
         positiveBtn.setTitleColor(.appOnPrimary, for: .normal)
         positiveBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .bold)
         positiveBtn.layer.cornerRadius = 26
