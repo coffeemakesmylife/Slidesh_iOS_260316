@@ -226,11 +226,13 @@ class MyWorksViewController: UIViewController {
         let isEmpty = ppts.isEmpty
         // 空状态：单行全宽占位；有数据：两列网格
         let itemWidth: NSCollectionLayoutDimension = isEmpty ? .fractionalWidth(1.0) : .fractionalWidth(0.5)
-        let groupHeight: CGFloat = isEmpty ? 44 : 190
+        let groupHeight: CGFloat = isEmpty ? 80 : 190
 
         let item = NSCollectionLayoutItem(
             layoutSize: NSCollectionLayoutSize(widthDimension: itemWidth, heightDimension: .fractionalHeight(1.0)))
-        item.contentInsets = NSDirectionalEdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5)
+        item.contentInsets = isEmpty
+            ? NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
+            : NSDirectionalEdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5)
 
         let group = NSCollectionLayoutGroup.horizontal(
             layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
@@ -284,12 +286,18 @@ extension MyWorksViewController: UICollectionViewDataSource {
             if ppts.isEmpty {
                 let cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: "PlaceholderCell", for: indexPath)
+                // 卡片样式，与大纲空状态保持一致
+                var bg = UIBackgroundConfiguration.listGroupedCell()
+                bg.backgroundColor    = UIColor.appCardBackground.withAlphaComponent(0.7)
+                bg.cornerRadius       = 14
+                cell.backgroundConfiguration = bg
                 var cfg = UIListContentConfiguration.cell()
-                cfg.text = "暂无 PPT 记录"
+                cfg.text                     = "暂无 PPT 文件"
                 cfg.textProperties.color     = .secondaryLabel
                 cfg.textProperties.alignment = .center
+                cfg.image                    = UIImage(systemName: "photo.on.rectangle.angled")
+                cfg.imageProperties.tintColor = UIColor.secondaryLabel
                 cell.contentConfiguration = cfg
-                cell.backgroundColor = .clear
                 return cell
             }
             let cell = collectionView.dequeueReusableCell(
