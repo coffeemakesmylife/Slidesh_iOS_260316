@@ -101,7 +101,7 @@ class NewProjectViewController: UIViewController {
         view.addSubview(mainLabel)
 
         let subLabel = UILabel()
-        subLabel.text          = "它会帮你整理成一套完整的演示稿"
+        subLabel.text          = "AI 帮你整理成一套完整的PPT"
         subLabel.font          = .systemFont(ofSize: 14)
         subLabel.textColor     = .appTextSecondary
         subLabel.textAlignment = .center
