@@ -286,18 +286,31 @@ extension MyWorksViewController: UICollectionViewDataSource {
             if ppts.isEmpty {
                 let cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: "PlaceholderCell", for: indexPath)
-                // 卡片样式，与大纲空状态保持一致
-                var bg = UIBackgroundConfiguration.listGroupedCell()
-                bg.backgroundColor    = UIColor.appCardBackground.withAlphaComponent(0.7)
-                bg.cornerRadius       = 14
-                cell.backgroundConfiguration = bg
-                var cfg = UIListContentConfiguration.cell()
-                cfg.text                     = "暂无 PPT 文件"
-                cfg.textProperties.color     = .secondaryLabel
-                cfg.textProperties.alignment = .center
-                cfg.image                    = UIImage(systemName: "photo.on.rectangle.angled")
-                cfg.imageProperties.tintColor = UIColor.secondaryLabel
-                cell.contentConfiguration = cfg
+                cell.backgroundConfiguration = .clear()
+                // tag=1 防止复用时重复添加子视图
+                if cell.contentView.viewWithTag(1) == nil {
+                    let icon = UIImageView(image: UIImage(systemName: "photo.on.rectangle.angled"))
+                    icon.tintColor = .secondaryLabel
+                    icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 24, weight: .regular)
+                    icon.contentMode = .scaleAspectFit
+
+                    let label = UILabel()
+                    label.text      = "暂无 PPT 文件"
+                    label.textColor = .secondaryLabel
+                    label.font      = .systemFont(ofSize: 14)
+
+                    let stack = UIStackView(arrangedSubviews: [icon, label])
+                    stack.tag       = 1
+                    stack.axis      = .vertical
+                    stack.alignment = .center
+                    stack.spacing   = 8
+                    stack.translatesAutoresizingMaskIntoConstraints = false
+                    cell.contentView.addSubview(stack)
+                    NSLayoutConstraint.activate([
+                        stack.centerXAnchor.constraint(equalTo: cell.contentView.centerXAnchor),
+                        stack.centerYAnchor.constraint(equalTo: cell.contentView.centerYAnchor),
+                    ])
+                }
                 return cell
             }
             let cell = collectionView.dequeueReusableCell(
