@@ -1,0 +1,44 @@
+name: Upload Metadata & Screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_screenshots:
+        description: '跳过截图上传'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  upload-metadata:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+      - run: gem install fastlane --no-document
+      - name: Write ASC API Key
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_API_KEY_CONTENT" | base64 --decode \
+            > ~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+      - name: Upload metadata
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+        run: |
+          fastlane deliver \
+            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8 \
+            --app_identifier com.bublelele..Slidesh \
+            --metadata_path metadata \
+            --skip_binary_upload \
+            --skip_screenshots ${{ inputs.skip_screenshots }} \
+            --skip_app_version_update \
+            --force
+      - if: always()
+        run: rm -f ~/.appstoreconnect/private_keys/*.p8

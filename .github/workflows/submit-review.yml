@@ -1,0 +1,47 @@
+name: Submit for Review
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: '提交审核的 Build 号'
+        required: true
+      version_number:
+        description: '版本号（如 1.0）'
+        required: true
+        default: '1.0'
+      phased_release:
+        description: '启用分阶段发布'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  submit:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: gem install fastlane --no-document
+      - name: Write ASC API Key
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_API_KEY_CONTENT" | base64 --decode \
+            > ~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+      - name: Submit for review
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+        run: |
+          fastlane deliver \
+            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8 \
+            --app_identifier com.bublelele..Slidesh \
+            --build_number "${{ inputs.build_number }}" \
+            --app_version "${{ inputs.version_number }}" \
+            --skip_binary_upload --skip_screenshots --skip_metadata \
+            --phased_release ${{ inputs.phased_release }} \
+            --submit_for_review --automatic_release false --force
+      - if: always()
+        run: rm -f ~/.appstoreconnect/private_keys/*.p8

@@ -1,0 +1,21 @@
+Slidesh turns your ideas into polished presentations in seconds. Whether you need to convert files or generate a full slide deck from scratch, Slidesh handles it all — no design skills required.
+
+Key Features
+
+AI Slide Generation
+Type your topic, and Slidesh's AI instantly creates a structured outline and builds a complete presentation for you. Choose from multiple professionally designed templates to match your style.
+
+File Format Conversion
+Convert PDF, Word (.doc/.docx), Excel, and other documents into PowerPoint format with a single tap. Fast, accurate, and handled securely on our servers.
+
+Outline Editor
+Review and refine the AI-generated outline before turning it into slides. Edit sections, reorder content, and export the outline as Markdown or plain text.
+
+My Works
+All your generated presentations are saved and organized in one place. Revisit, re-export, or share any slide deck at any time.
+
+Slidesh Pro
+Unlock unlimited AI generations, unlimited file conversions, and unlimited PPT exports. Available as a weekly, monthly, or yearly subscription — cancel anytime.
+
+Privacy Policy: https://example.com/privacy
+Terms of Service: https://example.com/terms

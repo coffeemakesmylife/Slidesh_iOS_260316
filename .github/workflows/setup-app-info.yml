@@ -1,0 +1,51 @@
+name: Setup App Info
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: '关联的 Build 号（留空则跳过）'
+        required: false
+        default: ''
+      primary_category:
+        description: '主分类'
+        required: false
+        default: 'PRODUCTIVITY'
+        type: choice
+        options:
+          - LIFESTYLE
+          - HEALTH_AND_FITNESS
+          - SHOPPING
+          - PHOTO_AND_VIDEO
+          - PRODUCTIVITY
+          - UTILITIES
+          - ENTERTAINMENT
+          - SOCIAL_NETWORKING
+
+jobs:
+  setup:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: gem install fastlane --no-document
+      - name: Write ASC API Key
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_API_KEY_CONTENT" | base64 --decode \
+            > ~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+      - name: Configure listing
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+        run: |
+          fastlane deliver \
+            --api_key_path ~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8 \
+            --app_identifier com.bublelele..Slidesh \
+            --primary_category "${{ inputs.primary_category }}" \
+            --privacy_url "https://example.com/privacy" \
+            --skip_binary_upload --skip_screenshots --skip_metadata --force
+      - if: always()
+        run: rm -f ~/.appstoreconnect/private_keys/*.p8
