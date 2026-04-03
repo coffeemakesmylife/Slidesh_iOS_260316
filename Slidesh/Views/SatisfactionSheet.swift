@@ -107,7 +107,7 @@ final class SatisfactionSheet: UIView {
         // 标题（动态读取 App 显示名，避免硬编码）
         let appName = Bundle.main.infoDictionary?["CFBundleDisplayName"] as? String
             ?? Bundle.main.infoDictionary?["CFBundleName"] as? String
-            ?? "Slidesh"
+            ?? AppConfig.appName
         let titleLabel = UILabel()
         titleLabel.text          = "\(appName) 帮到你了吗？"
         titleLabel.font          = .systemFont(ofSize: 22, weight: .black)

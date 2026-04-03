@@ -40,17 +40,17 @@ class AboutViewController: UIViewController {
         ])
 
         // 应用图标
-        let iconView = UIImageView(image: UIImage(named: "AppIcon"))
+        let iconView = UIImageView(image: UIImage(named: "slidesh logo"))
         iconView.layer.cornerRadius = 22
         iconView.clipsToBounds = true
         iconView.contentMode = .scaleAspectFill
-        iconView.layer.borderWidth = 0.5
+        iconView.layer.borderWidth = 1.5
         iconView.layer.borderColor = UIColor.appCardBorder.cgColor
         iconView.translatesAutoresizingMaskIntoConstraints = false
 
         // 应用名
         let nameLabel = UILabel()
-        nameLabel.text = "Slidesh"
+        nameLabel.text = AppConfig.appName
         nameLabel.font = .systemFont(ofSize: 24, weight: .bold)
         nameLabel.textColor = .appTextPrimary
         nameLabel.textAlignment = .center
@@ -66,7 +66,7 @@ class AboutViewController: UIViewController {
 
         // 简介
         let descLabel = UILabel()
-        descLabel.text = "Slidesh 是一款 AI 驱动的演示文稿工具，帮助你快速生成、编辑和分享精美幻灯片。"
+        descLabel.text = "\(AppConfig.appName) 是一款 AI 驱动的演示文稿工具，帮助你快速生成、编辑和分享精美幻灯片。"
         descLabel.font = .systemFont(ofSize: 14)
         descLabel.textColor = .appTextSecondary
         descLabel.textAlignment = .center
@@ -81,7 +81,7 @@ class AboutViewController: UIViewController {
 
         // 版权
         let copyrightLabel = UILabel()
-        copyrightLabel.text = "© 2026 Slidesh. All rights reserved."
+        copyrightLabel.text = "© 2026 \(AppConfig.appName). All rights reserved."
         copyrightLabel.font = .systemFont(ofSize: 12)
         copyrightLabel.textColor = .appTextTertiary
         copyrightLabel.textAlignment = .center

@@ -71,7 +71,7 @@ class PaywallSheet: UIViewController {
 
     private func setupUI() {
         // 标题
-        titleLabel.text = "解锁 Slidesh Pro"
+        titleLabel.text = "解锁 \(AppConfig.appName) Pro"
         titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.textAlignment = .center

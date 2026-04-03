@@ -448,7 +448,7 @@ class SettingsViewController: UIViewController {
     }
 
     private func shareApp() {
-        let text = "推荐你使用 Slidesh，一键生成精美演示文稿！"
+        let text = "推荐你使用 \(AppConfig.appName)，一键生成精美演示文稿！"
         let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         // iPad 需要指定 sourceView，iPhone 自动从底部弹出
         if let popover = vc.popoverPresentationController {
