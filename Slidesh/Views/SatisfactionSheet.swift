@@ -74,7 +74,7 @@ final class SatisfactionSheet: UIViewController {
 
         // 拖拽指示条
         let pill = UIView()
-        pill.backgroundColor = UIColor.label.withAlphaComponent(0.18)
+        pill.backgroundColor = UIColor.appTextPrimary.withAlphaComponent(0.18)
         pill.layer.cornerRadius = 2
         pill.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(pill)
@@ -89,14 +89,14 @@ final class SatisfactionSheet: UIViewController {
         let titleLabel = UILabel()
         titleLabel.text          = "\(appName) 帮到你了吗？"
         titleLabel.font          = .systemFont(ofSize: 22, weight: .bold)
-        titleLabel.textColor     = .label
+        titleLabel.textColor     = .appTextPrimary
         titleLabel.textAlignment = .center
 
         // 副标题
         let subtitleLabel = UILabel()
         subtitleLabel.text          = "你的反馈帮助我们持续改进"
         subtitleLabel.font          = .systemFont(ofSize: 15)
-        subtitleLabel.textColor     = .secondaryLabel
+        subtitleLabel.textColor     = .appTextSecondary
         subtitleLabel.textAlignment = .center
 
         // 按钮行
@@ -186,9 +186,9 @@ final class SatisfactionSheet: UIViewController {
         let symbolName = positive ? "hand.thumbsup.fill" : "hand.thumbsdown.fill"
         let cfg = UIImage.SymbolConfiguration(pointSize: 32, weight: .medium)
         btn.setImage(UIImage(systemName: symbolName, withConfiguration: cfg), for: .normal)
-        // label 深色模式为白、浅色模式为黑；systemBackground 与之互补，保证图标可见
-        btn.backgroundColor = UIColor.label
-        btn.tintColor       = UIColor.systemBackground
+        // appTextPrimary 深色模式近白、浅色模式近黑；appBackgroundPrimary 与之互补，保证图标可见
+        btn.backgroundColor = .appTextPrimary
+        btn.tintColor       = .appBackgroundPrimary
         btn.layer.cornerRadius = 50
         btn.clipsToBounds = true
         btn.addTarget(self, action: #selector(thumbTapped(_:)), for: .touchUpInside)
