@@ -81,7 +81,11 @@ final class RatingManager {
     // MARK: - 工具方法
 
     private func topViewController() -> UIViewController? {
-        guard var top = keyWindow()?.rootViewController else { return nil }
+        guard var top = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow })?.rootViewController
+        else { return nil }
         while let presented = top.presentedViewController {
             top = presented
         }
