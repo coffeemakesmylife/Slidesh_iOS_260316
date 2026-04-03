@@ -62,15 +62,15 @@ final class SatisfactionSheet: UIViewController {
 
     private func setupUI() {
         // 毛玻璃背景层
-        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterial))
-        blur.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(blur)
-        NSLayoutConstraint.activate([
-            blur.topAnchor.constraint(equalTo: view.topAnchor),
-            blur.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            blur.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            blur.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-        ])
+//        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .systemChromeMaterial))
+//        blur.translatesAutoresizingMaskIntoConstraints = false
+//        view.addSubview(blur)
+//        NSLayoutConstraint.activate([
+//            blur.topAnchor.constraint(equalTo: view.topAnchor),
+//            blur.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+//            blur.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+//            blur.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+//        ])
 
         // 拖拽指示条
         let pill = UIView()
@@ -186,11 +186,13 @@ final class SatisfactionSheet: UIViewController {
         let symbolName = positive ? "hand.thumbsup.fill" : "hand.thumbsdown.fill"
         let cfg = UIImage.SymbolConfiguration(pointSize: 32, weight: .medium)
         btn.setImage(UIImage(systemName: symbolName, withConfiguration: cfg), for: .normal)
-        // appTextPrimary 深色模式近白、浅色模式近黑；appBackgroundPrimary 与之互补，保证图标可见
-        btn.backgroundColor = .appTextPrimary
-        btn.tintColor       = .appBackgroundPrimary
+        // 半透明背景 + 边框，在任意背景下保持通透感
+        btn.backgroundColor   = UIColor.appTextPrimary.withAlphaComponent(0.12)
+        btn.tintColor         = .appTextPrimary
         btn.layer.cornerRadius = 50
-        btn.clipsToBounds = true
+        btn.layer.borderWidth = 1.0
+        btn.layer.borderColor = UIColor.appTextPrimary.withAlphaComponent(0.25).cgColor
+        btn.clipsToBounds     = true
         btn.addTarget(self, action: #selector(thumbTapped(_:)), for: .touchUpInside)
         return btn
     }
