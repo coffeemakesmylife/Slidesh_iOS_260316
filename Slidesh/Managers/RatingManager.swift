@@ -68,14 +68,13 @@ final class RatingManager {
     }
 
     private func handleNegative() {
-        guard let topVC = topViewController() else { return }
-        let feedbackVC = FeedbackViewController()
-        if let nav = topVC.navigationController {
-            nav.pushViewController(feedbackVC, animated: true)
-        } else {
-            let nav = UINavigationController(rootViewController: feedbackVC)
-            topVC.present(nav, animated: true)
+        // sheet 收起后 topViewController 可能返回 TabBarController，需取其选中的导航栈
+        var vc = topViewController()
+        if let tab = vc as? UITabBarController {
+            vc = tab.selectedViewController
         }
+        let nav = (vc as? UINavigationController) ?? vc?.navigationController
+        nav?.pushViewController(FeedbackViewController(), animated: true)
     }
 
     // MARK: - 工具方法

@@ -186,8 +186,9 @@ final class SatisfactionSheet: UIViewController {
         let symbolName = positive ? "hand.thumbsup.fill" : "hand.thumbsdown.fill"
         let cfg = UIImage.SymbolConfiguration(pointSize: 32, weight: .medium)
         btn.setImage(UIImage(systemName: symbolName, withConfiguration: cfg), for: .normal)
-        btn.tintColor = .white
-        btn.backgroundColor = UIColor.label          // 自动深浅模式
+        // label 深色模式为白、浅色模式为黑；systemBackground 与之互补，保证图标可见
+        btn.backgroundColor = UIColor.label
+        btn.tintColor       = UIColor.systemBackground
         btn.layer.cornerRadius = 50
         btn.clipsToBounds = true
         btn.addTarget(self, action: #selector(thumbTapped(_:)), for: .touchUpInside)
