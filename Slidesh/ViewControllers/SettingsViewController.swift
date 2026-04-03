@@ -473,9 +473,7 @@ class SettingsViewController: UIViewController {
     }
 
     private func changeAppIcon() {
-        let alert = UIAlertController(title: "切换应用图标", message: "该功能即将推出", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
-        present(alert, animated: true)
+        push(AppIconPickerViewController())
     }
 
     // MARK: - 高亮
