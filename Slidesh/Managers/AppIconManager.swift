@@ -25,9 +25,11 @@ final class AppIconManager {
 
     // 新增图标只需在此数组追加一个 AppIconEntry，并在 Info.plist 和项目文件里同步添加
     let icons: [AppIconEntry] = [
-        AppIconEntry(identifier: nil,         displayName: "默认"),
-        AppIconEntry(identifier: "IconDark",  displayName: "深色"),
-        AppIconEntry(identifier: "IconLight", displayName: "浅色"),
+        AppIconEntry(identifier: nil,          displayName: "默认"),
+        AppIconEntry(identifier: "IconDark",   displayName: "深色"),
+        AppIconEntry(identifier: "IconLight",  displayName: "浅色"),
+        AppIconEntry(identifier: "IconBadge",  displayName: "徽章"),
+        AppIconEntry(identifier: "IconComics", displayName: "漫画"),
     ]
 
     /// 当前使用的图标 identifier（nil = 主图标）
