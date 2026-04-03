@@ -43,14 +43,11 @@ final class RatingManager {
 
     /// Debug / 设置页直接展示（跳过 hasPrompted 检查）
     func presentSatisfactionSheet() {
-        guard let window = keyWindow() else { return }
-
         hasPrompted = true
-
-        let sheet = SatisfactionSheet()
-        sheet.onPositive = { [weak self] in self?.handlePositive() }
-        sheet.onNegative = { [weak self] in self?.handleNegative() }
-        sheet.show(in: window)
+        SatisfactionSheet.present(
+            onPositive: { [weak self] in self?.handlePositive() },
+            onNegative: { [weak self] in self?.handleNegative() }
+        )
     }
 
     // MARK: - 回调处理
@@ -82,13 +79,6 @@ final class RatingManager {
     }
 
     // MARK: - 工具方法
-
-    private func keyWindow() -> UIWindow? {
-        UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
-    }
 
     private func topViewController() -> UIViewController? {
         guard var top = keyWindow()?.rootViewController else { return nil }
