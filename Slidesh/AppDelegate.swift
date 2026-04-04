@@ -36,6 +36,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 清理旧版本遗留的缓存文件
         TemplateCache.shared.cleanupOrphanedFiles()
 
+        // 启动全局订阅状态监听（订阅到期/撤销时自动降级）
+        Task { await QuotaManager.shared.startListening() }
+
         return true
     }
 

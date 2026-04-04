@@ -65,8 +65,6 @@ class PremiumViewController: UIViewController {
 
     // StoreKit 2：已加载的产品（productID → Product）
     private var storeProducts: [String: Product] = [:]
-    // 监听后台交易更新（如家庭共享、Ask to Buy 审批通过等）
-    private var transactionListener: Task<Void, Never>?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -79,14 +77,8 @@ class PremiumViewController: UIViewController {
         // 初始更新选中状态
         updateSelection()
 
-        // 启动交易监听（需在 loadProducts 之前启动，避免漏单）
-        transactionListener = listenForTransactions()
         // 异步加载 App Store 产品信息
         Task { await loadProducts() }
-    }
-
-    deinit {
-        transactionListener?.cancel()
     }
 
     override func viewDidLayoutSubviews() {
@@ -300,30 +292,6 @@ class PremiumViewController: UIViewController {
     }
 
     // MARK: - StoreKit 2
-
-    /// 启动后台交易监听，处理家庭共享、Ask to Buy 等场景
-    private func listenForTransactions() -> Task<Void, Never> {
-        Task.detached(priority: .background) { [weak self] in
-            for await result in Transaction.updates {
-                guard let self else { return }
-                await self.handleVerified(result)
-            }
-        }
-    }
-
-    /// 验证并完成交易
-    private func handleVerified(_ result: VerificationResult<Transaction>) async {
-        guard case .verified(let transaction) = result else { return }
-        await transaction.finish()
-        // 后台交易完成（如 Ask to Buy 审批），直接关闭界面
-        await QuotaManager.shared.refreshPremiumStatus()
-        let callback = self.onPurchased
-        await MainActor.run {
-            self.dismiss(animated: true) {
-                callback?()
-            }
-        }
-    }
 
     /// 从 App Store 加载产品信息，并用真实价格更新 UI
     private func loadProducts() async {

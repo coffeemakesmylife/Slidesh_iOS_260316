@@ -41,16 +41,36 @@ class QuotaManager {
     // 内存缓存的 Premium 状态，由 refreshPremiumStatus() 更新，非持久化
     private(set) var isPremium: Bool = false
 
+    // 全局交易监听任务（App 生命周期内持续运行）
+    private var transactionListener: Task<Void, Never>?
+
+    // MARK: - 全局监听（在 AppDelegate 启动时调用一次）
+
+    /// 启动 Transaction.updates 监听，订阅撤销/过期/续费时自动刷新 Premium 状态
+    func startListening() {
+        guard transactionListener == nil else { return }
+        transactionListener = Task.detached(priority: .background) { [weak self] in
+            for await result in Transaction.updates {
+                // 验证通过则完成交易，无论成功失败都刷新状态
+                if case .verified(let tx) = result {
+                    await tx.finish()
+                }
+                await self?.refreshPremiumStatus()
+            }
+        }
+        // 启动时立即做一次同步，确保冷启动时状态正确
+        Task { await refreshPremiumStatus() }
+    }
+
     // MARK: - Premium 状态刷新（异步，在 viewWillAppear 调用）
 
     /// 通过 StoreKit 2 Transaction.currentEntitlements 验证有效订阅
     func refreshPremiumStatus() async {
-        // 使用 contains 消除跨 await 的可变变量
         let hasPremium = await Transaction.currentEntitlements.contains { result in
             guard case .verified(let tx) = result else { return false }
             return tx.revocationDate == nil
         }
-        isPremium = hasPremium   // @MainActor 类，直接赋值无需 MainActor.run
+        isPremium = hasPremium
     }
 
     // MARK: - 配额操作
