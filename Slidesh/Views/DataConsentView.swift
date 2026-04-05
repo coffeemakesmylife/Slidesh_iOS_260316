@@ -348,11 +348,11 @@ class DataConsentView: UIView {
             .foregroundColor: UIColor.appTextSecondary
         ])
         if let r = full.range(of: terms) {
-            attr.addAttributes([.link: "https://example.com/terms",
+            attr.addAttributes([.link: "https://docs.google.com/document/d/1KxSeuHffh0ko6f22XIyO_DLYrajOdtfpi0mWzRY4GYw/edit?usp=sharing",
                                  .foregroundColor: UIColor.appGradientMid], range: NSRange(r, in: full))
         }
         if let r = full.range(of: privacy) {
-            attr.addAttributes([.link: "https://example.com/privacy",
+            attr.addAttributes([.link: "https://docs.google.com/document/d/10jQz1h_h5Sj5OSdnDRME86BdRCKg-1o9y03ndZIXAdg/edit?usp=sharing",
                                  .foregroundColor: UIColor.appGradientMid], range: NSRange(r, in: full))
         }
         tv.attributedText = attr

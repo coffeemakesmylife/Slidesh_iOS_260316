@@ -39,8 +39,8 @@ class SettingsViewController: UIViewController {
     }
 
     // 隐私 / 条款链接（替换为正式 URL）
-    private let privacyURL = URL(string: "https://example.com/privacy")!
-    private let termsURL   = URL(string: "https://example.com/terms")!
+    private let privacyURL = URL(string: "https://docs.google.com/document/d/10jQz1h_h5Sj5OSdnDRME86BdRCKg-1o9y03ndZIXAdg/edit?usp=sharing")!
+    private let termsURL   = URL(string: "https://docs.google.com/document/d/1KxSeuHffh0ko6f22XIyO_DLYrajOdtfpi0mWzRY4GYw/edit?usp=sharing")!
 
     override func viewDidLoad() {
         super.viewDidLoad()

@@ -11,7 +11,7 @@ struct AppConfig {
 
     /// 上线时使用的正式 appId，用于配置拉取请求
     /// TODO: 替换为服务端分配的正式 appId
-    static let appId = "6900000000"
+    static let appId = "6761677729"
 
     // TODO: 替换为正式的配置分发服务器地址
     static let configServerURL = "http://8.134.126.1:8080/api/app/host/list"
