@@ -254,13 +254,12 @@ class PremiumViewController: UIViewController {
         disclaimerLabel.textAlignment = .center
         disclaimerLabel.numberOfLines = 0
 
-        // TODO: 替换为实际的用户协议和隐私政策 URL
         let termsBtn = createLinkButton(title: "用户协议") { [weak self] in
-            self?.openSafari(url: URL(string: "https://docs.google.com/document/d/1KxSeuHffh0ko6f22XIyO_DLYrajOdtfpi0mWzRY4GYw/edit?usp=sharing")!)
+            self?.openSafari(url: AppConfig.termsOfServiceURL)
         }
 
         let privacyBtn = createLinkButton(title: "隐私政策") { [weak self] in
-            self?.openSafari(url: URL(string: "https://docs.google.com/document/d/10jQz1h_h5Sj5OSdnDRME86BdRCKg-1o9y03ndZIXAdg/edit?usp=sharing")!)
+            self?.openSafari(url: AppConfig.privacyPolicyURL)
         }
 
         let restoreBtn = createLinkButton(title: "恢复购买") { [weak self] in

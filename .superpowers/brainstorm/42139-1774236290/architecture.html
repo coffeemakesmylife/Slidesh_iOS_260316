@@ -1,0 +1,102 @@
+<h2>整体架构设计</h2>
+<p class="subtitle">两个新文件 + 对现有文件的最小改动</p>
+
+<div class="section">
+  <h3>新增文件</h3>
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <div style="flex:1;min-width:280px;background:var(--card-bg,#1e1e2e);border:1px solid var(--border,#333);border-radius:12px;padding:16px">
+      <div class="label">新文件 1</div>
+      <h3 style="margin:8px 0 4px">ConvertAPIService.swift</h3>
+      <p style="margin:0 0 10px">格式转换网络层，multipart/form-data 上传 + 下载结果文件</p>
+      <ul style="margin:0;padding-left:16px;line-height:1.8">
+        <li>支持 PDF / Word / Excel / PPT 转换</li>
+        <li>支持合并 PDF（2 个或多个）</li>
+        <li>支持文件转图片</li>
+        <li>URLSession 上传进度回调</li>
+        <li>解析 newslist → 下载 URL</li>
+      </ul>
+    </div>
+    <div style="flex:1;min-width:280px;background:var(--card-bg,#1e1e2e);border:1px solid var(--border,#333);border-radius:12px;padding:16px">
+      <div class="label">新文件 2</div>
+      <h3 style="margin:8px 0 4px">ConvertJobViewController.swift</h3>
+      <p style="margin:0 0 10px">单次转换任务 VC，管理完整流程状态机</p>
+      <ul style="margin:0;padding-left:16px;line-height:1.8">
+        <li>State: idle → fileSelected → converting → success / error</li>
+        <li>显示文件名、大小、格式标签</li>
+        <li>进度条（上传进度 + 处理中动画）</li>
+        <li>转换成功后 present QLPreviewController</li>
+        <li>错误时显示原因 + 重试按钮</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>修改文件</h3>
+  <div style="background:var(--card-bg,#1e1e2e);border:1px solid var(--border,#333);border-radius:12px;padding:16px">
+    <div class="label">最小改动</div>
+    <h3 style="margin:8px 0 4px">ConvertViewController.swift</h3>
+    <ul style="margin:0;padding-left:16px;line-height:1.8">
+      <li>给 <code>ConvertToolItem</code> 增加 <code>kind: ConvertToolKind</code> 枚举字段</li>
+      <li><code>didSelectItemAt</code> → 若有格式选项先弹 action sheet，再 push <code>ConvertJobViewController</code></li>
+    </ul>
+  </div>
+</div>
+
+<div class="section">
+  <h3>工具 → API 映射</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead>
+      <tr style="border-bottom:1px solid var(--border,#444)">
+        <th style="text-align:left;padding:8px">工具</th>
+        <th style="text-align:left;padding:8px">格式选项</th>
+        <th style="text-align:left;padding:8px">接受文件</th>
+        <th style="text-align:left;padding:8px">API 端点</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid var(--border,#333)">
+        <td style="padding:8px">PDF 转 Word ⭐</td>
+        <td style="padding:8px">无（固定 WORD）</td>
+        <td style="padding:8px">PDF</td>
+        <td style="padding:8px">/pdf/pdftofile</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border,#333)">
+        <td style="padding:8px">PDF 转换器</td>
+        <td style="padding:8px">WORD / XML / EXCEL / PPT / PNG / HTML</td>
+        <td style="padding:8px">PDF</td>
+        <td style="padding:8px">/pdf/pdftofile</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border,#333)">
+        <td style="padding:8px">合并 PDF</td>
+        <td style="padding:8px">无</td>
+        <td style="padding:8px">PDF（多选）</td>
+        <td style="padding:8px">mergetwopdf / mergemorepdf</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border,#333)">
+        <td style="padding:8px">Word 转换</td>
+        <td style="padding:8px">PDF / HTML / PNG</td>
+        <td style="padding:8px">.doc .docx</td>
+        <td style="padding:8px">/word/wordtofile</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border,#333)">
+        <td style="padding:8px">Excel 转换</td>
+        <td style="padding:8px">PDF / HTML / PNG</td>
+        <td style="padding:8px">.xls .xlsx</td>
+        <td style="padding:8px">/excel/exceltofile</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border,#333)">
+        <td style="padding:8px">PPT 转换</td>
+        <td style="padding:8px">PDF / HTML / PNG</td>
+        <td style="padding:8px">.ppt .pptx</td>
+        <td style="padding:8px">/ppt/ppttofile</td>
+      </tr>
+      <tr>
+        <td style="padding:8px">文件转图片</td>
+        <td style="padding:8px">无</td>
+        <td style="padding:8px">PDF / Word / Excel / PPT</td>
+        <td style="padding:8px">/images/filetoimages</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

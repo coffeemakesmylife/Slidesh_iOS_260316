@@ -67,7 +67,23 @@ struct AppConfig {
 
     /// App Store 评分页直链（enable_star_or_comment == false 时使用）
     /// TODO: 上线前替换为正式 Apple ID（数字）
-    static let appStoreReviewURL = "https://apps.apple.com/app/id6900000000?action=write-review"
+    static let appStoreReviewURL = "https://apps.apple.com/app/id\(appId)?action=write-review"
+
+    // MARK: - Legal URLs
+
+    /// 隐私政策链接
+    static let privacyPolicyURLString = "https://docs.google.com/document/d/10jQz1h_h5Sj5OSdnDRME86BdRCKg-1o9y03ndZIXAdg/edit?usp=sharing"
+
+    /// 用户协议链接
+    static let termsOfServiceURLString = "https://docs.google.com/document/d/1KxSeuHffh0ko6f22XIyO_DLYrajOdtfpi0mWzRY4GYw/edit?usp=sharing"
+
+    static var privacyPolicyURL: URL {
+        URL(string: privacyPolicyURLString)!
+    }
+
+    static var termsOfServiceURL: URL {
+        URL(string: termsOfServiceURLString)!
+    }
 
     // MARK: - 应用名称
 

@@ -1,0 +1,67 @@
+<h2>完整设计总结</h2>
+<p class="subtitle">所有决策汇总，确认后写入 Spec 文档</p>
+
+<div class="section">
+  <h3>交互流程（已确认）</h3>
+  <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
+    <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;padding:14px;border-left:3px solid #8b5cf6">
+      <strong>有格式选项的工具</strong>（PDF转换器 / Word / Excel / PPT 转换）<br>
+      <span style="color:rgba(255,255,255,0.6)">点击卡片 → 自定义底部面板（列表行样式选格式）→ UIDocumentPickerViewController 选文件 → push ConvertJobViewController → 开始转换 → QLPreviewController</span>
+    </div>
+    <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;padding:14px;border-left:3px solid #3b82f6">
+      <strong>无格式选项的工具</strong>（PDF转Word ⭐ / 文件转图片）<br>
+      <span style="color:rgba(255,255,255,0.6)">点击卡片 → UIDocumentPickerViewController 选文件 → push ConvertJobViewController → 开始转换 → QLPreviewController</span>
+    </div>
+    <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;padding:14px;border-left:3px solid #10b981">
+      <strong>合并 PDF</strong>（单入口，自动判断接口）<br>
+      <span style="color:rgba(255,255,255,0.6)">点击卡片 → UIDocumentPickerViewController（多选）→ push ConvertJobViewController（显示文件列表）→ 开始转换 → 自动判断调 mergetwopdf/mergemorepdf → QLPreviewController</span>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>新增组件</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;font-size:13px">
+    <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;padding:14px">
+      <div class="label">ConvertAPIService.swift</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.9">
+        <li>multipart/form-data 上传</li>
+        <li>URLSession 上传进度回调</li>
+        <li>解析 newslist → 下载 URL</li>
+        <li>下载结果文件到 temp 目录</li>
+        <li>统一错误处理（复用 APIError）</li>
+      </ul>
+    </div>
+    <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;padding:14px">
+      <div class="label">ConvertJobViewController.swift</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.9">
+        <li>4状态UI：idle / fileSelected / converting / success+error</li>
+        <li>两阶段进度条：上传 + 处理中</li>
+        <li>合并PDF 支持文件列表</li>
+        <li>成功后 present QLPreviewController</li>
+        <li>MeshGradient 背景 + 颜色系统</li>
+      </ul>
+    </div>
+    <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;padding:14px">
+      <div class="label">FormatPickerSheet（内嵌在 ConvertViewController）</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.9">
+        <li>自定义底部面板，随 dim 遮罩弹出</li>
+        <li>列表行：彩色图标 + 格式名 + 扩展名说明</li>
+        <li>卡片风格与 ToolCell 一致</li>
+        <li>取消按钮</li>
+        <li>支持深/浅色模式</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>ConvertViewController 改动</h3>
+  <div style="background:var(--card-bg,#1e1e2e);border-radius:12px;padding:14px;font-size:13px">
+    <ul style="margin:0;padding-left:16px;line-height:1.9">
+      <li>给 <code>ConvertToolItem</code> 增加 <code>kind: ConvertToolKind</code> 枚举，定义每个工具的 API 和文件类型</li>
+      <li><code>didSelectItemAt</code>：有格式选项 → 先 present FormatPickerSheet；无格式选项 → 直接打开文件选择器</li>
+      <li>格式和文件选好后，push ConvertJobViewController</li>
+    </ul>
+  </div>
+</div>

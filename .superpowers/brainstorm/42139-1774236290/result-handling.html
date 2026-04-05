@@ -1,0 +1,40 @@
+<h2>转换成功后：如何呈现结果？</h2>
+<p class="subtitle">服务端返回转换后的文件下载 URL，用户接下来如何操作？</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>转换完成弹窗 + 分享/保存</h3>
+      <p>转换完成后弹出成功提示卡片，显示文件名和大小，提供两个按钮：<strong>「保存到文件」</strong>和<strong>「分享」</strong>（调 UIActivityViewController）</p>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>优点</h4><ul><li>操作最直接，无需额外跳转</li><li>保存到文件/AirDrop/微信等均支持</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>无法在 App 内预览文件内容</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>先下载到临时目录 → 用 QLPreviewController 预览 → 再保存/分享</h3>
+      <p>转换完成后，先下载到本地缓存，弹出系统预览（Quick Look），用户在预览界面可点击右上角分享/保存</p>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>优点</h4><ul><li>用户可以确认文件内容再决定保存</li><li>用系统原生预览，体验一致</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>多一步下载；PDF/图片效果好，但 Word/Excel 在 QL 内可能排版有出入</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>直接自动下载并保存到「文件」App</h3>
+      <p>转换完成后静默下载，自动保存到 App 沙盒/用户选定的目录，弹出"已保存"Toast 提示</p>
+      <div class="pros-cons" style="margin-top:10px">
+        <div class="pros"><h4>优点</h4><ul><li>操作最少，体验最流畅</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>用户无法选择保存位置；文件管理混乱</li><li>无法立即确认内容</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,94 @@
+<h2>ConvertJobViewController UI 设计</h2>
+<p class="subtitle">一个 VC 管理四个状态，push 进入，背景与其他页面统一（MeshGradient）</p>
+
+<div class="section">
+  <h3>状态机</h3>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+    <div style="background:#3b82f6;color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">idle<br><span style="font-weight:400;font-size:11px">等待选文件</span></div>
+    <div style="color:#888;font-size:18px">→</div>
+    <div style="background:#8b5cf6;color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">fileSelected<br><span style="font-weight:400;font-size:11px">已选，待确认</span></div>
+    <div style="color:#888;font-size:18px">→</div>
+    <div style="background:#f59e0b;color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">converting<br><span style="font-weight:400;font-size:11px">上传+处理中</span></div>
+    <div style="color:#888;font-size:18px">→</div>
+    <div style="background:#10b981;color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">success<br><span style="font-weight:400;font-size:11px">转换完成</span></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div style="width:120px"></div>
+    <div style="color:#888;font-size:18px">↘</div>
+    <div style="background:#ef4444;color:#fff;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:600">error<br><span style="font-weight:400;font-size:11px">失败可重试</span></div>
+    <div style="color:#888;font-size:12px;margin-left:8px">← converting 失败时</div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>各状态 UI 内容</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+
+    <div style="background:var(--card-bg,#1e1e2e);border:1px solid #3b82f6;border-radius:12px;padding:14px">
+      <div class="label" style="color:#3b82f6">idle 状态</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.8;font-size:13px">
+        <li>大图标 + 工具名称（与卡片一致）</li>
+        <li>副标题说明支持的文件格式</li>
+        <li>「选择文件」主按钮（渐变色）</li>
+        <li>合并PDF：按钮文字改为「选择多个文件」</li>
+        <li>导航栏有「取消」返回</li>
+      </ul>
+    </div>
+
+    <div style="background:var(--card-bg,#1e1e2e);border:1px solid #8b5cf6;border-radius:12px;padding:14px">
+      <div class="label" style="color:#8b5cf6">fileSelected 状态</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.8;font-size:13px">
+        <li>文件卡片：图标 + 文件名 + 大小</li>
+        <li>合并PDF：显示文件列表（可删除单个）</li>
+        <li>格式标签（如 → PDF）显示在文件卡右侧</li>
+        <li>「开始转换」主按钮</li>
+        <li>「重新选择」次要按钮</li>
+      </ul>
+    </div>
+
+    <div style="background:var(--card-bg,#1e1e2e);border:1px solid #f59e0b;border-radius:12px;padding:14px">
+      <div class="label" style="color:#f59e0b">converting 状态</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.8;font-size:13px">
+        <li>两阶段进度：<br>① 上传进度条（URLSession 精确进度）<br>② 服务端处理中（不确定进度，动画条）</li>
+        <li>文字提示："正在上传..." / "转换中..."</li>
+        <li>「取消」按钮（取消任务）</li>
+        <li>禁用返回手势</li>
+      </ul>
+    </div>
+
+    <div style="background:var(--card-bg,#1e1e2e);border:1px solid #10b981;border-radius:12px;padding:14px">
+      <div class="label" style="color:#10b981">success 状态</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.8;font-size:13px">
+        <li>绿色勾选动画</li>
+        <li>「预览结果」主按钮 → present QLPreviewController</li>
+        <li>「再转一个」次要按钮 → 重置回 idle</li>
+        <li>QLPreviewController 提供系统分享/存储</li>
+      </ul>
+    </div>
+
+    <div style="background:var(--card-bg,#1e1e2e);border:1px solid #ef4444;border-radius:12px;padding:14px">
+      <div class="label" style="color:#ef4444">error 状态</div>
+      <ul style="margin:8px 0 0;padding-left:16px;line-height:1.8;font-size:13px">
+        <li>红色感叹号图标</li>
+        <li>显示错误信息（来自 API msg 字段）</li>
+        <li>「重试」主按钮 → 回到 fileSelected</li>
+        <li>「重新选择文件」次要按钮 → idle</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<div class="section">
+  <h3>完整交互流程</h3>
+  <div style="font-size:13px;line-height:2;padding:12px;background:var(--card-bg,#1e1e2e);border-radius:10px">
+    <strong>有格式选项的工具：</strong><br>
+    点击卡片 → UIAlertController(actionSheet) 选格式 → UIDocumentPickerViewController 选文件 → push ConvertJobViewController(fileSelected) → 点「开始转换」→ converting → success → QLPreviewController
+    <br><br>
+    <strong>无格式选项的工具（PDF转Word / 文件转图片）：</strong><br>
+    点击卡片 → UIDocumentPickerViewController 选文件 → push ConvertJobViewController(fileSelected) → 点「开始转换」→ converting → success → QLPreviewController
+    <br><br>
+    <strong>合并 PDF：</strong><br>
+    点击卡片 → UIDocumentPickerViewController(多选) 选文件 → push ConvertJobViewController(fileSelected，显示文件列表) → 点「开始转换」→ 自动判断调 mergetwopdf 或 mergemorepdf → success → QLPreviewController
+  </div>
+</div>

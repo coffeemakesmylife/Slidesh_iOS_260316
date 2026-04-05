@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "xcodebuildmcp": {
+      "command": "/Users/ted/.npm-global/bin/xcodebuildmcp",
+      "args": ["mcp"],
+      "env": {}
+    }
+  }
+}

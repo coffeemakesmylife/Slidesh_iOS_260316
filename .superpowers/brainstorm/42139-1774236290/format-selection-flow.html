@@ -1,0 +1,42 @@
+<h2>转换功能：输出格式如何选择？</h2>
+<p class="subtitle">对于支持多种输出格式的工具（如"PDF 转换器"支持 Word/Excel/PPT/HTML/PNG），用户应在哪个步骤选择格式？</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>点击工具卡片后立即选择格式</h3>
+      <p>点击工具 → <strong>底部弹窗</strong>选择输出格式 → 选文件 → 上传转换</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>优点</h4><ul><li>用户先明确目标再找文件，逻辑清晰</li><li>减少返回操作</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>多一步才能到文件选择器</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>选完文件后再选择格式</h3>
+      <p>点击工具 → 选文件 → <strong>底部弹窗</strong>选择输出格式 → 上传转换</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>优点</h4><ul><li>直接进入文件选择，少一次点击</li></ul></div>
+        <div class="cons"><h4>缺点</h4>
+          <ul><li>用户不知道要转成什么格式就去找文件，稍显反逻辑</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>在工具卡片上直接展示格式子按钮</h3>
+      <p>工具卡展开后显示格式按钮（PDF / Word / HTML …）→ 点格式 → 选文件 → 转换</p>
+      <div class="pros-cons" style="margin-top:12px">
+        <div class="pros"><h4>优点</h4><ul><li>一屏可见所有格式，最直观</li></ul></div>
+        <div class="cons"><h4>缺点</h4><ul><li>格式多时卡片会很高，影响列表视觉</li><li>改变了原有卡片风格</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>

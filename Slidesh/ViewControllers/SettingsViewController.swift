@@ -38,10 +38,6 @@ class SettingsViewController: UIViewController {
         UIColor(red: 0.60, green: 0.32, blue: 0.00, alpha: 1)            // 深棕金，搭配白色按钮背景
     }
 
-    // 隐私 / 条款链接（替换为正式 URL）
-    private let privacyURL = URL(string: "https://docs.google.com/document/d/10jQz1h_h5Sj5OSdnDRME86BdRCKg-1o9y03ndZIXAdg/edit?usp=sharing")!
-    private let termsURL   = URL(string: "https://docs.google.com/document/d/1KxSeuHffh0ko6f22XIyO_DLYrajOdtfpi0mWzRY4GYw/edit?usp=sharing")!
-
     override func viewDidLoad() {
         super.viewDidLoad()
         navigationItem.title = "设置"
@@ -114,10 +110,10 @@ class SettingsViewController: UIViewController {
         // Section 4：隐私政策 + 使用条款 + FAQ + 关于
         let section4 = makeCard(rows: [
             makeRow(sfSymbol: "hand.raised.fill", title: "隐私政策") { [weak self] in
-                self?.openSafari(url: self!.privacyURL)
+                self?.openSafari(url: AppConfig.privacyPolicyURL)
             },
             makeRow(sfSymbol: "doc.text", title: "使用条款") { [weak self] in
-                self?.openSafari(url: self!.termsURL)
+                self?.openSafari(url: AppConfig.termsOfServiceURL)
             },
             makeRow(sfSymbol: "questionmark.circle.fill", title: "FAQ") { [weak self] in
                 self?.push(FAQViewController())
