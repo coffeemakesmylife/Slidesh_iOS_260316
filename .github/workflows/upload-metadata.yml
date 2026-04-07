@@ -50,6 +50,7 @@ jobs:
             --skip_binary_upload \
             --skip_screenshots ${{ inputs.skip_screenshots }} \
             --skip_app_version_update \
+            --precheck_include_in_app_purchases false \
             --force
 
       - if: always()
