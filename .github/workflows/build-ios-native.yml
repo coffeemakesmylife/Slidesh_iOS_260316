@@ -15,7 +15,7 @@ on:
 env:
   SCHEME: Slidesh
   PROJECT: Slidesh.xcodeproj
-  BUNDLE_ID: com.bublelele..Slidesh
+  BUNDLE_ID: com.powerpoint.slidesh
   XCODE_VERSION: '16.0'
 
 jobs:
@@ -65,14 +65,26 @@ jobs:
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
+            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}" \
             | xcpretty
 
       - name: Export IPA
         run: |
+          cp ExportOptions.plist $RUNNER_TEMP/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Set :teamID ${{ secrets.TEAM_ID }}" \
+            $RUNNER_TEMP/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Set :signingStyle manual" \
+            $RUNNER_TEMP/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles" \
+            $RUNNER_TEMP/ExportOptions.plist >/dev/null 2>&1 || true
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" \
+            $RUNNER_TEMP/ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:${{ env.BUNDLE_ID }} string ${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}" \
+            $RUNNER_TEMP/ExportOptions.plist
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/Slidesh.xcarchive \
             -exportPath $RUNNER_TEMP/export \
-            -exportOptionsPlist ExportOptions.plist | xcpretty
+            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist | xcpretty
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
