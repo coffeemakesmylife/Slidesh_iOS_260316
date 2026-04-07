@@ -17,6 +17,9 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      # 修复 GENERATE_INFOPLIST_FILE=YES 时自动生成 plist 缺少版本号（ITMS-90057）
+      config.build_settings['MARKETING_VERSION'] = '1.0'
+      config.build_settings['CURRENT_PROJECT_VERSION'] = '1'
     end
   end
 
