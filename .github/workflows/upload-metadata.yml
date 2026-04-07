@@ -47,7 +47,6 @@ jobs:
             --api_key_path /tmp/asc_api_key.json \
             --app_identifier com.powerpoint.slidesh \
             --metadata_path metadata \
-            --app_review_attachment_file "" \
             --skip_binary_upload \
             --skip_screenshots ${{ inputs.skip_screenshots }} \
             --skip_app_version_update \

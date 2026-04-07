@@ -1,4 +1,4 @@
-Slidesh 让你的想法秒变专业演示稿。输入主题，AI 自动生成大纲并一键生成完整 PPT；上传文件，轻松完成格式转换——无需设计基础，随时随地搞定演示。
+AI PPT 让你的想法秒变专业演示稿。输入主题，AI 自动生成大纲并一键生成完整 PPT；上传文件，轻松完成格式转换，无需设计基础，随时随地搞定演示。
 
 核心功能
 
@@ -17,5 +17,5 @@ AI 生成 PPT
 高级版（Pro）
 解锁无限次 AI 生成、无限次格式转换、无限次 PPT 导出。提供周订阅、月订阅、年订阅方案，随时可取消。
 
-隐私政策：https://example.com/privacy
-使用条款：https://example.com/terms
+隐私政策：https://docs.google.com/document/d/10jQz1h_h5Sj5OSdnDRME86BdRCKg-1o9y03ndZIXAdg/edit?usp=sharing
+使用条款：https://docs.google.com/document/d/1KxSeuHffh0ko6f22XIyO_DLYrajOdtfpi0mWzRY4GYw/edit?usp=sharing
