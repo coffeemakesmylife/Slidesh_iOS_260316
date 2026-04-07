@@ -24,6 +24,7 @@ env:
   WORKSPACE: Slidesh.xcworkspace
   BUNDLE_ID: com.powerpoint.slidesh
   PROFILE_NAME: Slidesh App Store
+  TEAM_ID: Y5T953BMZH
 
 jobs:
   build:
@@ -268,7 +269,7 @@ jobs:
             -archivePath $RUNNER_TEMP/Slidesh.xcarchive \
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
+            DEVELOPMENT_TEAM=${{ env.TEAM_ID }} \
             PROVISIONING_PROFILE_SPECIFIER="${{ env.PROFILE_NAME }}" \
             2>&1 | tail -50
 
@@ -276,7 +277,7 @@ jobs:
         run: |
           set -o pipefail
           # 动态写入 teamID 和 provisioningProfiles，避免 ExportOptions.plist 硬编码
-          /usr/libexec/PlistBuddy -c "Set :teamID ${{ secrets.TEAM_ID }}" ExportOptions.plist
+          /usr/libexec/PlistBuddy -c "Set :teamID ${{ env.TEAM_ID }}" ExportOptions.plist
           /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles" \
             ExportOptions.plist 2>/dev/null || true
           /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" ExportOptions.plist
