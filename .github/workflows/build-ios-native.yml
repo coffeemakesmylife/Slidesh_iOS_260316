@@ -1,5 +1,12 @@
 name: Build & Upload IPA
 
+# 两种模式：
+# 模式A（首次 / 证书过期）: 只需 ASC_KEY_ID + ASC_ISSUER_ID + ASC_PRIVATE_KEY + TEAM_ID
+#   → 自动生成私钥+CSR → 创建 iOS Distribution 证书 → 创建 Provisioning Profile
+#   → 安装到临时 Keychain → 输出 P12/Profile base64 artifact 供保存为 Secret
+# 模式B（日常打包）: 额外需要 P12_BASE64 + P12_PASSWORD + PROVISIONING_PROFILE_BASE64 + KEYCHAIN_PASSWORD
+#   → 直接用已有证书，跳过 API 创建，更快更稳定
+
 on:
   push:
     tags:
@@ -14,100 +21,311 @@ on:
 
 env:
   SCHEME: Slidesh
-  PROJECT: Slidesh.xcodeproj
+  WORKSPACE: Slidesh.xcworkspace
   BUNDLE_ID: com.powerpoint.slidesh
-  XCODE_VERSION: '16.0'
+  PROFILE_NAME: Slidesh App Store
 
 jobs:
   build:
-    name: Build & Archive
-    runs-on: macos-15
+    name: Build and Upload to App Store Connect
+    runs-on: macos-latest
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      - name: 安装 CocoaPods 依赖
+        run: pod install
 
-      - name: Install signing certificate
+      - name: 检测签名模式
         env:
-          DIST_CERTIFICATE_BASE64: ${{ secrets.DIST_CERTIFICATE_BASE64 }}
-          DIST_CERTIFICATE_PASSWORD: ${{ secrets.DIST_CERTIFICATE_PASSWORD }}
+          P12_BASE64: ${{ secrets.P12_BASE64 }}
+        run: |
+          if [ -n "$P12_BASE64" ]; then
+            echo "MODE=B" >> $GITHUB_ENV
+          else
+            echo "MODE=A" >> $GITHUB_ENV
+          fi
+
+      # ── 模式 B：使用已存储的证书和 Profile ──────────────────────────────
+      - name: 安装签名文件（模式B）
+        if: env.MODE == 'B'
+        env:
+          P12_BASE64: ${{ secrets.P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
           PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          echo "$DIST_CERTIFICATE_BASE64" | base64 --decode -o $RUNNER_TEMP/certificate.p12
-          security import $RUNNER_TEMP/certificate.p12 \
-            -P "$DIST_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
-          PP_PATH=$RUNNER_TEMP/app.mobileprovision
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
-      - name: Resolve dependencies
+          echo "$P12_BASE64" | base64 --decode -o $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 \
+            -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list \
+            -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          echo "$PROVISIONING_PROFILE_BASE64" | base64 --decode \
+            -o $RUNNER_TEMP/profile.mobileprovision
+          PP_UUID=$(security cms -D -i $RUNNER_TEMP/profile.mobileprovision \
+            | plutil -extract UUID xml1 - -o - \
+            | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          cp $RUNNER_TEMP/profile.mobileprovision \
+            "$HOME/Library/MobileDevice/Provisioning Profiles/$PP_UUID.mobileprovision"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> $GITHUB_ENV
+          echo "Profile UUID: $PP_UUID"
+
+      # ── 模式 A：自动生成私钥+CSR，通过 ASC API 创建证书和 Profile ─────────
+      - name: 创建签名文件（模式A）
+        if: env.MODE == 'A'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          pip3 install --break-system-packages PyJWT cryptography
+
+          python3 << 'PYEOF'
+          import jwt, time, json, os, subprocess, base64, urllib.request, ssl, re, shutil
+          from urllib.parse import quote
+
+          key_id      = os.environ["ASC_KEY_ID"]
+          issuer_id   = os.environ["ASC_ISSUER_ID"]
+          private_key = os.environ["ASC_PRIVATE_KEY"]
+          bundle_id   = os.environ["BUNDLE_ID"]
+          profile_name = os.environ["PROFILE_NAME"]
+          T = os.environ["RUNNER_TEMP"]
+
+          ctx = ssl.create_default_context()
+
+          def token():
+              now = int(time.time())
+              return jwt.encode(
+                  {"iss": issuer_id, "iat": now, "exp": now + 1200,
+                   "aud": "appstoreconnect-v1"},
+                  private_key, algorithm="ES256", headers={"kid": key_id}
+              )
+
+          def api(method, path, data=None):
+              url = f"https://api.appstoreconnect.apple.com/v1/{path}"
+              req = urllib.request.Request(url, method=method,
+                  headers={"Authorization": f"Bearer {token()}",
+                           "Content-Type": "application/json"})
+              if data: req.data = json.dumps(data).encode()
+              try:
+                  resp = urllib.request.urlopen(req, context=ctx)
+                  body = resp.read()
+                  return json.loads(body) if body else {}
+              except urllib.error.HTTPError as e:
+                  if e.code == 204: return {}
+                  print(f"  [API {e.code}]: {e.read().decode()[:400]}")
+                  return {}
+
+          # 1. 生成私钥 + CSR
+          print("\n== 生成私钥和 CSR ==")
+          subprocess.run(
+              ["openssl", "req", "-new", "-newkey", "rsa:2048", "-nodes",
+               "-keyout", f"{T}/dist.key", "-out", f"{T}/dist.csr",
+               "-subj", "/CN=Slidesh Distribution/C=CN"],
+              capture_output=True, check=True
+          )
+          print("  私钥和 CSR 生成完毕")
+
+          # 2. 删除旧的 iOS Distribution 证书，上传 CSR 创建新证书
+          print("\n== 证书 ==")
+          certs = api("GET", "certificates?filter[certificateType]=IOS_DISTRIBUTION")
+          for c in (certs.get("data") or []):
+              print(f"  删除旧证书: {c['id']}")
+              api("DELETE", f"certificates/{c['id']}")
+              time.sleep(1)
+
+          with open(f"{T}/dist.csr") as f:
+              csr_content = f.read()
+          result = api("POST", "certificates", {"data": {"type": "certificates",
+              "attributes": {"certificateType": "IOS_DISTRIBUTION",
+                             "csrContent": csr_content}}})
+          if not result.get("data"):
+              print("[FATAL] 证书创建失败"); exit(1)
+          cert_id = result["data"]["id"]
+          print(f"  创建证书: {cert_id}")
+
+          # 将 .cer 转为 .pem，再与私钥合并成 .p12
+          with open(f"{T}/dist.cer", "wb") as f:
+              f.write(base64.b64decode(
+                  result["data"]["attributes"]["certificateContent"]))
+          subprocess.run(
+              ["openssl", "x509", "-inform", "DER",
+               "-in", f"{T}/dist.cer", "-out", f"{T}/dist.pem"],
+              capture_output=True, check=True
+          )
+          subprocess.run(
+              ["openssl", "pkcs12", "-export",
+               "-out", f"{T}/dist.p12",
+               "-inkey", f"{T}/dist.key",
+               "-in", f"{T}/dist.pem",
+               "-passout", "pass:ci"],
+              capture_output=True, check=True
+          )
+          print("  .p12 生成完毕")
+
+          # 3. 确保 Bundle ID 已注册
+          print(f"\n== Bundle ID: {bundle_id} ==")
+          bundles = api("GET",
+              f"bundleIds?filter[identifier]={bundle_id}&filter[platform]=IOS")
+          if bundles.get("data"):
+              bid = bundles["data"][0]["id"]
+              print(f"  已存在: {bid}")
+          else:
+              r = api("POST", "bundleIds", {"data": {"type": "bundleIds",
+                  "attributes": {"identifier": bundle_id,
+                                 "name": "Slidesh", "platform": "IOS"}}})
+              bid = (r.get("data") or {}).get("id", "")
+              if not bid: print("[FATAL] Bundle ID 注册失败"); exit(1)
+              print(f"  已注册: {bid}")
+
+          # 4. 删除同名旧 Profile，创建新 Profile
+          print(f"\n== Provisioning Profile: {profile_name} ==")
+          old = api("GET",
+              f"profiles?filter[name]={quote(profile_name)}&filter[profileType]=IOS_APP_STORE")
+          for p in (old.get("data") or []):
+              api("DELETE", f"profiles/{p['id']}")
+              print(f"  删除旧 Profile: {p['id']}")
+
+          result = api("POST", "profiles", {"data": {"type": "profiles",
+              "attributes": {"name": profile_name, "profileType": "IOS_APP_STORE"},
+              "relationships": {
+                  "bundleId":    {"data": {"type": "bundleIds",    "id": bid}},
+                  "certificates":{"data": [{"type":"certificates","id": cert_id}]}
+              }}})
+          if not result.get("data"):
+              print("[FATAL] Profile 创建失败"); exit(1)
+          print(f"  创建 Profile: {result['data']['id']}")
+
+          with open(f"{T}/profile.mobileprovision", "wb") as f:
+              f.write(base64.b64decode(
+                  result["data"]["attributes"]["profileContent"]))
+
+          # 5. 安装到临时 Keychain
+          print("\n== 安装到 Keychain ==")
+          kc = f"{T}/build.keychain"
+          subprocess.run(["security", "create-keychain", "-p", "ci", kc])
+          subprocess.run(["security", "set-keychain-settings", "-lut", "21600", kc])
+          subprocess.run(["security", "unlock-keychain", "-p", "ci", kc])
+          subprocess.run(["security", "import", f"{T}/dist.p12",
+              "-P", "ci", "-A", "-t", "cert", "-f", "pkcs12", "-k", kc], check=True)
+          subprocess.run(["security", "set-key-partition-list",
+              "-S", "apple-tool:,apple:", "-s", "-k", "ci", kc])
+          subprocess.run(["security", "list-keychain", "-d", "user", "-s", kc])
+
+          plist_out = subprocess.run(
+              ["security", "cms", "-D", "-i", f"{T}/profile.mobileprovision"],
+              capture_output=True, text=True).stdout
+          pp_uuid = re.search(
+              r'<key>UUID</key>\s*<string>([\w-]+)</string>', plist_out).group(1)
+          pp_dir = os.path.expanduser("~/Library/MobileDevice/Provisioning Profiles")
+          os.makedirs(pp_dir, exist_ok=True)
+          shutil.copy(f"{T}/profile.mobileprovision",
+                      f"{pp_dir}/{pp_uuid}.mobileprovision")
+          print(f"  Profile UUID: {pp_uuid}")
+
+          # 6. 将 P12 和 Profile 输出为 base64，方便保存为 Secret（下次走模式B）
+          p12_b64 = base64.b64encode(open(f"{T}/dist.p12", "rb").read()).decode()
+          pp_b64  = base64.b64encode(open(f"{T}/profile.mobileprovision","rb").read()).decode()
+          with open(f"{T}/p12.b64", "w") as f: f.write(p12_b64)
+          with open(f"{T}/pp.b64",  "w") as f: f.write(pp_b64)
+          print("\n== 模式A完成，签名文件已输出为 artifact ==")
+          PYEOF
+
+      - name: 保存签名文件 artifact（模式A）
+        if: env.MODE == 'A'
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-files
+          path: |
+            ${{ runner.temp }}/p12.b64
+            ${{ runner.temp }}/pp.b64
+          retention-days: 3
+
+      # ── 打包 ─────────────────────────────────────────────────────────────
+      - name: 解析 SPM 依赖
         run: |
           xcodebuild -resolvePackageDependencies \
-            -project ${{ env.PROJECT }} -scheme ${{ env.SCHEME }}
+            -workspace ${{ env.WORKSPACE }} \
+            -scheme ${{ env.SCHEME }}
 
       - name: Archive
         run: |
+          set -o pipefail
           xcodebuild archive \
-            -project ${{ env.PROJECT }} \
+            -workspace ${{ env.WORKSPACE }} \
             -scheme ${{ env.SCHEME }} \
             -configuration Release \
             -archivePath $RUNNER_TEMP/Slidesh.xcarchive \
             -destination "generic/platform=iOS" \
             CODE_SIGN_STYLE=Manual \
             DEVELOPMENT_TEAM=${{ secrets.TEAM_ID }} \
-            PROVISIONING_PROFILE_SPECIFIER="${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}" \
-            | xcpretty
+            PROVISIONING_PROFILE_SPECIFIER="${{ env.PROFILE_NAME }}" \
+            2>&1 | tail -50
 
       - name: Export IPA
         run: |
-          cp ExportOptions.plist $RUNNER_TEMP/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Set :teamID ${{ secrets.TEAM_ID }}" \
-            $RUNNER_TEMP/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Set :signingStyle manual" \
-            $RUNNER_TEMP/ExportOptions.plist
+          set -o pipefail
+          # 动态写入 teamID 和 provisioningProfiles，避免 ExportOptions.plist 硬编码
+          /usr/libexec/PlistBuddy -c "Set :teamID ${{ secrets.TEAM_ID }}" ExportOptions.plist
           /usr/libexec/PlistBuddy -c "Delete :provisioningProfiles" \
-            $RUNNER_TEMP/ExportOptions.plist >/dev/null 2>&1 || true
-          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" \
-            $RUNNER_TEMP/ExportOptions.plist
-          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:${{ env.BUNDLE_ID }} string ${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}" \
-            $RUNNER_TEMP/ExportOptions.plist
+            ExportOptions.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" ExportOptions.plist
+          /usr/libexec/PlistBuddy \
+            -c "Add :provisioningProfiles:${{ env.BUNDLE_ID }} string ${{ env.PROFILE_NAME }}" \
+            ExportOptions.plist
+
           xcodebuild -exportArchive \
             -archivePath $RUNNER_TEMP/Slidesh.xcarchive \
             -exportPath $RUNNER_TEMP/export \
-            -exportOptionsPlist $RUNNER_TEMP/ExportOptions.plist | xcpretty
+            -exportOptionsPlist ExportOptions.plist \
+            2>&1 | tail -20
 
-      - name: Upload IPA artifact
+          echo "IPA 文件："
+          find $RUNNER_TEMP/export -name "*.ipa"
+
+      - name: 上传 IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: Slidesh-${{ github.ref_name }}.ipa
           path: ${{ runner.temp }}/export/*.ipa
           retention-days: 7
 
-      - name: Upload to TestFlight
+      # ── 上传 TestFlight ───────────────────────────────────────────────────
+      - name: 上传到 TestFlight
         if: ${{ inputs.upload_to_testflight != 'false' }}
         env:
-          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
-          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
-          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
         run: |
-          echo "$ASC_API_KEY_CONTENT" | base64 --decode \
-            > $RUNNER_TEMP/AuthKey_${ASC_API_KEY_ID}.p8
-          xcrun altool --upload-app --type ios \
-            --file $RUNNER_TEMP/export/*.ipa \
-            --apiKey "$ASC_API_KEY_ID" \
-            --apiIssuer "$ASC_API_KEY_ISSUER_ID" \
-            --private-key $RUNNER_TEMP/AuthKey_${ASC_API_KEY_ID}.p8
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_PRIVATE_KEY" \
+            > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
 
-      - name: Clean up keychain
+          IPA_PATH=$(find $RUNNER_TEMP/export -name "*.ipa" | head -1)
+          if [ -z "$IPA_PATH" ]; then echo "ERROR: 未找到 IPA"; exit 1; fi
+          echo "上传: $IPA_PATH"
+
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$ASC_KEY_ID" \
+            --apiIssuer "$ASC_ISSUER_ID" \
+            --verbose
+
+      # ── 清理 ─────────────────────────────────────────────────────────────
+      - name: 清理
         if: always()
-        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+        run: |
+          security delete-keychain $RUNNER_TEMP/build.keychain 2>/dev/null || true
+          rm -f ~/.appstoreconnect/private_keys/*.p8 2>/dev/null || true
