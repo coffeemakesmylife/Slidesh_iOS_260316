@@ -41,6 +41,9 @@ class QuotaManager {
     // 内存缓存的 Premium 状态，由 refreshPremiumStatus() 更新，非持久化
     private(set) var isPremium: Bool = false
 
+    // 当前有效订阅的到期时间（nil 表示非会员或永久会员）
+    private(set) var subscriptionExpiryDate: Date? = nil
+
     // 全局交易监听任务（App 生命周期内持续运行）
     private var transactionListener: Task<Void, Never>?
 
@@ -64,13 +67,20 @@ class QuotaManager {
 
     // MARK: - Premium 状态刷新（异步，在 viewWillAppear 调用）
 
-    /// 通过 StoreKit 2 Transaction.currentEntitlements 验证有效订阅
+    /// 通过 StoreKit 2 Transaction.currentEntitlements 验证有效订阅，同时记录到期时间
     func refreshPremiumStatus() async {
-        let hasPremium = await Transaction.currentEntitlements.contains { result in
-            guard case .verified(let tx) = result else { return false }
-            return tx.revocationDate == nil
+        var hasPremium = false
+        var expiryDate: Date? = nil
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let tx) = result, tx.revocationDate == nil else { continue }
+            hasPremium = true
+            // 取最晚的到期时间（多个订阅取最大值）
+            if let txExpiry = tx.expirationDate {
+                expiryDate = max(expiryDate ?? txExpiry, txExpiry)
+            }
         }
         isPremium = hasPremium
+        subscriptionExpiryDate = expiryDate
     }
 
     // MARK: - 配额操作

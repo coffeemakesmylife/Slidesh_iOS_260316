@@ -503,21 +503,21 @@ class SettingsViewController: UIViewController {
                 .paragraphStyle: paraStyle,
             ])
 
-        vipButton?.setTitle(isPremium ? "管理订阅" : "立即升级", for: .normal)
+        // 会员显示到期时间，非会员显示"立即升级"
+        let buttonTitle: String
+        if isPremium, let expiry = QuotaManager.shared.subscriptionExpiryDate {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy/MM/dd 到期"
+            buttonTitle = formatter.string(from: expiry)
+        } else if isPremium {
+            buttonTitle = "已订阅"
+        } else {
+            buttonTitle = "立即升级"
+        }
+        vipButton?.setTitle(buttonTitle, for: .normal)
         vipButton?.setTitleColor(isPremium ? premiumButtonTitleColor : .appPrimary, for: .normal)
         vipButton?.removeTarget(nil, action: nil, for: .allEvents)
-        if isPremium {
-            vipButton?.addTarget(self, action: #selector(manageSubscription), for: .touchUpInside)
-        } else {
-            vipButton?.addTarget(self, action: #selector(unlockPro), for: .touchUpInside)
-        }
-    }
-
-    @objc private func manageSubscription() {
-        // 跳转到 App Store 订阅管理页
-        if let url = URL(string: "itms-apps://apps.apple.com/account/subscriptions") {
-            UIApplication.shared.open(url)
-        }
+        vipButton?.addTarget(self, action: #selector(unlockPro), for: .touchUpInside)
     }
 
     @objc private func unlockPro() {
