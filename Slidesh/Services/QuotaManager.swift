@@ -44,6 +44,11 @@ class QuotaManager {
     // 当前有效订阅的到期时间（nil 表示非会员或永久会员）
     private(set) var subscriptionExpiryDate: Date? = nil
 
+    #if DEBUG
+    // Debug 强制覆盖标志，设为 true 时 refreshPremiumStatus 不会覆盖 isPremium
+    private var debugPremiumOverride: Bool = false
+    #endif
+
     // 全局交易监听任务（App 生命周期内持续运行）
     private var transactionListener: Task<Void, Never>?
 
@@ -69,6 +74,10 @@ class QuotaManager {
 
     /// 通过 StoreKit 2 Transaction.currentEntitlements 验证有效订阅，同时记录到期时间
     func refreshPremiumStatus() async {
+        #if DEBUG
+        // Debug 强制覆盖时跳过 StoreKit 查询，保持手动设置的状态
+        if debugPremiumOverride { return }
+        #endif
         var hasPremium = false
         var expiryDate: Date? = nil
         for await result in Transaction.currentEntitlements {
@@ -111,8 +120,11 @@ class QuotaManager {
 
     #if DEBUG
     /// 直接覆盖 Premium 状态（仅 Debug 构建可用）
+    /// override=true 时 refreshPremiumStatus 不会再覆盖这个值
     func debugSetPremium(_ value: Bool) {
+        debugPremiumOverride = value
         isPremium = value
+        if !value { subscriptionExpiryDate = nil }
     }
 
     /// 将所有功能的 Keychain 配额计数重置为 0
