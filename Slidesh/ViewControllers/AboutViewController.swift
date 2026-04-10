@@ -74,8 +74,9 @@ class AboutViewController: UIViewController {
 
         // 信息卡片
         let infoCard = makeInfoCard(rows: [
-            ("globe", "官方网站", { [weak self] in self?.openURL("https://example.com") }),
-            ("envelope", "联系我们", { [weak self] in self?.openURL("mailto:hello@slidesh.app") }),
+            // 官方网站暂未上线，先隐藏
+            // ("globe", "官方网站", { [weak self] in self?.openURL("https://example.com") }),
+            ("envelope", "联系我们", { [weak self] in self?.contactUs() }),
             ("star.fill", "给我们评分", { self.rateApp() }),
         ])
 
@@ -209,9 +210,13 @@ class AboutViewController: UIViewController {
         }
     }
 
+    private func contactUs() {
+        navigationController?.pushViewController(FeedbackViewController(), animated: true)
+    }
+
     private func rateApp() {
         // 替换为实际 App Store ID
-        if let url = URL(string: "https://apps.apple.com/app/idXXXXXXXXXX?action=write-review") {
+        if let url = URL(string: "https://apps.apple.com/app/id\(AppConfig.appId)?action=write-review") {
             UIApplication.shared.open(url)
         }
     }
