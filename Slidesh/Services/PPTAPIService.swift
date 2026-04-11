@@ -418,6 +418,12 @@ class PPTAPIService {
 
     private func parseTemplates(_ raw: Any) -> [PPTTemplate] {
         guard let arr = raw as? [[String: Any]] else { return [] }
+        #if DEBUG
+        if let first = arr.first {
+            print("🖼 模板首条原始字段：\(first)")
+            print("🖼 coverUrl 示例：\(first["coverUrl"] ?? "nil")")
+        }
+        #endif
         return arr.compactMap { dict in
             guard let id       = dict["id"]       as? String,
                   let coverUrl = dict["coverUrl"] as? String,
