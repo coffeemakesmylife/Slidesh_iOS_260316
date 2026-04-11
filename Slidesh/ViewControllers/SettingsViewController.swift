@@ -40,7 +40,7 @@ class SettingsViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "设置"
+        navigationItem.title = NSLocalizedString("设置", comment: "")
         addMeshGradientBackground()
         setupScrollView()
         buildSections()
@@ -89,36 +89,36 @@ class SettingsViewController: UIViewController {
         // Section 2：主题（上下 chevron 选择）+ 切换应用图标
         let section2 = makeCard(rows: [
             makeThemeRow(),
-            makeRow(sfSymbol: "square.grid.2x2", title: "切换应用图标") { [weak self] in
+            makeRow(sfSymbol: "square.grid.2x2", title: NSLocalizedString("切换应用图标", comment: "")) { [weak self] in
                 self?.changeAppIcon()
             },
         ])
 
         // Section 3：反馈 + 分享 + 恢复购买
         let section3 = makeCard(rows: [
-            makeRow(sfSymbol: "envelope", title: "反馈") { [weak self] in
+            makeRow(sfSymbol: "envelope", title: NSLocalizedString("反馈", comment: "")) { [weak self] in
                 self?.push(FeedbackViewController())
             },
-            makeRow(sfSymbol: "square.and.arrow.up", title: "分享") { [weak self] in
+            makeRow(sfSymbol: "square.and.arrow.up", title: NSLocalizedString("分享", comment: "")) { [weak self] in
                 self?.shareApp()
             },
-            makeRow(sfSymbol: "arrow.clockwise.circle", title: "恢复购买") { [weak self] in
+            makeRow(sfSymbol: "arrow.clockwise.circle", title: NSLocalizedString("恢复购买", comment: "")) { [weak self] in
                 self?.restorePurchase()
             },
         ])
 
         // Section 4：隐私政策 + 使用条款 + FAQ + 关于
         let section4 = makeCard(rows: [
-            makeRow(sfSymbol: "hand.raised.fill", title: "隐私政策") { [weak self] in
+            makeRow(sfSymbol: "hand.raised.fill", title: NSLocalizedString("隐私政策", comment: "")) { [weak self] in
                 self?.openSafari(url: AppConfig.privacyPolicyURL)
             },
-            makeRow(sfSymbol: "doc.text", title: "使用条款") { [weak self] in
+            makeRow(sfSymbol: "doc.text", title: NSLocalizedString("使用条款", comment: "")) { [weak self] in
                 self?.openSafari(url: AppConfig.termsOfServiceURL)
             },
-            makeRow(sfSymbol: "questionmark.circle.fill", title: "FAQ") { [weak self] in
+            makeRow(sfSymbol: "questionmark.circle.fill", title: NSLocalizedString("FAQ", comment: "")) { [weak self] in
                 self?.push(FAQViewController())
             },
-            makeRow(sfSymbol: "info.circle.fill", title: "关于") { [weak self] in
+            makeRow(sfSymbol: "info.circle.fill", title: NSLocalizedString("关于", comment: "")) { [weak self] in
                 self?.push(AboutViewController())
             },
         ])
@@ -162,7 +162,7 @@ class SettingsViewController: UIViewController {
         vipGradientLayer = gradient
 
         let titleLabel = UILabel()
-        titleLabel.text = "升级 Pro 会员"
+        titleLabel.text = NSLocalizedString("升级 Pro 会员", comment: "")
         titleLabel.font = .systemFont(ofSize: 22, weight: .bold)
         titleLabel.textColor = .white
         vipTitleLabel = titleLabel
@@ -171,7 +171,7 @@ class SettingsViewController: UIViewController {
         let paraStyle = NSMutableParagraphStyle()
         paraStyle.paragraphSpacing = 8
         featuresLabel.attributedText = NSAttributedString(
-            string: "✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿",
+            string: NSLocalizedString("✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿", comment: ""),
             attributes: [
                 .font: UIFont.systemFont(ofSize: 14),
                 .foregroundColor: UIColor.white.withAlphaComponent(0.88),
@@ -181,7 +181,7 @@ class SettingsViewController: UIViewController {
         vipFeaturesLabel = featuresLabel
 
         let btn = UIButton(type: .system)
-        btn.setTitle("立即升级", for: .normal)
+        btn.setTitle(NSLocalizedString("立即升级", comment: ""), for: .normal)
         btn.setTitleColor(.appPrimary, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
         btn.backgroundColor = .white
@@ -248,7 +248,7 @@ class SettingsViewController: UIViewController {
         icon.isUserInteractionEnabled = false
 
         let titleLabel = UILabel()
-        titleLabel.text = "主题"
+        titleLabel.text = NSLocalizedString("主题", comment: "")
         titleLabel.font = .systemFont(ofSize: 16)
         titleLabel.textColor = .appTextPrimary
         titleLabel.isUserInteractionEnabled = false
@@ -296,9 +296,9 @@ class SettingsViewController: UIViewController {
 
     private func makeThemeMenu() -> UIMenu {
         let options: [(String, String, UIUserInterfaceStyle)] = [
-            ("跟随系统", "circle.lefthalf.filled", .unspecified),
-            ("浅色主题",  "sun.max",                .light),
-            ("深色主题",  "moon.fill",               .dark),
+            (NSLocalizedString("跟随系统", comment: ""), "circle.lefthalf.filled", .unspecified),
+            (NSLocalizedString("浅色主题", comment: ""),  "sun.max",                .light),
+            (NSLocalizedString("深色主题", comment: ""),  "moon.fill",               .dark),
         ]
         let current = ThemeManager.shared.currentStyle
         let actions = options.map { title, symbol, style in
@@ -444,7 +444,7 @@ class SettingsViewController: UIViewController {
     }
 
     private func shareApp() {
-        let text = "推荐你使用 \(AppConfig.appName)，一键生成精美演示文稿！"
+        let text = NSLocalizedString("推荐你使用 ", comment: "") + "\(AppConfig.appName)" + NSLocalizedString("，一键生成精美演示文稿！", comment: "")
         let vc = UIActivityViewController(activityItems: [text], applicationActivities: nil)
         // iPad 需要指定 sourceView，iPhone 自动从底部弹出
         if let popover = vc.popoverPresentationController {
@@ -456,13 +456,13 @@ class SettingsViewController: UIViewController {
     }
 
     private func restorePurchase() {
-        let alert = UIAlertController(title: "恢复购买", message: "正在恢复您的购买记录…", preferredStyle: .alert)
+        let alert = UIAlertController(title: NSLocalizedString("恢复购买", comment: ""), message: NSLocalizedString("正在恢复您的购买记录…", comment: ""), preferredStyle: .alert)
         present(alert, animated: true)
         // 模拟异步恢复
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             alert.dismiss(animated: true) {
-                let result = UIAlertController(title: "恢复完成", message: "未找到可恢复的购买记录。", preferredStyle: .alert)
-                result.addAction(UIAlertAction(title: "确定", style: .default))
+                let result = UIAlertController(title: NSLocalizedString("恢复完成", comment: ""), message: NSLocalizedString("未找到可恢复的购买记录。", comment: ""), preferredStyle: .alert)
+                result.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
                 self?.present(result, animated: true)
             }
         }
@@ -476,7 +476,7 @@ class SettingsViewController: UIViewController {
 
     private func updateVIPCard() {
         let isPremium = QuotaManager.shared.isPremium
-        vipTitleLabel?.text = isPremium ? "Pro 会员" : "升级 Pro 会员"
+        vipTitleLabel?.text = isPremium ? NSLocalizedString("Pro 会员", comment: "") : NSLocalizedString("升级 Pro 会员", comment: "")
 
         // 渐变色切换动画
         if let gradient = vipGradientLayer {
@@ -492,9 +492,7 @@ class SettingsViewController: UIViewController {
 
         let paraStyle = NSMutableParagraphStyle()
         paraStyle.paragraphSpacing = 8
-        let featuresText = isPremium
-            ? "✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿"
-            : "✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿"
+        let featuresText = NSLocalizedString("✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿", comment: "")
         vipFeaturesLabel?.attributedText = NSAttributedString(
             string: featuresText,
             attributes: [
@@ -507,12 +505,12 @@ class SettingsViewController: UIViewController {
         let buttonTitle: String
         if isPremium, let expiry = QuotaManager.shared.subscriptionExpiryDate {
             let formatter = DateFormatter()
-            formatter.dateFormat = "yyyy/MM/dd 到期"
-            buttonTitle = formatter.string(from: expiry)
+            formatter.dateFormat = "yyyy/MM/dd"
+            buttonTitle = formatter.string(from: expiry) + " " + NSLocalizedString("到期", comment: "")
         } else if isPremium {
-            buttonTitle = "已订阅"
+            buttonTitle = NSLocalizedString("已订阅", comment: "")
         } else {
-            buttonTitle = "立即升级"
+            buttonTitle = NSLocalizedString("立即升级", comment: "")
         }
         vipButton?.setTitle(buttonTitle, for: .normal)
         vipButton?.setTitleColor(isPremium ? premiumButtonTitleColor : .appPrimary, for: .normal)

@@ -17,8 +17,8 @@ class FilterAndToggleBar: UIView {
     private(set) var layoutMode: LayoutMode = .grid
 
     // 对外暴露，让 VC 可更新选中文字
-    let styleButton = FilterChipButton(title: "风格")
-    let colorButton = FilterChipButton(title: "颜色")
+    let styleButton = FilterChipButton(title: NSLocalizedString("风格", comment: ""))
+    let colorButton = FilterChipButton(title: NSLocalizedString("颜色", comment: ""))
     private let toggleButton = UIButton(type: .system)
 
     override init(frame: CGRect) {

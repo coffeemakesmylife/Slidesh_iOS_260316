@@ -133,7 +133,7 @@ final class FormatPickerSheet: UIViewController {
 
     // 标题："选择输出格式"
     private func setupTitle() {
-        titleLabel.text      = "选择输出格式"
+        titleLabel.text      = NSLocalizedString("选择输出格式", comment: "")
         titleLabel.font      = .systemFont(ofSize: 18, weight: .heavy)
         titleLabel.textColor = .appTextPrimary
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -175,7 +175,7 @@ final class FormatPickerSheet: UIViewController {
         panelView.addSubview(cancelBtn)
 
         let label      = UILabel()
-        label.text      = "取消"
+        label.text      = NSLocalizedString("取消", comment: "")
         label.font      = .systemFont(ofSize: 16, weight: .medium)
         label.textColor = .appTextSecondary
         label.textAlignment = .center
@@ -327,13 +327,13 @@ final class FormatPickerSheet: UIViewController {
 
     private func extensionHint(for format: String) -> String {
         switch format.uppercased() {
-        case "WORD":  return ".docx 文档格式"
-        case "PDF":   return ".pdf 便携文档"
-        case "EXCEL": return ".xlsx 表格格式"
-        case "PPT":   return ".pptx 演示文稿"
-        case "PNG":   return ".png 图片格式"
-        case "HTML":  return ".html 网页格式"
-        case "XML":   return ".xml 标记语言"
+        case "WORD":  return NSLocalizedString(".docx 文档格式", comment: "")
+        case "PDF":   return NSLocalizedString(".pdf 便携文档", comment: "")
+        case "EXCEL": return NSLocalizedString(".xlsx 表格格式", comment: "")
+        case "PPT":   return NSLocalizedString(".pptx 演示文稿", comment: "")
+        case "PNG":   return NSLocalizedString(".png 图片格式", comment: "")
+        case "HTML":  return NSLocalizedString(".html 网页格式", comment: "")
+        case "XML":   return NSLocalizedString(".xml 标记语言", comment: "")
         default:      return ""
         }
     }

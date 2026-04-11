@@ -126,7 +126,7 @@ class TemplateCell: UICollectionViewCell {
 
     func configure(with model: PPTTemplate, mode: LayoutMode) {
         nameLabel.text = model.subject
-        descLabel.text = "\(model.num) 页"
+        descLabel.text = "\(model.num) " + NSLocalizedString("页", comment: "")
         usageLabel.text = model.category.isEmpty ? nil : model.category
 
         // Kingfisher 加载封面图：先显示骨架闪烁，加载完成后隐藏

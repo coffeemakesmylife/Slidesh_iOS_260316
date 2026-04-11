@@ -34,7 +34,7 @@ final class ConvertHistoryViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "转换记录"
+        navigationItem.title = NSLocalizedString("转换记录", comment: "")
         view.backgroundColor = .appBackgroundPrimary
         addMeshGradientBackground()
         setupTableView()
@@ -109,7 +109,7 @@ final class ConvertHistoryViewController: UIViewController {
         icon.translatesAutoresizingMaskIntoConstraints = false
 
         let label = UILabel()
-        label.text          = "暂无转换记录"
+        label.text          = NSLocalizedString("暂无转换记录", comment: "")
         label.font          = .systemFont(ofSize: 16)
         label.textColor     = .appTextSecondary
         label.textAlignment = .center
@@ -172,8 +172,8 @@ final class ConvertHistoryViewController: UIViewController {
     }
 
     private func showExpiredAlert() {
-        let alert = UIAlertController(title: "文件已失效", message: "转换结果已被清理，请重新转换", preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "好", style: .default))
+        let alert = UIAlertController(title: NSLocalizedString("文件已失效", comment: ""), message: NSLocalizedString("转换结果已被清理，请重新转换", comment: ""), preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("好", comment: ""), style: .default))
         present(alert, animated: true)
     }
 
@@ -260,7 +260,7 @@ extension ConvertHistoryViewController: UITableViewDataSource, UITableViewDelega
     func tableView(_ tableView: UITableView,
                    trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath
     ) -> UISwipeActionsConfiguration? {
-        let del = UIContextualAction(style: .destructive, title: "删除") { [weak self] _, _, done in
+        let del = UIContextualAction(style: .destructive, title: NSLocalizedString("删除", comment: "")) { [weak self] _, _, done in
             self?.deleteRecord(at: indexPath)
             done(true)
         }

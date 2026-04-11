@@ -10,7 +10,7 @@ class AboutViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "关于"
+        navigationItem.title = NSLocalizedString("关于", comment: "")
         addMeshGradientBackground()
         setupUI()
     }
@@ -59,14 +59,14 @@ class AboutViewController: UIViewController {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build   = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         let versionLabel = UILabel()
-        versionLabel.text = "版本 \(version) (\(build))"
+        versionLabel.text = NSLocalizedString("版本 ", comment: "") + "\(version) (\(build))"
         versionLabel.font = .systemFont(ofSize: 13)
         versionLabel.textColor = .appTextTertiary
         versionLabel.textAlignment = .center
 
         // 简介
         let descLabel = UILabel()
-        descLabel.text = "\(AppConfig.appName) 是一款 AI 驱动的演示文稿工具，帮助你快速生成、编辑和分享精美幻灯片。"
+        descLabel.text = "\(AppConfig.appName)" + NSLocalizedString(" 是一款 AI 驱动的演示文稿工具，帮助你快速生成、编辑和分享精美幻灯片。", comment: "")
         descLabel.font = .systemFont(ofSize: 14)
         descLabel.textColor = .appTextSecondary
         descLabel.textAlignment = .center
@@ -76,8 +76,8 @@ class AboutViewController: UIViewController {
         let infoCard = makeInfoCard(rows: [
             // 官方网站暂未上线，先隐藏
             // ("globe", "官方网站", { [weak self] in self?.openURL("https://example.com") }),
-            ("envelope", "联系我们", { [weak self] in self?.contactUs() }),
-            ("star.fill", "给我们评分", { self.rateApp() }),
+            ("envelope", NSLocalizedString("联系我们", comment: ""), { [weak self] in self?.contactUs() }),
+            ("star.fill", NSLocalizedString("给我们评分", comment: ""), { self.rateApp() }),
         ])
 
         // 版权

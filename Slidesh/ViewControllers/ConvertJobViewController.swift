@@ -354,7 +354,7 @@ final class ConvertJobViewController: UIViewController {
         primaryBtn.addTarget(self, action: #selector(didTapPrimary), for: .touchUpInside)
 
         // 「保存 / 分享」按钮（仅成功状态显示）
-        shareBtn.setTitle("保存到本地", for: .normal)
+        shareBtn.setTitle(NSLocalizedString("保存到本地", comment: ""), for: .normal)
         shareBtn.titleLabel?.font    = .systemFont(ofSize: 16, weight: .medium)
         shareBtn.setTitleColor(.appTextSecondary, for: .normal)
         shareBtn.backgroundColor     = .appCardBackground.withAlphaComponent(0.7)
@@ -433,10 +433,10 @@ final class ConvertJobViewController: UIViewController {
         case .idle:
             primaryBtnTopFromSubLabel?.isActive = true
             let hint = tool.allowsMultiple
-                ? "请选择 2 个或更多 PDF 文件"
-                : "支持：\(tool.acceptedExtensions.joined(separator: "、"))"
+                ? NSLocalizedString("请选择 2 个或更多 PDF 文件", comment: "")
+                : NSLocalizedString("支持：", comment: "") + tool.acceptedExtensions.joined(separator: "、")
             subLabel.text = hint
-            primaryBtn.setTitle(tool.allowsMultiple ? "选择多个文件（至少 2 个）" : "选择文件", for: .normal)
+            primaryBtn.setTitle(tool.allowsMultiple ? NSLocalizedString("选择多个文件（至少 2 个）", comment: "") : NSLocalizedString("选择文件", comment: ""), for: .normal)
             primaryBtn.isEnabled = true
             secondaryBtn.isHidden = true
 
@@ -472,10 +472,10 @@ final class ConvertJobViewController: UIViewController {
             } else {
                 formatBadge.isHidden = true
             }
-            primaryBtn.setTitle("开始转换", for: .normal)
+            primaryBtn.setTitle(NSLocalizedString("开始转换", comment: ""), for: .normal)
             primaryBtn.isEnabled = !tool.allowsMultiple || files.count >= 2
             secondaryBtn.isHidden = false
-            secondaryBtn.setTitle("重新选择", for: .normal)
+            secondaryBtn.setTitle(NSLocalizedString("重新选择", comment: ""), for: .normal)
 
         case .converting:
             primaryBtnTopFromProgress?.isActive = true
@@ -483,7 +483,7 @@ final class ConvertJobViewController: UIViewController {
             isModalInPresentation      = true
             subLabel.text              = nil
             setUploadProgress(0)
-            primaryBtn.setTitle("取消", for: .normal)
+            primaryBtn.setTitle(NSLocalizedString("取消", comment: ""), for: .normal)
             primaryBtn.isEnabled = true
             secondaryBtn.isHidden = true
 
@@ -492,15 +492,15 @@ final class ConvertJobViewController: UIViewController {
             statusIconView.isHidden  = false
             statusIconView.image     = UIImage(systemName: "checkmark.circle.fill")
             statusIconView.tintColor = .appSuccess
-            subLabel.text = "转换完成！"
-            primaryBtn.setTitle("预览结果", for: .normal)
+            subLabel.text = NSLocalizedString("转换完成！", comment: "")
+            primaryBtn.setTitle(NSLocalizedString("预览结果", comment: ""), for: .normal)
             primaryBtn.isEnabled = true
             // 成功时显示「保存到本地」，secondaryBtn 跟在其下方
             shareBtn.isHidden = false
             secondaryBtnTopFromPrimary?.isActive = false
             secondaryBtnTopFromShare?.isActive   = true
             secondaryBtn.isHidden = false
-            secondaryBtn.setTitle("再转一个", for: .normal)
+            secondaryBtn.setTitle(NSLocalizedString("再转一个", comment: ""), for: .normal)
 
         case .error(let message, _):
             primaryBtnTopFromStatusIcon?.isActive = true
@@ -508,17 +508,17 @@ final class ConvertJobViewController: UIViewController {
             statusIconView.image     = UIImage(systemName: "exclamationmark.circle.fill")
             statusIconView.tintColor = .appError
             subLabel.text = message
-            primaryBtn.setTitle("重试", for: .normal)
+            primaryBtn.setTitle(NSLocalizedString("重试", comment: ""), for: .normal)
             primaryBtn.isEnabled = true
             secondaryBtn.isHidden = false
-            secondaryBtn.setTitle("重新选择文件", for: .normal)
+            secondaryBtn.setTitle(NSLocalizedString("重新选择文件", comment: ""), for: .normal)
         }
     }
 
     private func setUploadProgress(_ value: Double) {
         progressFillWidth?.isActive = false
         if value >= 1.0 {
-            progressLabel.text = "转换中..."
+            progressLabel.text = NSLocalizedString("转换中...", comment: "")
             progressFillWidth = progressFill.widthAnchor.constraint(
                 equalTo: progressBg.widthAnchor, multiplier: 0.6)
             progressFillWidth?.isActive = true
@@ -527,7 +527,7 @@ final class ConvertJobViewController: UIViewController {
             progressFillWidth = progressFill.widthAnchor.constraint(
                 equalTo: progressBg.widthAnchor, multiplier: max(0.05, value))
             progressFillWidth?.isActive = true
-            progressLabel.text = "正在上传... \(Int(value * 100))%"
+            progressLabel.text = NSLocalizedString("正在上传... ", comment: "") + "\(Int(value * 100))%"
         }
     }
 
@@ -697,7 +697,7 @@ final class ConvertJobViewController: UIViewController {
         if inputFiles.count == 1 {
             inputName = inputFiles[0].lastPathComponent
         } else {
-            inputName = "\(inputFiles[0].lastPathComponent) 等 \(inputFiles.count) 个文件"
+            inputName = "\(inputFiles[0].lastPathComponent)" + NSLocalizedString(" 等 ", comment: "") + "\(inputFiles.count)" + NSLocalizedString(" 个文件", comment: "")
         }
 
         // 结果路径：本地文件复制到永久目录；远程 URL 直接存字符串

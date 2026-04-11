@@ -25,14 +25,14 @@ class ParamsPickerViewController: UIViewController {
     // MARK: - 静态数据
 
     static let lengths: [LengthOption] = [
-        .init(display: "短篇", detail: "10-15页", value: "short"),
-        .init(display: "中篇", detail: "20-30页", value: "medium"),
-        .init(display: "长篇", detail: "25-35页", value: "long"),
+        .init(display: NSLocalizedString("短篇", comment: ""), detail: NSLocalizedString("10-15页", comment: ""), value: "short"),
+        .init(display: NSLocalizedString("中篇", comment: ""), detail: NSLocalizedString("20-30页", comment: ""), value: "medium"),
+        .init(display: NSLocalizedString("长篇", comment: ""), detail: NSLocalizedString("25-35页", comment: ""), value: "long"),
     ]
 
     static let languages: [LanguageOption] = [
-        .init(display: "中文（简体）", value: "zh"),
-        .init(display: "中文（繁體）", value: "zh-Hant"),
+        .init(display: NSLocalizedString("中文（简体）", comment: ""), value: "zh"),
+        .init(display: NSLocalizedString("中文（繁體）", comment: ""), value: "zh-Hant"),
         .init(display: "English",      value: "en"),
         .init(display: "日本語",        value: "ja"),
         .init(display: "한국어",        value: "ko"),
@@ -46,20 +46,20 @@ class ParamsPickerViewController: UIViewController {
     ]
 
     static let scenes: [String] = [
-        "通用", "分析报告", "教学课件",
-        "宣传材料", "公众演讲", "在线媒体",
-        "公告", "研究报告", "学术会议",
-        "项目汇报", "个人介绍", "商业计划书",
-        "解决方案", "产品介绍", "会议流程",
-        "年度计划", "年度总结", "健康科普",
-        "财务报告", "项目计划书", "商业博文",
+        NSLocalizedString("通用", comment: ""), NSLocalizedString("分析报告", comment: ""), NSLocalizedString("教学课件", comment: ""),
+        NSLocalizedString("宣传材料", comment: ""), NSLocalizedString("公众演讲", comment: ""), NSLocalizedString("在线媒体", comment: ""),
+        NSLocalizedString("公告", comment: ""), NSLocalizedString("研究报告", comment: ""), NSLocalizedString("学术会议", comment: ""),
+        NSLocalizedString("项目汇报", comment: ""), NSLocalizedString("个人介绍", comment: ""), NSLocalizedString("商业计划书", comment: ""),
+        NSLocalizedString("解决方案", comment: ""), NSLocalizedString("产品介绍", comment: ""), NSLocalizedString("会议流程", comment: ""),
+        NSLocalizedString("年度计划", comment: ""), NSLocalizedString("年度总结", comment: ""), NSLocalizedString("健康科普", comment: ""),
+        NSLocalizedString("财务报告", comment: ""), NSLocalizedString("项目计划书", comment: ""), NSLocalizedString("商业博文", comment: ""),
     ]
 
     static let audiences: [String] = [
-        "大众", "投资者", "商业",
-        "学生", "教师", "老板",
-        "面试官", "员工", "同事同行",
-        "在线访客", "组员",
+        NSLocalizedString("大众", comment: ""), NSLocalizedString("投资者", comment: ""), NSLocalizedString("商业", comment: ""),
+        NSLocalizedString("学生", comment: ""), NSLocalizedString("教师", comment: ""), NSLocalizedString("老板", comment: ""),
+        NSLocalizedString("面试官", comment: ""), NSLocalizedString("员工", comment: ""), NSLocalizedString("同事同行", comment: ""),
+        NSLocalizedString("在线访客", comment: ""), NSLocalizedString("组员", comment: ""),
     ]
 
     // MARK: - 选择结果
@@ -104,17 +104,17 @@ class ParamsPickerViewController: UIViewController {
     }
 
     private lazy var sections: [SectionMeta] = [
-        SectionMeta(title: "篇幅长度",
+        SectionMeta(title: NSLocalizedString("篇幅长度", comment: ""),
                     options: Self.lengths.map { "\($0.display)  \($0.detail)" },
                     columns: 1, supportsCustom: false),
-        SectionMeta(title: "语言",
+        SectionMeta(title: NSLocalizedString("语言", comment: ""),
                     options: Self.languages.map { $0.display },
                     columns: 3, supportsCustom: false),
-        SectionMeta(title: "场景",
-                    options: Self.scenes + ["自定义"],
+        SectionMeta(title: NSLocalizedString("场景", comment: ""),
+                    options: Self.scenes + [NSLocalizedString("自定义", comment: "")],
                     columns: 3, supportsCustom: true),
-        SectionMeta(title: "受众",
-                    options: Self.audiences + ["自定义"],
+        SectionMeta(title: NSLocalizedString("受众", comment: ""),
+                    options: Self.audiences + [NSLocalizedString("自定义", comment: "")],
                     columns: 3, supportsCustom: true),
     ]
 
@@ -131,7 +131,7 @@ class ParamsPickerViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .appBackgroundSecondary
+        view.backgroundColor = .clear
         buildContent()
 
         // 恢复自定义选中状态
@@ -164,14 +164,14 @@ class ParamsPickerViewController: UIViewController {
 
     private func buildContent() {
         let titleLabel = UILabel()
-        titleLabel.text      = "参数设置"
+        titleLabel.text      = NSLocalizedString("参数设置", comment: "")
         titleLabel.font      = .systemFont(ofSize: 18, weight: .semibold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(titleLabel)
 
         let doneBtn = UIButton(type: .system)
-        doneBtn.setTitle("完成", for: .normal)
+        doneBtn.setTitle(NSLocalizedString("完成", comment: ""), for: .normal)
         doneBtn.titleLabel?.font = .systemFont(ofSize: 15, weight: .medium)
         doneBtn.tintColor = .appPrimary
         doneBtn.addTarget(self, action: #selector(doneTapped), for: .touchUpInside)
@@ -248,7 +248,7 @@ class ParamsPickerViewController: UIViewController {
 
         if meta.supportsCustom {
             // 自定义输入框：初始高度 0，选中"自定义"后展开
-            let tf = buildCustomTextField(placeholder: "请输入自定义内容...", tag: tag)
+            let tf = buildCustomTextField(placeholder: NSLocalizedString("请输入自定义内容...", comment: ""), tag: tag)
             tf.isHidden = true
             container.addSubview(tf)
             customTextFields[tag] = tf

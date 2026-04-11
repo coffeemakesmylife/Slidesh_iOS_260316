@@ -20,9 +20,9 @@ class PaywallSheet: UIViewController {
 
     // 权益文案轮播
     private let benefits = [
-        "✓  AI 大纲无限次生成",
-        "✓  格式转换无限次使用",
-        "✓  一键生成完整 PPT",
+        NSLocalizedString("✓  AI 大纲无限次生成", comment: ""),
+        NSLocalizedString("✓  格式转换无限次使用", comment: ""),
+        NSLocalizedString("✓  一键生成完整 PPT", comment: ""),
     ]
     private var benefitIndex = 0
     private var rotationTimer: Timer?
@@ -71,7 +71,7 @@ class PaywallSheet: UIViewController {
 
     private func setupUI() {
         // 标题
-        titleLabel.text = "解锁 \(AppConfig.appName) Pro"
+        titleLabel.text = NSLocalizedString("解锁 ", comment: "") + "\(AppConfig.appName) Pro"
         titleLabel.font = .systemFont(ofSize: 20, weight: .bold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.textAlignment = .center
@@ -87,7 +87,7 @@ class PaywallSheet: UIViewController {
         view.addSubview(benefitLabel)
 
         // 升级按钮
-        upgradeButton.setTitle("查看升级计划  →", for: .normal)
+        upgradeButton.setTitle(NSLocalizedString("查看升级计划  →", comment: ""), for: .normal)
         upgradeButton.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         upgradeButton.setTitleColor(.white, for: .normal)
         upgradeButton.backgroundColor = .appGradientMid

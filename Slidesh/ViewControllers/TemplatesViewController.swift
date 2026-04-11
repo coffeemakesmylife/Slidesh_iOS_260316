@@ -24,9 +24,9 @@ class TemplatesViewController: UIViewController {
 
     // MARK: - 筛选选项（API 加载后更新）
 
-    private var categoryOptions: [(name: String, value: String)] = [("全部场景", "")]
-    private var styleOptions:    [(name: String, value: String)] = [("全部风格", "")]
-    private var colorOptions:    [(name: String, value: String)] = [("全部颜色", "")]
+    private var categoryOptions: [(name: String, value: String)] = [(NSLocalizedString("全部场景", comment: ""), "")]
+    private var styleOptions:    [(name: String, value: String)] = [(NSLocalizedString("全部风格", comment: ""), "")]
+    private var colorOptions:    [(name: String, value: String)] = [(NSLocalizedString("全部颜色", comment: ""), "")]
 
     // MARK: - 子视图
 
@@ -50,7 +50,7 @@ class TemplatesViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "全部模板"
+        navigationItem.title = NSLocalizedString("全部模板", comment: "")
         addMeshGradientBackground()
         setupCategoryView()
         setupFilterBar()
@@ -138,9 +138,9 @@ class TemplatesViewController: UIViewController {
         let categories = options.filter { $0.type.lowercased() == "category" }
         let styles     = options.filter { $0.type.lowercased() == "style" }
         let colors     = options.filter { $0.type.lowercased() == "themecolor" }
-        categoryOptions = [("全部场景", "")] + categories.map { ($0.name, $0.value) }
-        styleOptions    = [("全部风格", "")] + styles.map    { ($0.name, $0.value) }
-        colorOptions    = [("全部颜色", "")] + colors.map    { ($0.name, $0.value) }
+        categoryOptions = [(NSLocalizedString("全部场景", comment: ""), "")] + categories.map { ($0.name, $0.value) }
+        styleOptions    = [(NSLocalizedString("全部风格", comment: ""), "")] + styles.map    { ($0.name, $0.value) }
+        colorOptions    = [(NSLocalizedString("全部颜色", comment: ""), "")] + colors.map    { ($0.name, $0.value) }
         categoryView.configure(with: categoryOptions)
     }
 
@@ -372,7 +372,7 @@ class TemplatesViewController: UIViewController {
     private func showStylePicker() {
         let options = styleOptions.map { $0.name }
         let current = styleOptions.firstIndex { $0.value == selectedStyle } ?? 0
-        let picker  = FilterPickerViewController(title: "风格", options: options, selectedIndex: current)
+        let picker  = FilterPickerViewController(title: NSLocalizedString("风格", comment: ""), options: options, selectedIndex: current)
         picker.onSelect = { [weak self] index in
             guard let self, index < self.styleOptions.count else { return }
             let selected = self.styleOptions[index]
@@ -388,7 +388,7 @@ class TemplatesViewController: UIViewController {
         let current  = colorOptions.firstIndex { $0.value == selectedColor } ?? 0
         // 将颜色 value 映射为 UIColor，第一个（全部）传 nil 用品牌渐变
         let swatches: [UIColor?] = colorOptions.map { Self.uiColor(forValue: $0.value) }
-        let picker   = FilterPickerViewController(title: "颜色", options: options,
+        let picker   = FilterPickerViewController(title: NSLocalizedString("颜色", comment: ""), options: options,
                                                   selectedIndex: current, colorSwatches: swatches)
         picker.onSelect = { [weak self] index in
             guard let self, index < self.colorOptions.count else { return }
@@ -518,6 +518,6 @@ private class TemplatesFooterView: UICollectionReusableView {
     required init?(coder: NSCoder) { fatalError() }
 
     func configure(showEnd: Bool) {
-        label.text = showEnd ? "— 到底了 —" : nil
+        label.text = showEnd ? NSLocalizedString("— 到底了 —", comment: "") : nil
     }
 }

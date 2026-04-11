@@ -11,23 +11,23 @@ class FAQViewController: UIViewController {
     private let stackView  = UIStackView()
 
     private let items: [(question: String, answer: String)] = [
-        ("如何创建新的演示文稿？",
-         "点击底部中间的「+」按钮，选择模板或从空白开始，即可快速创建一份新的演示文稿。"),
-        ("支持哪些格式导出？",
-         "目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。"),
-        ("如何导入已有文件？",
-         "在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。"),
-        ("会员有哪些特权？",
-         "Pro 会员可无限制导出、解锁全部精选模板、使用高级格式转换功能，以及优先获得新功能体验资格。"),
-        ("如何取消订阅？",
-         "前往「设置」→「Apple ID」→「订阅」，找到 \(AppConfig.appName) 后点击取消即可。取消后当前周期内仍可使用会员功能。"),
-        ("数据会保存在哪里？",
-         "作品默认保存在本地设备，同时支持 iCloud 备份。开启 iCloud 后，在其他设备上也能访问您的作品。"),
+        (NSLocalizedString("如何创建新的演示文稿？", comment: ""),
+         NSLocalizedString("点击底部中间的「+」按钮，选择模板或从空白开始，即可快速创建一份新的演示文稿。", comment: "")),
+        (NSLocalizedString("支持哪些格式导出？", comment: ""),
+         NSLocalizedString("目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。", comment: "")),
+        (NSLocalizedString("如何导入已有文件？", comment: ""),
+         NSLocalizedString("在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。", comment: "")),
+        (NSLocalizedString("会员有哪些特权？", comment: ""),
+         NSLocalizedString("Pro 会员可无限制导出、解锁全部精选模板、使用高级格式转换功能，以及优先获得新功能体验资格。", comment: "")),
+        (NSLocalizedString("如何取消订阅？", comment: ""),
+         NSLocalizedString("前往「设置」→「Apple ID」→「订阅」，找到 ", comment: "") + AppConfig.appName + NSLocalizedString(" 后点击取消即可。取消后当前周期内仍可使用会员功能。", comment: "")),
+        (NSLocalizedString("数据会保存在哪里？", comment: ""),
+         NSLocalizedString("作品默认保存在本地设备，同时支持 iCloud 备份。开启 iCloud 后，在其他设备上也能访问您的作品。", comment: "")),
     ]
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "FAQ"
+        navigationItem.title = NSLocalizedString("FAQ", comment: "")
         addMeshGradientBackground()
         setupScrollView()
         buildItems()

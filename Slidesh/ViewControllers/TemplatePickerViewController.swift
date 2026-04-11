@@ -41,11 +41,11 @@ class TemplatePickerViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "换模板"
+        title = NSLocalizedString("换模板", comment: "")
         view.backgroundColor = .systemGroupedBackground
 
         navigationItem.leftBarButtonItem = UIBarButtonItem(
-            title: "取消", style: .plain, target: self, action: #selector(cancelTapped))
+            title: NSLocalizedString("取消", comment: ""), style: .plain, target: self, action: #selector(cancelTapped))
 
         setupCollectionView()
         setupBottomBar()
@@ -78,7 +78,7 @@ class TemplatePickerViewController: UIViewController {
         sep.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(sep)
 
-        confirmBtn.setTitle("使用此模板", for: .normal)
+        confirmBtn.setTitle(NSLocalizedString("使用此模板", comment: ""), for: .normal)
         confirmBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         confirmBtn.setTitleColor(.white, for: .normal)
         confirmBtn.setTitleColor(UIColor.white.withAlphaComponent(0.5), for: .disabled)

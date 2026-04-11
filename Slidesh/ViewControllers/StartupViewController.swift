@@ -429,7 +429,7 @@ class StartupViewController: UIViewController {
         errorIconView.addSubview(iconImageView)
 
         // 标题
-        errorTitleLabel.text = "无法连接网络"
+        errorTitleLabel.text = NSLocalizedString("无法连接网络", comment: "")
         errorTitleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
         errorTitleLabel.textColor = .appTextPrimary
         errorTitleLabel.textAlignment = .center
@@ -437,7 +437,7 @@ class StartupViewController: UIViewController {
         errorCard.addSubview(errorTitleLabel)
 
         // 描述
-        errorDescLabel.text = "请检查网络连接后重试"
+        errorDescLabel.text = NSLocalizedString("请检查网络连接后重试", comment: "")
         errorDescLabel.font = .systemFont(ofSize: 14)
         errorDescLabel.textColor = .appTextSecondary
         errorDescLabel.textAlignment = .center
@@ -446,7 +446,7 @@ class StartupViewController: UIViewController {
         errorCard.addSubview(errorDescLabel)
 
         // 重试按钮（渐变背景）
-        retryButton.setTitle("重试", for: .normal)
+        retryButton.setTitle(NSLocalizedString("重试", comment: ""), for: .normal)
         retryButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         retryButton.setTitleColor(.white, for: .normal)
         retryButton.layer.cornerRadius = 22
@@ -457,7 +457,7 @@ class StartupViewController: UIViewController {
         addGradientToRetryButton()
 
         // 网络设置按钮
-        settingsButton.setTitle("前往网络设置", for: .normal)
+        settingsButton.setTitle(NSLocalizedString("前往网络设置", comment: ""), for: .normal)
         settingsButton.titleLabel?.font = .systemFont(ofSize: 13)
         settingsButton.setTitleColor(.appTextSecondary, for: .normal)
         settingsButton.addTarget(self, action: #selector(settingsTapped), for: .touchUpInside)

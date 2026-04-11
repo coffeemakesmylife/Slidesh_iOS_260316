@@ -55,7 +55,7 @@ class CategorySelectorView: UIView {
         ])
 
         // 初始默认 "全部场景"
-        configure(with: [("全部场景", "")])
+        configure(with: [(NSLocalizedString("全部场景", comment: ""), "")])
     }
 
     /// 用 API 返回的分类选项重建 chips

@@ -87,14 +87,14 @@ final class SatisfactionSheet: UIViewController {
             ?? Bundle.main.infoDictionary?["CFBundleName"] as? String
             ?? AppConfig.appName
         let titleLabel = UILabel()
-        titleLabel.text          = "\(appName) 帮到你了吗？"
+        titleLabel.text          = "\(appName) " + NSLocalizedString("帮到你了吗？", comment: "")
         titleLabel.font          = .systemFont(ofSize: 22, weight: .bold)
         titleLabel.textColor     = .appTextPrimary
         titleLabel.textAlignment = .center
 
         // 副标题
         let subtitleLabel = UILabel()
-        subtitleLabel.text          = "你的反馈帮助我们持续改进"
+        subtitleLabel.text          = NSLocalizedString("你的反馈帮助我们持续改进", comment: "")
         subtitleLabel.font          = .systemFont(ofSize: 15)
         subtitleLabel.textColor     = .appTextSecondary
         subtitleLabel.textAlignment = .center

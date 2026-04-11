@@ -17,9 +17,9 @@ struct OutlineSection {
 
     var tagLabel: String {
         switch kind {
-        case .theme:   return "主题"
-        case .toc:     return "目录"
-        case .chapter: return "章节"
+        case .theme:   return NSLocalizedString("主题", comment: "")
+        case .toc:     return NSLocalizedString("目录", comment: "")
+        case .chapter: return NSLocalizedString("章节", comment: "")
         }
     }
 }
@@ -75,7 +75,7 @@ enum MarkdownParser {
             let tocBullets = tocTitles.enumerated().map { i, title in
                 OutlineBullet(level: .body, text: "\(i + 1). \(title)")
             }
-            let toc = OutlineSection(kind: .toc, title: "目录", bullets: tocBullets)
+            let toc = OutlineSection(kind: .toc, title: NSLocalizedString("目录", comment: ""), bullets: tocBullets)
             let insertIdx = sections.firstIndex(where: { $0.kind == .theme }).map { $0 + 1 } ?? 0
             sections.insert(toc, at: insertIdx)
         }
@@ -166,7 +166,7 @@ class OutlineViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        title = "大纲生成"
+        title = NSLocalizedString("大纲生成", comment: "")
         view.backgroundColor = .systemGroupedBackground
         addMeshGradientBackground()
         navigationItem.leftBarButtonItem = UIBarButtonItem(
@@ -226,7 +226,7 @@ class OutlineViewController: UIViewController {
         spinner.color = .secondaryLabel
         spinner.startAnimating()
 
-        spinnerLabel.text      = "大纲生成中，请不要退出..."
+        spinnerLabel.text      = NSLocalizedString("大纲生成中，请不要退出...", comment: "")
         spinnerLabel.font      = .systemFont(ofSize: 13)
         spinnerLabel.textColor = .secondaryLabel
 
@@ -278,18 +278,18 @@ class OutlineViewController: UIViewController {
         bottomBar.addSubview(checkImg)
 
         let hintLbl = UILabel()
-        hintLbl.text      = "AI生成内容仅供参考，点击可编辑操作"
+        hintLbl.text      = NSLocalizedString("AI生成内容仅供参考，点击可编辑操作", comment: "")
         hintLbl.font      = .systemFont(ofSize: 12)
         hintLbl.textColor = .secondaryLabel
         hintLbl.translatesAutoresizingMaskIntoConstraints = false
         bottomBar.addSubview(hintLbl)
 
         // 换个大纲 & 下载大纲（使用自定义图片，alwaysTemplate 保留当前颜色）
-        let regenBtn = makeToolbarBtn(image: UIImage(named: "refresh-line"),      label: "重写大纲", action: #selector(regenerateTapped))
-        let dlBtn    = makeToolbarBtn(image: UIImage(named: "file-download-line"), label: "下载大纲", action: #selector(downloadTapped))
+        let regenBtn = makeToolbarBtn(image: UIImage(named: "refresh-line"),      label: NSLocalizedString("重写大纲", comment: ""), action: #selector(regenerateTapped))
+        let dlBtn    = makeToolbarBtn(image: UIImage(named: "file-download-line"), label: NSLocalizedString("下载大纲", comment: ""), action: #selector(downloadTapped))
 
         // 渐变"挑选PPT模板"按钮
-        templateBtn.setTitle("挑选PPT模板  →", for: .normal)
+        templateBtn.setTitle(NSLocalizedString("挑选PPT模板  →", comment: ""), for: .normal)
         templateBtn.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
         templateBtn.setTitleColor(.white, for: .normal)
         templateBtn.layer.cornerRadius = 22
@@ -500,11 +500,11 @@ class OutlineViewController: UIViewController {
             onError: { [weak self] error in
                 guard let self else { return }
                 self.spinner.stopAnimating()
-                self.spinnerLabel.text = "生成失败"
-                let alert = UIAlertController(title: "生成失败",
+                self.spinnerLabel.text = NSLocalizedString("生成失败", comment: "")
+                let alert = UIAlertController(title: NSLocalizedString("生成失败", comment: ""),
                                               message: error.localizedDescription,
                                               preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "返回", style: .default) { [weak self] _ in
+                alert.addAction(UIAlertAction(title: NSLocalizedString("返回", comment: ""), style: .default) { [weak self] _ in
                     self?.navigationController?.popViewController(animated: true)
                 })
                 self.present(alert, animated: true)
@@ -537,11 +537,11 @@ class OutlineViewController: UIViewController {
 
             let lineAttr: NSAttributedString
             if t.hasPrefix("# ") {
-                lineAttr = taggedLine(tag: "主题", text: String(t.dropFirst(2)),
+                lineAttr = taggedLine(tag: NSLocalizedString("主题", comment: ""), text: String(t.dropFirst(2)),
                                       tagFg: purple, tagBg: purpleBg,
                                       textFont: .boldSystemFont(ofSize: 18), spacingBefore: 8)
             } else if t.hasPrefix("## ") {
-                lineAttr = taggedLine(tag: "章节", text: String(t.dropFirst(3)),
+                lineAttr = taggedLine(tag: NSLocalizedString("章节", comment: ""), text: String(t.dropFirst(3)),
                                       tagFg: purple, tagBg: purpleBg,
                                       textFont: .boldSystemFont(ofSize: 16), spacingBefore: 24)
             } else if t.hasPrefix("### ") {
@@ -804,8 +804,8 @@ class OutlineViewController: UIViewController {
     }
 
     private func showExportError(_ error: Error) {
-        let alert = UIAlertController(title: "导出失败", message: error.localizedDescription, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        let alert = UIAlertController(title: NSLocalizedString("导出失败", comment: ""), message: error.localizedDescription, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
         present(alert, animated: true)
     }
 
@@ -877,7 +877,7 @@ class OutlineViewController: UIViewController {
             ])
         } else {
             templateBtn.subviews.first(where: { $0.tag == 999 })?.removeFromSuperview()
-            templateBtn.setTitle("挑选PPT模板  →", for: .normal)
+            templateBtn.setTitle(NSLocalizedString("挑选PPT模板  →", comment: ""), for: .normal)
         }
     }
 

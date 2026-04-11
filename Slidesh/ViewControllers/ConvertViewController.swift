@@ -28,9 +28,9 @@ enum ConvertSection: Int, CaseIterable, Sendable {
     var title: String? {
         switch self {
         case .featured:    return nil
-        case .pdfTools:    return "PDF 专家"
-        case .officeTools: return "Office 转换"
-        case .utility:     return "万能提取"
+        case .pdfTools:    return NSLocalizedString("PDF 专家", comment: "")
+        case .officeTools: return NSLocalizedString("Office 转换", comment: "")
+        case .utility:     return NSLocalizedString("万能提取", comment: "")
         }
     }
 }
@@ -53,39 +53,39 @@ struct ConvertToolItem: Hashable, Sendable {
 
     static let all: [ConvertSection: [ConvertToolItem]] = [
         .featured: [
-            ConvertToolItem(title: "PDF 转 Word",
-                            subTitle: "保持排版，精准转换，支持多种 OCR 识别",
+            ConvertToolItem(title: NSLocalizedString("PDF 转 Word", comment: ""),
+                            subTitle: NSLocalizedString("保持排版，精准转换，支持多种 OCR 识别", comment: ""),
                             icon: "doc.text.fill", colorName: "appPrimary", isFeatured: true,
                             kind: .pdfToWord, formatOptions: [],
                             acceptedExtensions: ["pdf"], allowsMultiple: false),
         ],
         .pdfTools: [
-            ConvertToolItem(title: "PDF 转换器", subTitle: "转为 Word/Excel/PPT/HTML",
+            ConvertToolItem(title: NSLocalizedString("PDF 转换器", comment: ""), subTitle: NSLocalizedString("转为 Word/Excel/PPT/HTML", comment: ""),
                             icon: "book.pages.fill", colorName: "systemRed", isFeatured: false,
                             kind: .pdfConvert,
                             formatOptions: ["WORD", "XML", "EXCEL", "PPT", "PNG", "HTML"],
                             acceptedExtensions: ["pdf"], allowsMultiple: false),
-            ConvertToolItem(title: "合并 PDF", subTitle: "支持两份或多份文件合并",
+            ConvertToolItem(title: NSLocalizedString("合并 PDF", comment: ""), subTitle: NSLocalizedString("支持两份或多份文件合并", comment: ""),
                             icon: "plus.square.fill.on.square.fill", colorName: "systemBlue", isFeatured: false,
                             kind: .mergePDF, formatOptions: [],
                             acceptedExtensions: ["pdf"], allowsMultiple: true),
         ],
         .officeTools: [
-            ConvertToolItem(title: "Word 转换", subTitle: "转为 PDF/HTML/PNG",
+            ConvertToolItem(title: NSLocalizedString("Word 转换", comment: ""), subTitle: NSLocalizedString("转为 PDF/HTML/PNG", comment: ""),
                             icon: "doc.richtext.fill", colorName: "systemIndigo", isFeatured: false,
                             kind: .wordConvert, formatOptions: ["PDF", "HTML", "PNG"],
                             acceptedExtensions: ["doc", "docx"], allowsMultiple: false),
-            ConvertToolItem(title: "Excel 转换", subTitle: "转为 PDF/HTML/PNG",
+            ConvertToolItem(title: NSLocalizedString("Excel 转换", comment: ""), subTitle: NSLocalizedString("转为 PDF/HTML/PNG", comment: ""),
                             icon: "tablecells.fill", colorName: "systemGreen", isFeatured: false,
                             kind: .excelConvert, formatOptions: ["PDF", "HTML", "PNG"],
                             acceptedExtensions: ["xls", "xlsx"], allowsMultiple: false),
-            ConvertToolItem(title: "PPT 转换", subTitle: "转为 PDF/HTML/PNG",
+            ConvertToolItem(title: NSLocalizedString("PPT 转换", comment: ""), subTitle: NSLocalizedString("转为 PDF/HTML/PNG", comment: ""),
                             icon: "tv.fill", colorName: "systemOrange", isFeatured: false,
                             kind: .pptConvert, formatOptions: ["PDF", "HTML", "PNG"],
                             acceptedExtensions: ["ppt", "pptx"], allowsMultiple: false),
         ],
         .utility: [
-            ConvertToolItem(title: "文件转图片", subTitle: "将文档每一页提取为图片",
+            ConvertToolItem(title: NSLocalizedString("文件转图片", comment: ""), subTitle: NSLocalizedString("将文档每一页提取为图片", comment: ""),
                             icon: "photo.on.rectangle.angled.fill", colorName: "systemTeal", isFeatured: false,
                             kind: .fileToImage, formatOptions: [],
                             acceptedExtensions: ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"],
@@ -132,7 +132,7 @@ class ConvertViewController: UIViewController {
     }
 
     private func setupUI() {
-        navigationItem.title = "极速转换"
+        navigationItem.title = NSLocalizedString("极速转换", comment: "")
         view.backgroundColor = .appBackgroundPrimary
         addMeshGradientBackground()
 

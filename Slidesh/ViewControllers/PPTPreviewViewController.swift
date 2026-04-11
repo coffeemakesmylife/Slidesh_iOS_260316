@@ -86,7 +86,7 @@ class PPTPreviewViewController: UIViewController {
     // MARK: - 导航栏
 
     private func setupNavBar() {
-        title = pptInfo.subject ?? "PPT 预览"
+        title = pptInfo.subject ?? NSLocalizedString("PPT 预览", comment: "")
 
         // push 进来时系统 back button 自动显示；modal present 才显示 xmark
         if navigationController?.viewControllers.first == self {
@@ -119,7 +119,7 @@ class PPTPreviewViewController: UIViewController {
         ])
 
         // 保存到本地按钮（主题色背景）
-        saveBtn.setTitle("保存到本地", for: .normal)
+        saveBtn.setTitle(NSLocalizedString("保存到本地", comment: ""), for: .normal)
         saveBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         saveBtn.setTitleColor(.white, for: .normal)
         saveBtn.backgroundColor = .appPrimary
@@ -132,7 +132,7 @@ class PPTPreviewViewController: UIViewController {
         // 左侧：换模板场景用 changeTemplateBtn（无渐变），否则用 shareBtn 容器
         let leftView: UIView
         if canChangeTemplate {
-            changeTemplateBtn.setTitle("换模板", for: .normal)
+            changeTemplateBtn.setTitle(NSLocalizedString("换模板", comment: ""), for: .normal)
             changeTemplateBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
             changeTemplateBtn.setTitleColor(.appPrimary, for: .normal)
             changeTemplateBtn.backgroundColor = .appCardBackground
@@ -148,7 +148,7 @@ class PPTPreviewViewController: UIViewController {
             let shareContainer = makeGradientContainer(alpha: 0.8, grad: &shareBtnGrad)
             shareBtnContainer = shareContainer
             bottomBar.contentView.addSubview(shareContainer)
-            shareBtn.setTitle("分享", for: .normal)
+            shareBtn.setTitle(NSLocalizedString("分享", comment: ""), for: .normal)
             shareBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
             shareBtn.setTitleColor(.white, for: .normal)
             shareBtn.translatesAutoresizingMaskIntoConstraints = false
@@ -264,11 +264,11 @@ class PPTPreviewViewController: UIViewController {
 
     private func loadContent() {
         if pptInfo.status == "FAILURE" {
-            showCenterMessage("PPT 生成失败，请重试")
+            showCenterMessage(NSLocalizedString("PPT 生成失败，请重试", comment: ""))
             return
         }
         guard let rawUrl = pptInfo.fileUrl, !rawUrl.isEmpty else {
-            showCenterMessage("PPT 文件地址为空")
+            showCenterMessage(NSLocalizedString("PPT 文件地址为空", comment: ""))
             return
         }
 
@@ -282,7 +282,7 @@ class PPTPreviewViewController: UIViewController {
         }
 
         guard let url = URL(string: viewerUrl) else {
-            showCenterMessage("无效的 PPT 文件地址")
+            showCenterMessage(NSLocalizedString("无效的 PPT 文件地址", comment: ""))
             return
         }
         print("📄 PPTPreview 加载：\(viewerUrl)")
@@ -314,10 +314,10 @@ class PPTPreviewViewController: UIViewController {
             }
             if let error {
                 DispatchQueue.main.async {
-                    let alert = UIAlertController(title: "下载失败",
+                    let alert = UIAlertController(title: NSLocalizedString("下载失败", comment: ""),
                                                   message: error.localizedDescription,
                                                   preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "确定", style: .default))
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
                     self.present(alert, animated: true)
                 }
                 return
@@ -342,8 +342,8 @@ class PPTPreviewViewController: UIViewController {
         shareBtn.isEnabled          = enabled
         changeTemplateBtn.isEnabled = enabled
         if enabled {
-            saveBtn.setTitle("保存到本地", for: .normal)
-            shareBtn.setTitle("分享", for: .normal)
+            saveBtn.setTitle(NSLocalizedString("保存到本地", comment: ""), for: .normal)
+            shareBtn.setTitle(NSLocalizedString("分享", comment: ""), for: .normal)
         }
     }
 
@@ -390,7 +390,7 @@ class PPTPreviewViewController: UIViewController {
         guard !pptId.isEmpty else { return }
 
         setButtonsEnabled(false)
-        showLoadingOverlay(message: "更换模板中…")
+        showLoadingOverlay(message: NSLocalizedString("更换模板中…", comment: ""))
 
         PPTAPIService.shared.updateTemplate(pptId: pptId, templateId: templateId) { [weak self] result in
             guard let self else { return }
@@ -398,10 +398,10 @@ class PPTPreviewViewController: UIViewController {
             case .failure(let error):
                 self.hideLoadingOverlay()
                 self.setButtonsEnabled(true)
-                let alert = UIAlertController(title: "换模板失败",
+                let alert = UIAlertController(title: NSLocalizedString("换模板失败", comment: ""),
                                               message: error.localizedDescription,
                                               preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "确定", style: .default))
+                alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
                 self.present(alert, animated: true)
 
             case .success:
@@ -412,7 +412,7 @@ class PPTPreviewViewController: UIViewController {
                     self.setButtonsEnabled(true)
                     if case .success(let newInfo) = result {
                         self.pptInfo = newInfo
-                        self.title   = newInfo.subject ?? "PPT 预览"
+                        self.title   = newInfo.subject ?? NSLocalizedString("PPT 预览", comment: "")
                         self.loadContent()
                     }
                 }
@@ -507,7 +507,7 @@ class PPTPreviewViewController: UIViewController {
 extension PPTPreviewViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFailProvisionalNavigation _: WKNavigation!, withError error: Error) {
         print("❌ PPTPreview 加载失败：\(error.localizedDescription)")
-        showCenterMessage("加载失败，请检查网络\n\(error.localizedDescription)")
+        showCenterMessage(NSLocalizedString("加载失败，请检查网络", comment: "") + "\n\(error.localizedDescription)")
     }
 }
 
@@ -517,10 +517,10 @@ extension PPTPreviewViewController: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         // 用户点击"保存"完成后弹出提示
         let alert = UIAlertController(
-            title: "已保存到文件 App",
-            message: "你可以在「文件」App 中找到「\(pptInfo.subject ?? "PPT")」。",
+            title: NSLocalizedString("已保存到文件 App", comment: ""),
+            message: NSLocalizedString("你可以在「文件」App 中找到「", comment: "") + "\(pptInfo.subject ?? "PPT")" + NSLocalizedString("」。", comment: ""),
             preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "好的", style: .default))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("好的", comment: ""), style: .default))
         present(alert, animated: true)
     }
 }

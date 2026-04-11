@@ -31,9 +31,9 @@ struct PremiumPlan: Equatable {
     }
 
     static let allPlans: [PremiumPlan] = [
-        PremiumPlan(id: "week",  title: "周订阅", tag: nil,       priceStr: "¥12.00",  priceDouble: 12.00,  subtext: "每天低至 ¥1.71", disclaimer: "每天仅¥1.7无限次使用，到期自动续期，随时可取消"),
-        PremiumPlan(id: "month", title: "月订阅", tag: "限时折扣", priceStr: "¥18.00",  priceDouble: 18.00,  subtext: "每天低至 ¥0.60", disclaimer: "首月¥18，之后¥38每月包含无限次使用，随时可取消"),
-        PremiumPlan(id: "year",  title: "年订阅", tag: "最受欢迎", priceStr: "¥198.00", priceDouble: 198.00, subtext: "每月低至 ¥16.50", disclaimer: "每年包含无限次使用，到期自动续期，随时可取消")
+        PremiumPlan(id: "week",  title: NSLocalizedString("周订阅", comment: ""), tag: nil,                                        priceStr: "¥12.00",  priceDouble: 12.00,  subtext: NSLocalizedString("每天低至 ¥1.71", comment: ""),  disclaimer: NSLocalizedString("每天仅¥1.7无限次使用，到期自动续期，随时可取消", comment: "")),
+        PremiumPlan(id: "month", title: NSLocalizedString("月订阅", comment: ""), tag: NSLocalizedString("限时折扣", comment: ""), priceStr: "¥18.00",  priceDouble: 18.00,  subtext: NSLocalizedString("每天低至 ¥0.60", comment: ""),  disclaimer: NSLocalizedString("首月¥18，之后¥38每月包含无限次使用，随时可取消", comment: "")),
+        PremiumPlan(id: "year",  title: NSLocalizedString("年订阅", comment: ""), tag: NSLocalizedString("最受欢迎", comment: ""), priceStr: "¥198.00", priceDouble: 198.00, subtext: NSLocalizedString("每月低至 ¥16.50", comment: ""), disclaimer: NSLocalizedString("每年包含无限次使用，到期自动续期，随时可取消", comment: ""))
     ]
 }
 
@@ -147,7 +147,7 @@ class PremiumViewController: UIViewController {
         container.addSubview(subscribeButton)
 
         // 自动续费附加提示
-        autoRenewTipLabel.text = "确认即同意自动续费条款，随用随停"
+        autoRenewTipLabel.text = NSLocalizedString("确认即同意自动续费条款，随用随停", comment: "")
         autoRenewTipLabel.font = .systemFont(ofSize: 12)
         autoRenewTipLabel.textColor = .appTextSecondary
         autoRenewTipLabel.textAlignment = .center
@@ -202,12 +202,12 @@ class PremiumViewController: UIViewController {
 
     private func setupContent() {
         // 标题信息
-        headerLabel.text = "解锁高级版"
+        headerLabel.text = NSLocalizedString("解锁高级版", comment: "")
         headerLabel.font = .systemFont(ofSize: 32, weight: .heavy)
         headerLabel.textColor = .appTextPrimary
         headerLabel.textAlignment = .center
 
-        subHeaderLabel.text = "解除一切格式限制，体验极速转换与提取"
+        subHeaderLabel.text = NSLocalizedString("解除一切格式限制，体验极速转换与提取", comment: "")
         subHeaderLabel.font = .systemFont(ofSize: 14, weight: .regular)
         subHeaderLabel.textColor = .appTextSecondary
         subHeaderLabel.textAlignment = .center
@@ -254,15 +254,15 @@ class PremiumViewController: UIViewController {
         disclaimerLabel.textAlignment = .center
         disclaimerLabel.numberOfLines = 0
 
-        let termsBtn = createLinkButton(title: "用户协议") { [weak self] in
+        let termsBtn = createLinkButton(title: NSLocalizedString("用户协议", comment: "")) { [weak self] in
             self?.openSafari(url: AppConfig.termsOfServiceURL)
         }
 
-        let privacyBtn = createLinkButton(title: "隐私政策") { [weak self] in
+        let privacyBtn = createLinkButton(title: NSLocalizedString("隐私政策", comment: "")) { [weak self] in
             self?.openSafari(url: AppConfig.privacyPolicyURL)
         }
 
-        let restoreBtn = createLinkButton(title: "恢复购买") { [weak self] in
+        let restoreBtn = createLinkButton(title: NSLocalizedString("恢复购买", comment: "")) { [weak self] in
             self?.handleRestore()
         }
 
@@ -340,7 +340,7 @@ class PremiumViewController: UIViewController {
         disclaimerLabel.text = selectedPlan.disclaimer
 
         // 使用真实价格（如已加载）或兜底价格
-        let btnText = "\(displayPrice(for: selectedPlan)) 立即体验"
+        let btnText = "\(displayPrice(for: selectedPlan)) " + NSLocalizedString("立即体验", comment: "")
         subscribeButton.setTitle(btnText, for: .normal)
 
         // 按钮轻微跳动强调
@@ -360,7 +360,7 @@ class PremiumViewController: UIViewController {
     @objc private func subscribeTapped() {
         guard let product = storeProducts[selectedPlan.productID] else {
             // 产品尚未加载完成，给出提示
-            showAlert(title: "提示", message: "产品信息加载中，请稍候重试")
+            showAlert(title: NSLocalizedString("提示", comment: ""), message: NSLocalizedString("产品信息加载中，请稍候重试", comment: ""))
             return
         }
 
@@ -376,7 +376,7 @@ class PremiumViewController: UIViewController {
                 case .success(let verification):
                     // 验证收据
                     guard case .verified(let transaction) = verification else {
-                        await MainActor.run { self.showAlert(title: "验证失败", message: "收据验证未通过，请联系客服。") }
+                        await MainActor.run { self.showAlert(title: NSLocalizedString("验证失败", comment: ""), message: NSLocalizedString("收据验证未通过，请联系客服。", comment: "")) }
                         return
                     }
                     await transaction.finish()
@@ -397,14 +397,14 @@ class PremiumViewController: UIViewController {
                 case .pending:
                     // 交易待处理：可能是 Ask to Buy 等待家长审批，或支付尚未完成
                     await MainActor.run {
-                        self.showAlert(title: "订阅待处理", message: "您的订阅正在等待审批，批准后即可使用。")
+                        self.showAlert(title: NSLocalizedString("订阅待处理", comment: ""), message: NSLocalizedString("您的订阅正在等待审批，批准后即可使用。", comment: ""))
                     }
 
                 @unknown default:
                     break
                 }
             } catch {
-                await MainActor.run { self.showAlert(title: "订阅失败", message: error.localizedDescription) }
+                await MainActor.run { self.showAlert(title: NSLocalizedString("订阅失败", comment: ""), message: error.localizedDescription) }
             }
         }
     }
@@ -414,9 +414,9 @@ class PremiumViewController: UIViewController {
             do {
                 // 同步 App Store 购买记录
                 try await AppStore.sync()
-                showAlert(title: "恢复完成", message: "购买记录已同步，如有有效订阅将自动激活。")
+                showAlert(title: NSLocalizedString("恢复完成", comment: ""), message: NSLocalizedString("购买记录已同步，如有有效订阅将自动激活。", comment: ""))
             } catch {
-                showAlert(title: "恢复失败", message: error.localizedDescription)
+                showAlert(title: NSLocalizedString("恢复失败", comment: ""), message: error.localizedDescription)
             }
         }
     }
@@ -428,7 +428,7 @@ class PremiumViewController: UIViewController {
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
         present(alert, animated: true)
     }
 }
@@ -524,7 +524,7 @@ private class PremiumPlanCardView: UIView {
                 tagContainer.leadingAnchor.constraint(equalTo: titleLabel.leadingAnchor)
             ])
 
-            if tagStr == "限时折扣" {
+            if tagStr == NSLocalizedString("限时折扣", comment: "") {
                 tagContainer.backgroundColor = UIColor(red: 1.0, green: 0.4, blue: 0.6, alpha: 0.2)
                 tagLabel.textColor = UIColor(red: 1.0, green: 0.4, blue: 0.6, alpha: 1.0)
             } else {

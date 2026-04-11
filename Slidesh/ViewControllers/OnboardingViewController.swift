@@ -81,7 +81,7 @@ class OnboardingViewController: UIViewController {
     // 恢复购买按钮（继续按钮下方，仅第4页显示）
     private let restoreButton: UIButton = {
         let btn = UIButton(type: .system)
-        btn.setTitle("恢复购买", for: .normal)
+        btn.setTitle(NSLocalizedString("恢复购买", comment: ""), for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 13)
         btn.setTitleColor(.appTextSecondary, for: .normal)
         btn.isHidden = true
@@ -169,10 +169,10 @@ class OnboardingViewController: UIViewController {
     
     private func buildFeaturesList() {
         let benefits = [
-            "无限次生成PPT大纲",
-            "无限制大纲+模板合成PPT",
-            "解除所有文件的格式转换限制",
-            "极速服务器响应时间"
+            NSLocalizedString("无限次生成PPT大纲", comment: ""),
+            NSLocalizedString("无限制大纲+模板合成PPT", comment: ""),
+            NSLocalizedString("解除所有文件的格式转换限制", comment: ""),
+            NSLocalizedString("极速服务器响应时间", comment: "")
         ]
         for text in benefits {
             let row = makeFeatureRow(text: text)
@@ -429,21 +429,21 @@ class OnboardingViewController: UIViewController {
     
     private func getStepData() -> (title: String, image: UIImage?, buttonTitle: String) {
         switch currentStep {
-        case 0: return ("一键生成专业幻灯片",    UIImage(named: "guide_bg_1"), "继续")
-        case 1: return ("解除一切格式转换限制",   UIImage(named: "guide_bg_2"), "继续")
-        case 2: return ("随时随地的高效创作",     UIImage(named: "guide_bg_3"), "继续")
-        case 3: return ("解锁全部高级特权",       UIImage(named: "guide_bg_4"), "继续")
-        default: return ("", nil, "继续")
+        case 0: return (NSLocalizedString("一键生成专业幻灯片", comment: ""),    UIImage(named: "guide_bg_1"), NSLocalizedString("继续", comment: ""))
+        case 1: return (NSLocalizedString("解除一切格式转换限制", comment: ""),   UIImage(named: "guide_bg_2"), NSLocalizedString("继续", comment: ""))
+        case 2: return (NSLocalizedString("随时随地的高效创作", comment: ""),     UIImage(named: "guide_bg_3"), NSLocalizedString("继续", comment: ""))
+        case 3: return (NSLocalizedString("解锁全部高级特权", comment: ""),       UIImage(named: "guide_bg_4"), NSLocalizedString("继续", comment: ""))
+        default: return ("", nil, NSLocalizedString("继续", comment: ""))
         }
     }
 
     /// 按套餐类型定制价格说明文案
     private func priceLabelText(plan: PremiumPlan, price: String) -> String {
         switch plan.id {
-        case "week":  return "每周 \(price)自动续费，随时可取消"
-        case "month": return "首月¥18 ，之后\(price)/月自动续费，随时可取消"
-        case "year":  return "每年 \(price)自动续费，随时可取消"
-        default:      return "自动续费 \(price)，随时可取消"
+        case "week":  return NSLocalizedString("每周 ", comment: "") + "\(price)" + NSLocalizedString("自动续费，随时可取消", comment: "")
+        case "month": return NSLocalizedString("首月¥18 ，之后", comment: "") + "\(price)" + NSLocalizedString("/月自动续费，随时可取消", comment: "")
+        case "year":  return NSLocalizedString("每年 ", comment: "") + "\(price)" + NSLocalizedString("自动续费，随时可取消", comment: "")
+        default:      return NSLocalizedString("自动续费 ", comment: "") + "\(price)" + NSLocalizedString("，随时可取消", comment: "")
         }
     }
     
@@ -475,12 +475,12 @@ class OnboardingViewController: UIViewController {
                     if QuotaManager.shared.isPremium {
                         self.navigateToMain()
                     } else {
-                        self.showAlert(title: "未找到购买记录", message: "当前账号没有可恢复的订阅。")
+                        self.showAlert(title: NSLocalizedString("未找到购买记录", comment: ""), message: NSLocalizedString("当前账号没有可恢复的订阅。", comment: ""))
                     }
                 }
             } catch {
                 await MainActor.run {
-                    self.showAlert(title: "恢复失败", message: error.localizedDescription)
+                    self.showAlert(title: NSLocalizedString("恢复失败", comment: ""), message: error.localizedDescription)
                 }
             }
         }
@@ -488,7 +488,7 @@ class OnboardingViewController: UIViewController {
     
     private func startSubscription() {
         guard let product = guidedProduct else {
-            showAlert(title: "提示", message: "产品信息加载中，请稍候重试")
+            showAlert(title: NSLocalizedString("提示", comment: ""), message: NSLocalizedString("产品信息加载中，请稍候重试", comment: ""))
             return
         }
         
@@ -500,7 +500,7 @@ class OnboardingViewController: UIViewController {
                 switch result {
                 case .success(let verification):
                     guard case .verified(let transaction) = verification else {
-                        await MainActor.run { self.showAlert(title: "验证失败", message: "收据验证未通过，请联系客服。") }
+                        await MainActor.run { self.showAlert(title: NSLocalizedString("验证失败", comment: ""), message: NSLocalizedString("收据验证未通过，请联系客服。", comment: "")) }
                         return
                     }
                     await transaction.finish()
@@ -509,12 +509,12 @@ class OnboardingViewController: UIViewController {
                 case .userCancelled:
                     break
                 case .pending:
-                    await MainActor.run { self.showAlert(title: "订阅待处理", message: "您的订阅正在等待审批，批准后即可使用。") }
+                    await MainActor.run { self.showAlert(title: NSLocalizedString("订阅待处理", comment: ""), message: NSLocalizedString("您的订阅正在等待审批，批准后即可使用。", comment: "")) }
                 @unknown default:
                     break
                 }
             } catch {
-                await MainActor.run { self.showAlert(title: "订阅失败", message: error.localizedDescription) }
+                await MainActor.run { self.showAlert(title: NSLocalizedString("订阅失败", comment: ""), message: error.localizedDescription) }
             }
         }
     }
@@ -528,7 +528,7 @@ class OnboardingViewController: UIViewController {
     
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
         present(alert, animated: true)
     }
 }

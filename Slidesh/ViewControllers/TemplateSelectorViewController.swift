@@ -32,9 +32,9 @@ class TemplateSelectorViewController: UIViewController {
     private var selectedColor:    String = ""
     private var themeFirst:       Bool   = false
 
-    private var categoryOptions: [(name: String, value: String)] = [("全部场景", "")]
-    private var styleOptions:    [(name: String, value: String)] = [("全部风格", "")]
-    private var colorOptions:    [(name: String, value: String)] = [("全部颜色", "")]
+    private var categoryOptions: [(name: String, value: String)] = [(NSLocalizedString("全部场景", comment: ""), "")]
+    private var styleOptions:    [(name: String, value: String)] = [(NSLocalizedString("全部风格", comment: ""), "")]
+    private var colorOptions:    [(name: String, value: String)] = [(NSLocalizedString("全部颜色", comment: ""), "")]
 
     // MARK: - 导航栏自定义 Tab（下划线样式，嵌入 titleView）
 
@@ -47,9 +47,9 @@ class TemplateSelectorViewController: UIViewController {
 
     private let categoryView   = CategorySelectorView()
     private let filterView     = UIView()
-    private let styleFilterBtn = FilterChipButton(title: "风格")
-    private let colorFilterBtn = FilterChipButton(title: "颜色")
-    private let themeFilterBtn = FilterChipButton(title: "贴合主题")
+    private let styleFilterBtn = FilterChipButton(title: NSLocalizedString("风格", comment: ""))
+    private let colorFilterBtn = FilterChipButton(title: NSLocalizedString("颜色", comment: ""))
+    private let themeFilterBtn = FilterChipButton(title: NSLocalizedString("贴合主题", comment: ""))
 
     // MARK: - 模板网格
 
@@ -93,7 +93,7 @@ class TemplateSelectorViewController: UIViewController {
         loadTemplates(reset: true)
         // 换模板模式：修改按钮标题
         if onTemplateSelected != nil {
-            composeBtn.setTitle("使用此模板", for: .normal)
+            composeBtn.setTitle(NSLocalizedString("使用此模板", comment: ""), for: .normal)
         }
     }
 
@@ -121,12 +121,12 @@ class TemplateSelectorViewController: UIViewController {
             $0.translatesAutoresizingMaskIntoConstraints = false
             container.addSubview($0)
         }
-        tabCenter.setTitle("模板中心", for: .normal)
+        tabCenter.setTitle(NSLocalizedString("模板中心", comment: ""), for: .normal)
         tabCenter.setTitleColor(.appPrimary, for: .normal)
         tabCenter.addTarget(self, action: #selector(tabTapped(_:)), for: .touchUpInside)
         tabCenter.tag = 0
 
-        tabRecent.setTitle("最近使用", for: .normal)
+        tabRecent.setTitle(NSLocalizedString("最近使用", comment: ""), for: .normal)
         tabRecent.setTitleColor(.appTextSecondary, for: .normal)
         tabRecent.addTarget(self, action: #selector(tabTapped(_:)), for: .touchUpInside)
         tabRecent.tag = 1
@@ -297,7 +297,7 @@ class TemplateSelectorViewController: UIViewController {
         bottomBar.layer.insertSublayer(gradBg, at: 0)
         bottomGradLayer = gradBg
 
-        composeBtn.setTitle("合成PPT", for: .normal)
+        composeBtn.setTitle(NSLocalizedString("合成PPT", comment: ""), for: .normal)
         composeBtn.titleLabel?.font = .systemFont(ofSize: 17, weight: .semibold)
         composeBtn.setTitleColor(.white, for: .normal)
         composeBtn.layer.cornerRadius = 26
@@ -332,7 +332,7 @@ class TemplateSelectorViewController: UIViewController {
     // MARK: - 空状态标签（"最近使用" tab）
 
     private func setupEmptyLabel() {
-        emptyLabel.text          = "暂无最近使用的模板"
+        emptyLabel.text          = NSLocalizedString("暂无最近使用的模板", comment: "")
         emptyLabel.textColor     = .appTextTertiary
         emptyLabel.font          = .systemFont(ofSize: 15)
         emptyLabel.textAlignment = .center
@@ -375,9 +375,9 @@ class TemplateSelectorViewController: UIViewController {
         let categories = options.filter { $0.type.lowercased() == "category" }
         let styles     = options.filter { $0.type.lowercased() == "style" }
         let colors     = options.filter { $0.type.lowercased() == "themecolor" }
-        categoryOptions = [("全部场景", "")] + categories.map { ($0.name, $0.value) }
-        styleOptions    = [("全部风格", "")] + styles.map    { ($0.name, $0.value) }
-        colorOptions    = [("全部颜色", "")] + colors.map    { ($0.name, $0.value) }
+        categoryOptions = [(NSLocalizedString("全部场景", comment: ""), "")] + categories.map { ($0.name, $0.value) }
+        styleOptions    = [(NSLocalizedString("全部风格", comment: ""), "")] + styles.map    { ($0.name, $0.value) }
+        colorOptions    = [(NSLocalizedString("全部颜色", comment: ""), "")] + colors.map    { ($0.name, $0.value) }
         categoryView.configure(with: categoryOptions)
     }
 
@@ -529,7 +529,7 @@ class TemplateSelectorViewController: UIViewController {
     @objc private func styleBtnTapped() {
         let options = styleOptions.map { $0.name }
         let current = styleOptions.firstIndex { $0.value == selectedStyle } ?? 0
-        let picker  = FilterPickerViewController(title: "风格", options: options, selectedIndex: current)
+        let picker  = FilterPickerViewController(title: NSLocalizedString("风格", comment: ""), options: options, selectedIndex: current)
         picker.onSelect = { [weak self] index in
             guard let self, index < self.styleOptions.count else { return }
             let sel = self.styleOptions[index]
@@ -544,7 +544,7 @@ class TemplateSelectorViewController: UIViewController {
         let options  = colorOptions.map { $0.name }
         let current  = colorOptions.firstIndex { $0.value == selectedColor } ?? 0
         let swatches: [UIColor?] = colorOptions.map { TemplatesViewController.uiColor(forValue: $0.value) }
-        let picker   = FilterPickerViewController(title: "颜色", options: options,
+        let picker   = FilterPickerViewController(title: NSLocalizedString("颜色", comment: ""), options: options,
                                                   selectedIndex: current, colorSwatches: swatches)
         picker.onSelect = { [weak self] index in
             guard let self, index < self.colorOptions.count else { return }
@@ -559,7 +559,7 @@ class TemplateSelectorViewController: UIViewController {
     /// 贴合主题：纯客户端排序，将 subject 包含大纲主题词的模板排到前面
     @objc private func themeBtnTapped() {
         themeFirst.toggle()
-        themeFilterBtn.setFilterTitle("贴合主题", active: themeFirst)
+        themeFilterBtn.setFilterTitle(NSLocalizedString("贴合主题", comment: ""), active: themeFirst)
         applySort()
     }
 
@@ -567,9 +567,9 @@ class TemplateSelectorViewController: UIViewController {
 
     @objc private func composeTapped() {
         guard let template = selectedTemplate else {
-            let msg = onTemplateSelected != nil ? "点击一个模板后再使用" : "点击一个模板后再合成PPT"
-            let alert = UIAlertController(title: "请先选择模板", message: msg, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "确定", style: .default))
+            let msg = onTemplateSelected != nil ? NSLocalizedString("点击一个模板后再使用", comment: "") : NSLocalizedString("点击一个模板后再合成PPT", comment: "")
+            let alert = UIAlertController(title: NSLocalizedString("请先选择模板", comment: ""), message: msg, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
             present(alert, animated: true)
             return
         }
@@ -594,10 +594,10 @@ class TemplateSelectorViewController: UIViewController {
                 self.loadAndShowPPT(pptId: pptId)
             case .failure(let error):
                 self.setComposeLoading(false)
-                let alert = UIAlertController(title: "合成失败",
+                let alert = UIAlertController(title: NSLocalizedString("合成失败", comment: ""),
                                               message: error.localizedDescription,
                                               preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "确定", style: .default))
+                alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
                 self.present(alert, animated: true)
             }
         }
@@ -609,7 +609,7 @@ class TemplateSelectorViewController: UIViewController {
             let t = line.trimmingCharacters(in: .whitespaces)
             if t.hasPrefix("# ") { return String(t.dropFirst(2)) }
         }
-        return "未命名作品"
+        return NSLocalizedString("未命名作品", comment: "")
     }
 
     private func setComposeLoading(_ loading: Bool) {
@@ -628,7 +628,7 @@ class TemplateSelectorViewController: UIViewController {
             ])
         } else {
             composeBtn.subviews.first(where: { $0.tag == 888 })?.removeFromSuperview()
-            composeBtn.setTitle(onTemplateSelected != nil ? "使用此模板" : "合成PPT", for: .normal)
+            composeBtn.setTitle(onTemplateSelected != nil ? NSLocalizedString("使用此模板", comment: "") : NSLocalizedString("合成PPT", comment: ""), for: .normal)
         }
     }
 
@@ -752,5 +752,5 @@ private class SelectorFooterView: UICollectionReusableView {
     }
 
     required init?(coder: NSCoder) { fatalError() }
-    func configure(showEnd: Bool) { label.text = showEnd ? "— 到底了 —" : nil }
+    func configure(showEnd: Bool) { label.text = showEnd ? NSLocalizedString("— 到底了 —", comment: "") : nil }
 }

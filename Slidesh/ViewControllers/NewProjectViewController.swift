@@ -93,7 +93,7 @@ class NewProjectViewController: UIViewController {
         view.addSubview(iconView)
 
         let mainLabel = UILabel()
-        mainLabel.text          = "有什么想法，说给 AI 听"
+        mainLabel.text          = NSLocalizedString("有什么想法，说给 AI 听", comment: "")
         mainLabel.font          = .systemFont(ofSize: 22, weight: .bold)
         mainLabel.textColor     = .appTextPrimary
         mainLabel.textAlignment = .center
@@ -101,7 +101,7 @@ class NewProjectViewController: UIViewController {
         view.addSubview(mainLabel)
 
         let subLabel = UILabel()
-        subLabel.text          = "AI 帮你整理成一套完整的PPT"
+        subLabel.text          = NSLocalizedString("AI 帮你整理成一套完整的PPT", comment: "")
         subLabel.font          = .systemFont(ofSize: 14)
         subLabel.textColor     = .appTextSecondary
         subLabel.textAlignment = .center
@@ -214,7 +214,7 @@ class NewProjectViewController: UIViewController {
         container.addSubview(themeTextView)
 
         // 占位符（UITextView 不内置 placeholder）
-        placeholderLabel.text                     = "输入您的幻灯片主题..."
+        placeholderLabel.text                     = NSLocalizedString("输入您的幻灯片主题...", comment: "")
         placeholderLabel.font                     = .systemFont(ofSize: 15)
         placeholderLabel.textColor                = .appTextTertiary
         placeholderLabel.isUserInteractionEnabled = false
@@ -321,13 +321,13 @@ class NewProjectViewController: UIViewController {
         paramsScrollView.addSubview(paramsStack)
 
         // 三个 Chip：灵感 / 页数 / 语言
-        inspireChip = ParamChip(symbol: "lightbulb", label: "主题灵感")
+        inspireChip = ParamChip(symbol: "lightbulb", label: NSLocalizedString("主题灵感", comment: ""))
         // 用默认值对应的显示文本初始化 chip
         let defaultLength = ParamsPickerViewController.lengths.first { $0.value == selectedLength }
         let defaultLang   = ParamsPickerViewController.languages.first { $0.value == selectedLanguage }
-        let lengthLabel = defaultLength.map { "\($0.display) \($0.detail)" } ?? "中篇 20-30页"
+        let lengthLabel = defaultLength.map { "\($0.display) \($0.detail)" } ?? NSLocalizedString("中篇 20-30页", comment: "")
         pageChip = ParamChip(symbol: "doc.text", label: lengthLabel)
-        langChip = ParamChip(symbol: "globe",    label: defaultLang?.display   ?? "中文（简体）")
+        langChip = ParamChip(symbol: "globe",    label: defaultLang?.display   ?? NSLocalizedString("中文（简体）", comment: ""))
 
         [inspireChip, pageChip, langChip].forEach { paramsStack.addArrangedSubview($0) }
 
@@ -403,7 +403,7 @@ class NewProjectViewController: UIViewController {
         container.layer.insertSublayer(gradient, at: 0)
         generateGradient = gradient
 
-        generateButton.setTitle("立即生成", for: .normal)
+        generateButton.setTitle(NSLocalizedString("立即生成", comment: ""), for: .normal)
         let imgCfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         generateButton.setImage(UIImage(systemName: "sparkles", withConfiguration: imgCfg), for: .normal)
         generateButton.tintColor        = .white
@@ -565,7 +565,7 @@ class NewProjectViewController: UIViewController {
             generateSpinner?.startAnimating()
         } else {
             generateSpinner?.stopAnimating()
-            generateButton.setTitle("立即生成", for: .normal)
+            generateButton.setTitle(NSLocalizedString("立即生成", comment: ""), for: .normal)
             let imgCfg = UIImage.SymbolConfiguration(pointSize: 14, weight: .medium)
             generateButton.setImage(UIImage(systemName: "sparkles", withConfiguration: imgCfg), for: .normal)
             generateTask = nil
@@ -573,8 +573,8 @@ class NewProjectViewController: UIViewController {
     }
 
     private func showGenerateError(_ message: String) {
-        let alert = UIAlertController(title: "生成失败", message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        let alert = UIAlertController(title: NSLocalizedString("生成失败", comment: ""), message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
         present(alert, animated: true)
     }
 

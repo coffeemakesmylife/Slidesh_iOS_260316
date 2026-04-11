@@ -21,7 +21,7 @@ final class AppIconPickerViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "应用图标"
+        navigationItem.title = NSLocalizedString("应用图标", comment: "")
         addMeshGradientBackground()
         setupCollectionView()
     }
@@ -99,9 +99,9 @@ extension AppIconPickerViewController: UICollectionViewDelegate {
         guard entry.identifier != currentIdentifier else { return }
 
         if !manager.supportsAlternateIcons {
-            let alert = UIAlertController(title: "不支持", message: "当前设备不支持更换应用图标。",
+            let alert = UIAlertController(title: NSLocalizedString("不支持", comment: ""), message: NSLocalizedString("当前设备不支持更换应用图标。", comment: ""),
                                           preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "确定", style: .default))
+            alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
             present(alert, animated: true)
             return
         }

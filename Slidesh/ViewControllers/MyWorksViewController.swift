@@ -73,7 +73,7 @@ private class PPTGridCell: UICollectionViewCell {
     }
 
     func configure(with info: PPTInfo) {
-        titleLabel.text = info.subject ?? "未命名"
+        titleLabel.text = info.subject ?? NSLocalizedString("未命名", comment: "")
         // createTime 可能含 T 分隔符（如 "2026-03-21T10:59:00"），替换 T 为空格后截取前16字符
         if let t = info.createTime {
             let normalized = t.replacingOccurrences(of: "T", with: " ")
@@ -146,7 +146,7 @@ class MyWorksViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "我的作品"
+        navigationItem.title = NSLocalizedString("我的作品", comment: "")
         view.backgroundColor = .systemGroupedBackground
         addMeshGradientBackground()
         setupCollectionView()
@@ -295,7 +295,7 @@ extension MyWorksViewController: UICollectionViewDataSource {
                     icon.contentMode = .scaleAspectFit
 
                     let label = UILabel()
-                    label.text      = "暂无 PPT 文件"
+                    label.text      = NSLocalizedString("暂无 PPT 文件", comment: "")
                     label.textColor = .secondaryLabel
                     label.font      = .systemFont(ofSize: 14)
 
@@ -326,7 +326,7 @@ extension MyWorksViewController: UICollectionViewDataSource {
             cell.backgroundConfiguration = bg
             if outlines.isEmpty {
                 var cfg = cell.defaultContentConfiguration()
-                cfg.text = "暂无大纲记录"
+                cfg.text = NSLocalizedString("暂无大纲记录", comment: "")
                 cfg.textProperties.color = .secondaryLabel
                 cell.contentConfiguration = cfg
                 cell.accessories = []
@@ -350,8 +350,8 @@ extension MyWorksViewController: UICollectionViewDataSource {
             ofKind: kind, withReuseIdentifier: WorksSectionHeader.reuseID,
             for: indexPath) as! WorksSectionHeader
         header.configure(title: indexPath.section == 0
-            ? "PPT 文件（\(ppts.count)）"
-            : "大纲（\(outlines.count)）")
+            ? NSLocalizedString("PPT 文件（", comment: "") + "\(ppts.count)）"
+            : NSLocalizedString("大纲（", comment: "") + "\(outlines.count)）")
         return header
     }
 }

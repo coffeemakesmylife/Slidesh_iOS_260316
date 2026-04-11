@@ -104,14 +104,14 @@ class DataConsentView: UIView {
     @objc private func declineTapped() {
         guard let vc = parentVC else { return }
         let alert = UIAlertController(
-            title: "无法继续",
-            message: "不同意数据处理条款将无法使用文件转换和 AI 生成功能。",
+            title: NSLocalizedString("无法继续", comment: ""),
+            message: NSLocalizedString("不同意数据处理条款将无法使用文件转换和 AI 生成功能。", comment: ""),
             preferredStyle: .alert
         )
-        alert.addAction(UIAlertAction(title: "确认不使用", style: .destructive) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确认不使用", comment: ""), style: .destructive) { [weak self] _ in
             self?.dismissWithAnimation { self?.onDecline?() }
         })
-        alert.addAction(UIAlertAction(title: "重新查看", style: .cancel))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("重新查看", comment: ""), style: .cancel))
         vc.present(alert, animated: true)
     }
 
@@ -154,14 +154,14 @@ class DataConsentView: UIView {
         iconView.translatesAutoresizingMaskIntoConstraints = false
 
         // 标题
-        titleLabel.text = "数据处理说明"
+        titleLabel.text = NSLocalizedString("数据处理说明", comment: "")
         titleLabel.font = .systemFont(ofSize: 18, weight: .bold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
 
         // 副标题
-        subtitleLabel.text = "在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据"
+        subtitleLabel.text = NSLocalizedString("在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据", comment: "")
         subtitleLabel.font = .systemFont(ofSize: 12)
         subtitleLabel.textColor = .appTextSecondary
         subtitleLabel.textAlignment = .center
@@ -175,41 +175,41 @@ class DataConsentView: UIView {
         // 各说明区块
         contentStack.addArrangedSubview(makeSection(
             sfSymbol: "arrow.up.doc",
-            title: "我们会处理哪些内容",
+            title: NSLocalizedString("我们会处理哪些内容", comment: ""),
             items: [
-                "您选择上传的文档文件（PDF、Word、Excel、PPT 等），仅用于本次格式转换",
-                "用于 AI 生成 PPT 的主题文字及相关描述信息",
-                "文件处理完成后即从服务器删除，不做任何形式的留存"
+                NSLocalizedString("您选择上传的文档文件（PDF、Word、Excel、PPT 等），仅用于本次格式转换", comment: ""),
+                NSLocalizedString("用于 AI 生成 PPT 的主题文字及相关描述信息", comment: ""),
+                NSLocalizedString("文件处理完成后即从服务器删除，不做任何形式的留存", comment: "")
             ]
         ))
 
         contentStack.addArrangedSubview(makeSection(
             sfSymbol: "lock.shield",
-            title: "数据安全保障",
+            title: NSLocalizedString("数据安全保障", comment: ""),
             items: [
-                "所有文件上传与下载均通过 HTTPS 加密传输，防止中间人截取",
-                "您的文件不会被用于训练 AI 模型，也不会与任何第三方共享",
-                "我们不收集文件内容用于广告或分析，文件数据与账号信息严格隔离"
+                NSLocalizedString("所有文件上传与下载均通过 HTTPS 加密传输，防止中间人截取", comment: ""),
+                NSLocalizedString("您的文件不会被用于训练 AI 模型，也不会与任何第三方共享", comment: ""),
+                NSLocalizedString("我们不收集文件内容用于广告或分析，文件数据与账号信息严格隔离", comment: "")
             ]
         ))
 
         contentStack.addArrangedSubview(makeSection(
             sfSymbol: "sparkles",
-            title: "AI 功能使用须知",
+            title: NSLocalizedString("AI 功能使用须知", comment: ""),
             items: [
-                "AI 根据您输入的主题自动生成 PPT 内容，生成结果因主题而异",
-                "AI 生成内容可能存在不准确之处，请在正式使用前自行核对审阅",
-                "AI 生成的内容版权归您所有，本应用不对生成结果的具体用途负责"
+                NSLocalizedString("AI 根据您输入的主题自动生成 PPT 内容，生成结果因主题而异", comment: ""),
+                NSLocalizedString("AI 生成内容可能存在不准确之处，请在正式使用前自行核对审阅", comment: ""),
+                NSLocalizedString("AI 生成的内容版权归您所有，本应用不对生成结果的具体用途负责", comment: "")
             ]
         ))
 
         contentStack.addArrangedSubview(makeSection(
             sfSymbol: "exclamationmark.triangle",
-            title: "免责声明",
+            title: NSLocalizedString("免责声明", comment: ""),
             items: [
-                "文件格式转换由服务器处理，转换效果可能因文件复杂度、排版等因素有所差异",
-                "请确保您对所上传的文件拥有合法使用权，不得上传涉及版权争议的内容",
-                "本应用转换及生成结果仅供参考，用户应自行承担使用风险"
+                NSLocalizedString("文件格式转换由服务器处理，转换效果可能因文件复杂度、排版等因素有所差异", comment: ""),
+                NSLocalizedString("请确保您对所上传的文件拥有合法使用权，不得上传涉及版权争议的内容", comment: ""),
+                NSLocalizedString("本应用转换及生成结果仅供参考，用户应自行承担使用风险", comment: "")
             ]
         ))
 
@@ -217,7 +217,7 @@ class DataConsentView: UIView {
         contentStack.addArrangedSubview(linkTextView)
 
         // 同意按钮：主题色背景
-        agreeButton.setTitle("同意并继续", for: .normal)
+        agreeButton.setTitle(NSLocalizedString("同意并继续", comment: ""), for: .normal)
         agreeButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         agreeButton.setTitleColor(.white, for: .normal)
         agreeButton.backgroundColor = .appGradientMid
@@ -226,7 +226,7 @@ class DataConsentView: UIView {
         agreeButton.addTarget(self, action: #selector(agreeTapped), for: .touchUpInside)
         agreeButton.translatesAutoresizingMaskIntoConstraints = false
 
-        declineButton.setTitle("不同意", for: .normal)
+        declineButton.setTitle(NSLocalizedString("不同意", comment: ""), for: .normal)
         declineButton.titleLabel?.font = .systemFont(ofSize: 14)
         declineButton.setTitleColor(.appTextSecondary, for: .normal)
         declineButton.addTarget(self, action: #selector(declineTapped), for: .touchUpInside)
@@ -339,9 +339,9 @@ class DataConsentView: UIView {
         tv.textContainer.lineFragmentPadding = 0
         tv.delegate = self
 
-        let full     = "继续使用即表示您同意我们的用户协议和隐私政策"
-        let terms    = "用户协议"
-        let privacy  = "隐私政策"
+        let full     = NSLocalizedString("继续使用即表示您同意我们的用户协议和隐私政策", comment: "")
+        let terms    = NSLocalizedString("用户协议", comment: "")
+        let privacy  = NSLocalizedString("隐私政策", comment: "")
 
         let attr = NSMutableAttributedString(string: full, attributes: [
             .font: UIFont.systemFont(ofSize: 12),

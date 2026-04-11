@@ -13,9 +13,9 @@ private enum FeedbackCategory: Int, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .bug:        return "Bug 报告"
-        case .suggestion: return "功能建议"
-        case .other:      return "其他"
+        case .bug:        return NSLocalizedString("Bug 报告", comment: "")
+        case .suggestion: return NSLocalizedString("功能建议", comment: "")
+        case .other:      return NSLocalizedString("其他", comment: "")
         }
     }
 
@@ -58,7 +58,7 @@ class FeedbackViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        navigationItem.title = "反馈"
+        navigationItem.title = NSLocalizedString("反馈", comment: "")
         addMeshGradientBackground()
         setupUI()
 
@@ -74,11 +74,11 @@ class FeedbackViewController: UIViewController {
 
     private func setupUI() {
         // 分类标签
-        let categoryLabel = makeLabel("反馈类型")
+        let categoryLabel = makeLabel(NSLocalizedString("反馈类型", comment: ""))
         // 内容标签
-        let contentLabel = makeLabel("反馈内容")
+        let contentLabel = makeLabel(NSLocalizedString("反馈内容", comment: ""))
         // 联系方式标签
-        let contactLabel = makeLabel("联系方式（选填）")
+        let contactLabel = makeLabel(NSLocalizedString("联系方式（选填）", comment: ""))
 
         // 反馈内容卡片
         let textCard = makeCard()
@@ -88,7 +88,7 @@ class FeedbackViewController: UIViewController {
         textView.delegate = self
         textView.translatesAutoresizingMaskIntoConstraints = false
 
-        placeholderLabel.text = "请描述您遇到的问题或建议…"
+        placeholderLabel.text = NSLocalizedString("请描述您遇到的问题或建议…", comment: "")
         placeholderLabel.font = .systemFont(ofSize: 15)
         placeholderLabel.textColor = .appInputPlaceholder
         placeholderLabel.numberOfLines = 0
@@ -105,7 +105,7 @@ class FeedbackViewController: UIViewController {
 
         // 联系方式卡片
         let contactCard = makeCard()
-        contactTextField.placeholder = "邮箱或手机号"
+        contactTextField.placeholder = NSLocalizedString("邮箱或手机号", comment: "")
         contactTextField.font = .systemFont(ofSize: 15)
         contactTextField.textColor = .appTextPrimary
         contactTextField.backgroundColor = .clear
@@ -117,7 +117,7 @@ class FeedbackViewController: UIViewController {
         contactCard.addSubview(contactTextField)
 
         // 发送按钮
-        sendButton.setTitle("提交反馈", for: .normal)
+        sendButton.setTitle(NSLocalizedString("提交反馈", comment: ""), for: .normal)
         sendButton.setTitleColor(.white, for: .normal)
         sendButton.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
         sendButton.backgroundColor = .appButtonPrimary
@@ -257,7 +257,7 @@ class FeedbackViewController: UIViewController {
 
         let urlString = "\(AppConfig.configBaseURL)/v1/api/ai/chat/feedback"
         guard let url = URL(string: urlString) else {
-            showAlert(title: "错误", message: "无效的请求地址")
+            showAlert(title: NSLocalizedString("错误", comment: ""), message: NSLocalizedString("无效的请求地址", comment: ""))
             return
         }
 
@@ -280,13 +280,13 @@ class FeedbackViewController: UIViewController {
 
                 if let error = error {
                     print("❌ 反馈提交失败: \(error)")
-                    self?.showAlert(title: "提交失败", message: "网络连接失败，请检查网络后重试")
+                    self?.showAlert(title: NSLocalizedString("提交失败", comment: ""), message: NSLocalizedString("网络连接失败，请检查网络后重试", comment: ""))
                     return
                 }
 
                 guard let data = data,
                       let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                    self?.showAlert(title: "提交失败", message: "响应解析失败，请稍后重试")
+                    self?.showAlert(title: NSLocalizedString("提交失败", comment: ""), message: NSLocalizedString("响应解析失败，请稍后重试", comment: ""))
                     return
                 }
 
@@ -294,18 +294,18 @@ class FeedbackViewController: UIViewController {
                     print("✅ 反馈提交成功")
                     self?.showSuccessAndPop()
                 } else {
-                    let msg = json["msg"] as? String ?? "提交失败，请稍后重试"
-                    self?.showAlert(title: "提交失败", message: msg)
+                    let msg = json["msg"] as? String ?? NSLocalizedString("提交失败，请稍后重试", comment: "")
+                    self?.showAlert(title: NSLocalizedString("提交失败", comment: ""), message: msg)
                 }
             }
         }.resume()
     }
 
     private func showSuccessAndPop() {
-        let alert = UIAlertController(title: "感谢反馈 🎉",
-                                      message: "我们会认真阅读您的反馈！",
+        let alert = UIAlertController(title: NSLocalizedString("感谢反馈 🎉", comment: ""),
+                                      message: NSLocalizedString("我们会认真阅读您的反馈！", comment: ""),
                                       preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default) { [weak self] _ in
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default) { [weak self] _ in
             self?.navigationController?.popViewController(animated: true)
         })
         present(alert, animated: true)
@@ -313,7 +313,7 @@ class FeedbackViewController: UIViewController {
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "确定", style: .default))
+        alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
         present(alert, animated: true)
     }
 
