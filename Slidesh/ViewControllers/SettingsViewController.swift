@@ -248,7 +248,7 @@ class SettingsViewController: UIViewController {
         icon.isUserInteractionEnabled = false
 
         let titleLabel = UILabel()
-        titleLabel.text = NSLocalizedString("主题", comment: "")
+        titleLabel.text = NSLocalizedString("外观", comment: "")
         titleLabel.font = .systemFont(ofSize: 16)
         titleLabel.textColor = .appTextPrimary
         titleLabel.isUserInteractionEnabled = false

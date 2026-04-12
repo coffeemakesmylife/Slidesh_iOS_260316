@@ -60,12 +60,12 @@ final class ThemeManager {
 
     // MARK: - 辅助
 
-    /// 当前主题的中文显示名
+    /// 当前主题的本地化显示名
     var currentStyleName: String {
         switch currentStyle {
-        case .dark:  return "深色"
-        case .light: return "浅色"
-        default:     return "跟随系统"
+        case .dark:  return NSLocalizedString("深色主题", comment: "")
+        case .light: return NSLocalizedString("浅色主题", comment: "")
+        default:     return NSLocalizedString("跟随系统", comment: "")
         }
     }
 }
