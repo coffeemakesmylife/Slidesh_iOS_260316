@@ -350,3 +350,6 @@
 "最近使用" = "Recently Used";
 "最受欢迎" = "Most Popular";
 "作品默认保存在本地设备，同时支持 iCloud 备份。开启 iCloud 后，在其他设备上也能访问您的作品。" = "Works are saved locally by default and support iCloud backup. Once iCloud is enabled, you can access your works on other devices.";
+"选择导出格式" = "Select Export Format";
+"Markdown 格式 (.md)" = "Markdown Format (.md)";
+"纯文本格式 (.txt)" = "Plain Text Format (.txt)";

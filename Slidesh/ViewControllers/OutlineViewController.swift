@@ -1161,7 +1161,7 @@ private class DownloadFormatSheet: UIViewController {
 
         // 标题
         let titleLabel = UILabel()
-        titleLabel.text      = "下载大纲"
+        titleLabel.text      = NSLocalizedString("下载大纲", comment: "")
         titleLabel.font      = .systemFont(ofSize: 18, weight: .semibold)
         titleLabel.textColor = .appTextPrimary
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -1169,15 +1169,15 @@ private class DownloadFormatSheet: UIViewController {
 
         // 副标题
         let subtitleLabel = UILabel()
-        subtitleLabel.text      = "选择导出格式"
+        subtitleLabel.text      = NSLocalizedString("选择导出格式", comment: "")
         subtitleLabel.font      = .systemFont(ofSize: 14)
         subtitleLabel.textColor = .appTextSecondary
         subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
         card.addSubview(subtitleLabel)
 
         // 两个选项按钮
-        let mdBtn  = makeOptionBtn(title: "Markdown 格式 (.md)",  action: #selector(mdTapped))
-        let txtBtn = makeOptionBtn(title: "纯文本格式 (.txt)",     action: #selector(txtTapped))
+        let mdBtn  = makeOptionBtn(title: NSLocalizedString("Markdown 格式 (.md)", comment: ""),  action: #selector(mdTapped))
+        let txtBtn = makeOptionBtn(title: NSLocalizedString("纯文本格式 (.txt)", comment: ""),     action: #selector(txtTapped))
 
         NSLayoutConstraint.activate([
             card.leadingAnchor.constraint(equalTo: view.leadingAnchor),
