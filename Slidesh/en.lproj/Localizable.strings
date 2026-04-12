@@ -130,7 +130,7 @@
 "教学课件" = "Teaching Courseware";
 "教育" = "Education";
 "解除所有文件的格式转换限制" = "Remove all format conversion restrictions";
-"解除一切格式限制，体验极速转换与提取" = "Remove all format limits for fast conversion and extraction";
+"解除一切格式限制，体验极速转换与提取" = "No limits. Lightning-fast conversion.";
 "解除一切格式转换限制" = "Remove all format conversion limits";
 "解决方案" = "Solution";
 "解锁 " = "Unlock ";
@@ -153,10 +153,10 @@
 "慢性病数字化管理解决方案" = "Digital Chronic Disease Management Solutions";
 "每年 " = "Annual ";
 "每年包含无限次使用，到期自动续期，随时可取消" = "Unlimited uses per year, auto-renews, cancel anytime";
-"每天低至 ¥0.60" = "As low as ¥0.60/day";
-"每天低至 ¥1.71" = "As low as ¥1.71/day";
+"每天低至 ¥0.60" = "¥0.60/day";
+"每天低至 ¥1.71" = "¥1.71/day";
 "每天仅¥1.7无限次使用，到期自动续期，随时可取消" = "Only ¥1.7/day, unlimited uses, auto-renews, cancel anytime";
-"每月低至 ¥16.50" = "As low as ¥16.50/month";
+"每月低至 ¥16.50" = "¥16.50/mo";
 "每周 " = "Weekly ";
 "门店选址分析与商圈评估方法" = "Store Location Analysis and Trade Area Evaluation";
 "免责声明" = "Disclaimer";
@@ -166,7 +166,7 @@
 "目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。" = "Currently supports export as PDF, PPT (PowerPoint), and PNG image sequence. Pro members unlock more format options.";
 "你的反馈帮助我们持续改进" = "Your feedback helps us keep improving";
 "你可以在「文件」App 中找到「" = "You can find \"";
-"年订阅" = "Annual Subscription";
+"年订阅" = "Annual";
 "年度计划" = "Annual Plan";
 "年度运营复盘与战略规划报告" = "Annual Operations Review and Strategic Planning Report";
 "年度总结" = "Annual Summary";
@@ -197,7 +197,7 @@
 "全渠道零售数字化转型路径" = "Omnichannel Retail Digital Transformation";
 "确定" = "Confirm";
 "确认不使用" = "Confirm Skip";
-"确认即同意自动续费条款，随用随停" = "Confirming means you agree to auto-renewal terms; cancel anytime";
+"确认即同意自动续费条款，随用随停" = "Auto-renews · cancel anytime";
 "人才梯队建设与接班人计划" = "Talent Pipeline and Succession Planning";
 "人工智能驱动的企业数字化转型实践" = "AI-Driven Enterprise Digital Transformation";
 "人力资源" = "Human Resources";
@@ -217,7 +217,7 @@
 "使用条款" = "Terms of Use";
 "收据验证未通过，请联系客服。" = "Receipt verification failed; please contact support.";
 "首月¥18 ，之后" = "First month ¥18, then ";
-"首月¥18，之后¥38每月包含无限次使用，随时可取消" = "First month ¥18, then ¥38/month, unlimited uses, cancel anytime";
+"首月¥18，之后¥38每月包含无限次使用，随时可取消" = "¥18 first month, then ¥38/mo · cancel anytime";
 "受众" = "Audience";
 "输入您的幻灯片主题..." = "Enter your slide topic...";
 "数据安全保障" = "Data Security";
@@ -266,7 +266,7 @@
 "物业管理服务品质提升方案" = "Property Management Service Quality Improvement";
 "下载大纲" = "Download Outline";
 "下载失败" = "Download Failed";
-"限时折扣" = "Limited-Time Discount";
+"限时折扣" = "Sale";
 "响应解析失败，请稍后重试" = "Response parsing failed, please try again later";
 "项目汇报" = "Project Report";
 "项目计划书" = "Project Plan";
@@ -301,7 +301,7 @@
 "语言" = "Language";
 "预览结果" = "Preview Result";
 "员工" = "Employee";
-"月订阅" = "Monthly Subscription";
+"月订阅" = "Monthly";
 "再转一个" = "Convert Another";
 "在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据" = "Before using file conversion and AI generation, please understand how we handle your files and data";
 "在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。" = "Tap the \"Import\" button in the top right of the home screen to import PDF or PPT from Files or iCloud Drive.";
@@ -334,7 +334,7 @@
 "重新查看" = "View Again";
 "重新选择" = "Reselect";
 "重新选择文件" = "Reselect File";
-"周订阅" = "Weekly Subscription";
+"周订阅" = "Weekly";
 "主题" = "Topic";
 "主题灵感" = "Topic Inspiration";
 "转换记录" = "Conversion History";

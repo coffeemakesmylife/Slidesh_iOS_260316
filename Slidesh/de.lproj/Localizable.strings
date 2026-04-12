@@ -7,7 +7,7 @@
 "— 到底了 —" = "— Ende —";
 " 等 " = " und ";
 " 个文件" = " Dateien";
-" 后点击取消即可。取消后当前周期内仍可使用会员功能。" = " dann tippe auf „Abbrechen". Du kannst die Pro-Funktionen noch bis zum Ende des aktuellen Zeitraums nutzen.";
+" 后点击取消即可。取消后当前周期内仍可使用会员功能。" = " dann tippe auf „Abbrechen„. Du kannst die Pro-Funktionen noch bis zum Ende des aktuellen Zeitraums nutzen.";
 " 是一款 AI 驱动的演示文稿工具，帮助你快速生成、编辑和分享精美幻灯片。" = " ist ein KI-gestütztes Präsentationstool, das dir hilft, schnell beeindruckende Folien zu erstellen, zu bearbeiten und zu teilen.";
 "✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿" = "✓ Unbegrenzte Gliederungsgenerierung\n✓ Unbegrenzte erweiterte Formatkonvertierung\n✓ Unbegrenzte Präsentationserstellung";
 ".docx 文档格式" = ".docx-Dokument";
@@ -75,7 +75,7 @@
 "当前账号没有可恢复的订阅。" = "Für dieses Konto wurden keine wiederherstellbaren Abonnements gefunden.";
 "导出失败" = "Export fehlgeschlagen";
 "到期" = "läuft ab";
-"点击底部中间的「+」按钮，选择模板或从空白开始，即可快速创建一份新的演示文稿。" = "Tippe auf die Schaltfläche „+" unten in der Mitte, wähle eine Vorlage oder beginne mit einer leeren Folie.";
+"点击底部中间的「+」按钮，选择模板或从空白开始，即可快速创建一份新的演示文稿。" = "Tippe auf die Schaltfläche „+„ unten in der Mitte, wähle eine Vorlage oder beginne mit einer leeren Folie.";
 "点击一个模板后再合成PPT" = "Vorlage auswählen, um PPT zu erstellen";
 "点击一个模板后再使用" = "Bitte zuerst eine Vorlage auswählen";
 "订阅待处理" = "Abonnement ausstehend";
@@ -130,7 +130,7 @@
 "教学课件" = "Lehrmaterialien";
 "教育" = "Bildung";
 "解除所有文件的格式转换限制" = "Alle Formatkonvertierungsbeschränkungen aufheben";
-"解除一切格式限制，体验极速转换与提取" = "Alle Formatbeschränkungen aufheben für schnelle Konvertierung und Extraktion";
+"解除一切格式限制，体验极速转换与提取" = "Keine Grenzen. Blitzschnelle Konvertierung.";
 "解除一切格式转换限制" = "Alle Konvertierungsbeschränkungen aufheben";
 "解决方案" = "Lösung";
 "解锁 " = "Freischalten ";
@@ -153,10 +153,10 @@
 "慢性病数字化管理解决方案" = "Digitale Lösungen für das Management chronischer Krankheiten";
 "每年 " = "Jährlich ";
 "每年包含无限次使用，到期自动续期，随时可取消" = "Unbegrenzte Nutzung pro Jahr, automatische Verlängerung, jederzeit kündbar";
-"每天低至 ¥0.60" = "Ab ¥0,60 pro Tag";
-"每天低至 ¥1.71" = "Ab ¥1,71 pro Tag";
+"每天低至 ¥0.60" = "¥0,60/Tag";
+"每天低至 ¥1.71" = "¥1,71/Tag";
 "每天仅¥1.7无限次使用，到期自动续期，随时可取消" = "Nur ¥1,7 pro Tag, unbegrenzt, automatische Verlängerung, jederzeit kündbar";
-"每月低至 ¥16.50" = "Ab ¥16,50 pro Monat";
+"每月低至 ¥16.50" = "¥16,50/Monat";
 "每周 " = "Wöchentlich ";
 "门店选址分析与商圈评估方法" = "Standortanalyse und Bewertung des Einzugsgebiets";
 "免责声明" = "Haftungsausschluss";
@@ -166,7 +166,7 @@
 "目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。" = "Derzeit unterstützt: Export als PDF, PPT (PowerPoint) und PNG-Bildsequenz. Pro-Mitglieder schalten weitere Formate frei.";
 "你的反馈帮助我们持续改进" = "Dein Feedback hilft uns, uns ständig zu verbessern";
 "你可以在「文件」App 中找到「" = "Du findest „";
-"年订阅" = "Jahresabonnement";
+"年订阅" = "Jährlich";
 "年度计划" = "Jahresplan";
 "年度运营复盘与战略规划报告" = "Jährliche Betriebsrückblick und strategische Planung";
 "年度总结" = "Jahresbericht";
@@ -197,7 +197,7 @@
 "全渠道零售数字化转型路径" = "Digitale Transformation im Omnichannel-Einzelhandel";
 "确定" = "Bestätigen";
 "确认不使用" = "Überspringen";
-"确认即同意自动续费条款，随用随停" = "Bestätigung bedeutet Zustimmung zu den automatischen Verlängerungsbedingungen; jederzeit kündbar";
+"确认即同意自动续费条款，随用随停" = "Auto-Verlängerung · jederzeit kündbar";
 "人才梯队建设与接班人计划" = "Talentförderung und Nachfolgeplanung";
 "人工智能驱动的企业数字化转型实践" = "KI-gestützte digitale Unternehmenstransformation";
 "人力资源" = "Personalwesen";
@@ -217,7 +217,7 @@
 "使用条款" = "Nutzungsbedingungen";
 "收据验证未通过，请联系客服。" = "Belegverifizierung fehlgeschlagen; bitte den Support kontaktieren.";
 "首月¥18 ，之后" = "Erster Monat ¥18, dann ";
-"首月¥18，之后¥38每月包含无限次使用，随时可取消" = "Erster Monat ¥18, dann ¥38/Monat, unbegrenzte Nutzung, jederzeit kündbar";
+"首月¥18，之后¥38每月包含无限次使用，随时可取消" = "¥18 im 1. Monat, dann ¥38/Monat · jederzeit kündbar";
 "受众" = "Zielgruppe";
 "输入您的幻灯片主题..." = "Folienthema eingeben...";
 "数据安全保障" = "Datensicherheit";
@@ -266,7 +266,7 @@
 "物业管理服务品质提升方案" = "Verbesserung der Servicequalität im Immobilienmanagement";
 "下载大纲" = "Gliederung herunterladen";
 "下载失败" = "Download fehlgeschlagen";
-"限时折扣" = "Zeitlich begrenzter Rabatt";
+"限时折扣" = "Angebot";
 "响应解析失败，请稍后重试" = "Antwort-Parsing fehlgeschlagen, bitte später erneut versuchen";
 "项目汇报" = "Projektbericht";
 "项目计划书" = "Projektplan";
@@ -301,10 +301,10 @@
 "语言" = "Sprache";
 "预览结果" = "Ergebnis-Vorschau";
 "员工" = "Mitarbeiter/in";
-"月订阅" = "Monatsabonnement";
+"月订阅" = "Monatlich";
 "再转一个" = "Weitere konvertieren";
 "在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据" = "Bevor du Dateikonvertierung und KI-Generierung verwendest, lies bitte, wie wir deine Dateien und Daten verarbeiten";
-"在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。" = "Tippe auf die Schaltfläche „Importieren" oben rechts auf der Startseite, um PDF oder PPT aus der Dateien-App oder iCloud Drive zu importieren.";
+"在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。" = "Tippe auf die Schaltfläche „Importieren„ oben rechts auf der Startseite, um PDF oder PPT aus der Dateien-App oder iCloud Drive zu importieren.";
 "在线访客" = "Online-Besucher";
 "在线教育平台用户增长与留存策略" = "Nutzerwachstum und -bindung bei Online-Bildungsplattformen";
 "在线媒体" = "Online-Medien";
@@ -334,7 +334,7 @@
 "重新查看" = "Erneut ansehen";
 "重新选择" = "Neu auswählen";
 "重新选择文件" = "Datei neu auswählen";
-"周订阅" = "Wochenabonnement";
+"周订阅" = "Wöchentlich";
 "主题" = "Thema";
 "主题灵感" = "Themeninspiration";
 "转换记录" = "Konvertierungshistorie";

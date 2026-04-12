@@ -130,7 +130,7 @@
 "教学课件" = "Material educativo";
 "教育" = "Educación";
 "解除所有文件的格式转换限制" = "Eliminar todas las restricciones de conversión de formatos";
-"解除一切格式限制，体验极速转换与提取" = "Eliminar todos los límites de formato para conversión y extracción rápidas";
+"解除一切格式限制，体验极速转换与提取" = "Sin límites. Conversión ultrarrápida.";
 "解除一切格式转换限制" = "Eliminar todas las restricciones de conversión";
 "解决方案" = "Solución";
 "解锁 " = "Desbloquear ";
@@ -153,10 +153,10 @@
 "慢性病数字化管理解决方案" = "Soluciones digitales para gestión de enfermedades crónicas";
 "每年 " = "Anual ";
 "每年包含无限次使用，到期自动续期，随时可取消" = "Usos ilimitados al año, renovación automática, cancela cuando quieras";
-"每天低至 ¥0.60" = "Desde ¥0.60/día";
-"每天低至 ¥1.71" = "Desde ¥1.71/día";
+"每天低至 ¥0.60" = "¥0.60/día";
+"每天低至 ¥1.71" = "¥1.71/día";
 "每天仅¥1.7无限次使用，到期自动续期，随时可取消" = "Solo ¥1.7/día, usos ilimitados, renovación automática, cancela cuando quieras";
-"每月低至 ¥16.50" = "Desde ¥16.50/mes";
+"每月低至 ¥16.50" = "¥16.50/mes";
 "每周 " = "Semanal ";
 "门店选址分析与商圈评估方法" = "Análisis de ubicación de tiendas y evaluación de zona comercial";
 "免责声明" = "Exención de responsabilidad";
@@ -166,7 +166,7 @@
 "目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。" = "Actualmente admite exportación como PDF, PPT (PowerPoint) y secuencia de imágenes PNG. Los miembros Pro desbloquean más opciones de formato.";
 "你的反馈帮助我们持续改进" = "Tu comentario nos ayuda a mejorar continuamente";
 "你可以在「文件」App 中找到「" = "Puedes encontrar \"";
-"年订阅" = "Suscripción anual";
+"年订阅" = "Anual";
 "年度计划" = "Plan anual";
 "年度运营复盘与战略规划报告" = "Revisión operativa anual e informe de planificación estratégica";
 "年度总结" = "Resumen anual";
@@ -197,7 +197,7 @@
 "全渠道零售数字化转型路径" = "Transformación digital del retail omnicanal";
 "确定" = "Confirmar";
 "确认不使用" = "Confirmar omisión";
-"确认即同意自动续费条款，随用随停" = "Confirmar significa aceptar los términos de renovación automática; cancela cuando quieras";
+"确认即同意自动续费条款，随用随停" = "Renovación automática · cancela cuando quieras";
 "人才梯队建设与接班人计划" = "Desarrollo de talento y planificación de sucesión";
 "人工智能驱动的企业数字化转型实践" = "Transformación digital empresarial impulsada por IA";
 "人力资源" = "Recursos humanos";
@@ -217,7 +217,7 @@
 "使用条款" = "Términos de uso";
 "收据验证未通过，请联系客服。" = "Verificación de recibo fallida; contacta con soporte.";
 "首月¥18 ，之后" = "Primer mes ¥18, luego ";
-"首月¥18，之后¥38每月包含无限次使用，随时可取消" = "Primer mes ¥18, luego ¥38/mes, usos ilimitados, cancela cuando quieras";
+"首月¥18，之后¥38每月包含无限次使用，随时可取消" = "¥18 el 1.er mes, luego ¥38/mes · cancela cuando quieras";
 "受众" = "Audiencia";
 "输入您的幻灯片主题..." = "Ingresa el tema de tu presentación...";
 "数据安全保障" = "Seguridad de datos";
@@ -266,7 +266,7 @@
 "物业管理服务品质提升方案" = "Mejora de la calidad del servicio de gestión de propiedades";
 "下载大纲" = "Descargar esquema";
 "下载失败" = "Error al descargar";
-"限时折扣" = "Descuento por tiempo limitado";
+"限时折扣" = "Oferta";
 "响应解析失败，请稍后重试" = "Error al analizar respuesta, inténtalo más tarde";
 "项目汇报" = "Informe de proyecto";
 "项目计划书" = "Plan de proyecto";
@@ -301,7 +301,7 @@
 "语言" = "Idioma";
 "预览结果" = "Vista previa del resultado";
 "员工" = "Empleado";
-"月订阅" = "Suscripción mensual";
+"月订阅" = "Mensual";
 "再转一个" = "Convertir otro";
 "在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据" = "Antes de usar la conversión de archivos y la generación con IA, entiende cómo manejamos tus archivos y datos";
 "在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。" = "Toca el botón \"Importar\" en la esquina superior derecha de la pantalla de inicio para importar PDF o PPT desde Archivos o iCloud Drive.";
@@ -334,7 +334,7 @@
 "重新查看" = "Ver de nuevo";
 "重新选择" = "Volver a seleccionar";
 "重新选择文件" = "Volver a seleccionar archivo";
-"周订阅" = "Suscripción semanal";
+"周订阅" = "Semanal";
 "主题" = "Tema";
 "主题灵感" = "Inspiración de tema";
 "转换记录" = "Historial de conversiones";
