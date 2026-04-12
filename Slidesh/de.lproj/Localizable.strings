@@ -94,7 +94,7 @@
 "感谢反馈 🎉" = "Danke für dein Feedback 🎉";
 "个人介绍" = "Persönliche Vorstellung";
 "给我们评分" = "Bewerte uns";
-"跟随系统" = "Systemeinstellung folgen";
+"跟随系统" = "System";
 "更换模板中…" = "Vorlage wird gewechselt…";
 "工业 4.0 背景下的生产效率提升" = "Steigerung der Produktionseffizienz im Zeitalter der Industrie 4.0";
 "公告" = "Ankündigung";
@@ -117,12 +117,12 @@
 "恢复失败" = "Wiederherstellung fehlgeschlagen";
 "恢复完成" = "Wiederherstellung abgeschlossen";
 "会议流程" = "Besprechungsagenda";
-"会员有哪些特权？" = "Welche Vorteile haben Pro-Mitglieder?";
+"会员有哪些特权？" = "Was ist in Pro enthalten?";
 "绩效管理体系优化与落地实践" = "Optimierung des Leistungsmanagementsystems";
 "极速服务器响应时间" = "Ultraschnelle Server-Antwortzeiten";
 "极速转换" = "Schnelle Konvertierung";
 "继续" = "Weiter";
-"继续使用即表示您同意我们的用户协议和隐私政策" = "Die weitere Nutzung bedeutet, dass du unseren Nutzungsbedingungen und der Datenschutzrichtlinie zustimmst";
+"继续使用即表示您同意我们的用户协议和隐私政策" = "Mit der Nutzung stimmst du unseren Nutzungsbedingungen und Datenschutzrichtlinien zu";
 "加载失败，请检查网络" = "Laden fehlgeschlagen, bitte Netzwerk prüfen";
 "健康科普" = "Gesundheitsaufklärung";
 "将文档每一页提取为图片" = "Jede Seite als Bild extrahieren";
@@ -163,7 +163,7 @@
 "面试官" = "Interviewer";
 "模板中心" = "Vorlagencenter";
 "目录" = "Inhaltsverzeichnis";
-"目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。" = "Derzeit unterstützt: Export als PDF, PPT (PowerPoint) und PNG-Bildsequenz. Pro-Mitglieder schalten weitere Formate frei.";
+"目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。" = "Export als PDF, PPT oder PNG. Pro schaltet mehr Formate frei.";
 "你的反馈帮助我们持续改进" = "Dein Feedback hilft uns, uns ständig zu verbessern";
 "你可以在「文件」App 中找到「" = "Du findest „";
 "年订阅" = "Jährlich";
@@ -181,7 +181,7 @@
 "企业合规管理体系建设指南" = "Leitfaden für den Aufbau eines Unternehmens-Compliance-Systems";
 "前往「设置」→「Apple ID」→「订阅」，找到 " = "Gehe zu Einstellungen → Apple ID → Abonnements, suche ";
 "前往网络设置" = "Zu Netzwerkeinstellungen";
-"浅色主题" = "Heller Modus";
+"浅色主题" = "Hell";
 "切换应用图标" = "App-Icon wechseln";
 "请检查网络连接后重试" = "Bitte Netzwerkverbindung prüfen und erneut versuchen";
 "请描述您遇到的问题或建议…" = "Beschreibe dein Problem oder deinen Vorschlag…";
@@ -210,7 +210,7 @@
 "商业地产运营与招商策略" = "Verwaltung von Gewerbeimmobilien und Vermietungsstrategie";
 "商业计划书" = "Geschäftsplan";
 "设置" = "Einstellungen";
-"深色主题" = "Dunkler Modus";
+"深色主题" = "Dunkel";
 "升级 Pro 会员" = "Auf Pro upgraden";
 "生成失败" = "Erstellung fehlgeschlagen";
 "使用此模板" = "Diese Vorlage verwenden";
@@ -243,11 +243,11 @@
 "推荐你使用 " = "Wir empfehlen ";
 "完成" = "Fertig";
 "万能提取" = "Universelle Extraktion";
-"网络连接失败，请检查网络后重试" = "Netzwerkverbindung fehlgeschlagen, bitte prüfen und erneut versuchen";
+"网络连接失败，请检查网络后重试" = "Keine Verbindung — Netzwerk prüfen";
 "未命名" = "Ohne Titel";
 "未命名作品" = "Werk ohne Titel";
 "未找到购买记录" = "Kein Kaufnachweis gefunden";
-"未找到可恢复的购买记录。" = "Keine wiederherstellbaren Kaufnachweise gefunden.";
+"未找到可恢复的购买记录。" = "Nichts wiederherzustellen.";
 "文化 IP 开发与商业化运营策略" = "Entwicklung von Kultur-IP und Kommerzialisierung";
 "文件处理完成后即从服务器删除，不做任何形式的留存" = "Dateien werden nach der Verarbeitung sofort vom Server gelöscht; kein Verbleib";
 "文件格式转换由服务器处理，转换效果可能因文件复杂度、排版等因素有所差异" = "Die Konvertierung erfolgt serverseitig; Ergebnisse können je nach Komplexität und Layout variieren";
@@ -267,7 +267,7 @@
 "下载大纲" = "Gliederung herunterladen";
 "下载失败" = "Download fehlgeschlagen";
 "限时折扣" = "Angebot";
-"响应解析失败，请稍后重试" = "Antwort-Parsing fehlgeschlagen, bitte später erneut versuchen";
+"响应解析失败，请稍后重试" = "Etwas ist schiefgelaufen — erneut versuchen";
 "项目汇报" = "Projektbericht";
 "项目计划书" = "Projektplan";
 "项目制学习在 K12 教育中的落地实践" = "Projektbasiertes Lernen in der K12-Bildung";
@@ -303,7 +303,7 @@
 "员工" = "Mitarbeiter/in";
 "月订阅" = "Monatlich";
 "再转一个" = "Weitere konvertieren";
-"在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据" = "Bevor du Dateikonvertierung und KI-Generierung verwendest, lies bitte, wie wir deine Dateien und Daten verarbeiten";
+"在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据" = "Wie wir deine Dateien und Daten verarbeiten";
 "在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。" = "Tippe auf die Schaltfläche „Importieren„ oben rechts auf der Startseite, um PDF oder PPT aus der Dateien-App oder iCloud Drive zu importieren.";
 "在线访客" = "Online-Besucher";
 "在线教育平台用户增长与留存策略" = "Nutzerwachstum und -bindung bei Online-Bildungsplattformen";
@@ -338,7 +338,7 @@
 "主题" = "Thema";
 "主题灵感" = "Themeninspiration";
 "转换记录" = "Konvertierungshistorie";
-"转换结果已被清理，请重新转换" = "Konvertierungsergebnis wurde gelöscht, bitte erneut konvertieren";
+"转换结果已被清理，请重新转换" = "Ergebnis abgelaufen — erneut konvertieren";
 "转换完成！" = "Konvertierung abgeschlossen!";
 "转换中..." = "Wird konvertiert...";
 "转为 PDF/HTML/PNG" = "Konvertieren zu PDF/HTML/PNG";

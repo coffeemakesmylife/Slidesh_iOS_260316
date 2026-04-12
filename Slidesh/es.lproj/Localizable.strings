@@ -9,7 +9,7 @@
 " 个文件" = " archivos";
 " 后点击取消即可。取消后当前周期内仍可使用会员功能。" = " luego toca Cancelar. Puedes seguir usando las funciones Pro durante el período actual.";
 " 是一款 AI 驱动的演示文稿工具，帮助你快速生成、编辑和分享精美幻灯片。" = " es una herramienta de presentaciones impulsada por IA que te ayuda a crear, editar y compartir diapositivas increíbles rápidamente.";
-"✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿" = "✓ Generación de esquemas ilimitada\n✓ Conversión de formatos avanzada ilimitada\n✓ Generación de presentaciones ilimitada";
+"✓ 无限制生成大纲\n✓ 无限制高级格式转换\n✓ 无限制生成演示文稿" = "✓ Esquemas ilimitados\n✓ Conversión ilimitada\n✓ Presentaciones ilimitadas";
 ".docx 文档格式" = "Documento .docx";
 ".html 网页格式" = "Página web .html";
 ".pdf 便携文档" = "Documento portátil .pdf";
@@ -94,7 +94,7 @@
 "感谢反馈 🎉" = "Gracias por tu comentario 🎉";
 "个人介绍" = "Introducción personal";
 "给我们评分" = "Califícanos";
-"跟随系统" = "Seguir sistema";
+"跟随系统" = "Sistema";
 "更换模板中…" = "Cambiando plantilla…";
 "工业 4.0 背景下的生产效率提升" = "Mejora de la eficiencia productiva en la era Industria 4.0";
 "公告" = "Anuncio";
@@ -102,7 +102,7 @@
 "公众演讲" = "Oratoria pública";
 "功能建议" = "Sugerencia de función";
 "供应链韧性建设与精益管理实践" = "Resiliencia de cadena de suministro y gestión lean";
-"购买记录已同步，如有有效订阅将自动激活。" = "Historial de compras sincronizado; cualquier suscripción activa se activará automáticamente.";
+"购买记录已同步，如有有效订阅将自动激活。" = "Compras sincronizadas. Suscripciones activas restauradas.";
 "关于" = "Acerca de";
 "好" = "OK";
 "好的" = "OK";
@@ -117,17 +117,17 @@
 "恢复失败" = "Error al restaurar";
 "恢复完成" = "Restauración completa";
 "会议流程" = "Agenda de reunión";
-"会员有哪些特权？" = "¿Cuáles son los privilegios del miembro Pro?";
+"会员有哪些特权？" = "¿Qué incluye Pro?";
 "绩效管理体系优化与落地实践" = "Optimización e implementación del sistema de gestión del desempeño";
 "极速服务器响应时间" = "Respuesta ultrarrápida del servidor";
 "极速转换" = "Conversión rápida";
 "继续" = "Continuar";
-"继续使用即表示您同意我们的用户协议和隐私政策" = "Continuar usando significa que aceptas nuestros Términos de servicio y Política de privacidad";
+"继续使用即表示您同意我们的用户协议和隐私政策" = "Al continuar, aceptas nuestros Términos y Política de privacidad";
 "加载失败，请检查网络" = "Error al cargar, verifica tu red";
 "健康科普" = "Educación sanitaria";
 "将文档每一页提取为图片" = "Extrae cada página como imagen";
 "教师" = "Docente";
-"教学课件" = "Material educativo";
+"教学课件" = "Material de clase";
 "教育" = "Educación";
 "解除所有文件的格式转换限制" = "Eliminar todas las restricciones de conversión de formatos";
 "解除一切格式限制，体验极速转换与提取" = "Sin límites. Conversión ultrarrápida.";
@@ -135,7 +135,7 @@
 "解决方案" = "Solución";
 "解锁 " = "Desbloquear ";
 "解锁高级版" = "Desbloquear versión premium";
-"解锁全部高级特权" = "Desbloquear todos los privilegios premium";
+"解锁全部高级特权" = "Desbloquear todos los beneficios Pro";
 "金融" = "Finanzas";
 "开始转换" = "Iniciar conversión";
 "科技" = "Tecnología";
@@ -163,7 +163,7 @@
 "面试官" = "Entrevistador";
 "模板中心" = "Centro de plantillas";
 "目录" = "Tabla de contenidos";
-"目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。" = "Actualmente admite exportación como PDF, PPT (PowerPoint) y secuencia de imágenes PNG. Los miembros Pro desbloquean más opciones de formato.";
+"目前支持导出为 PDF、PPT（PowerPoint）、PNG 图片序列。Pro 会员可解锁更多格式选项。" = "Exporta como PDF, PPT o PNG. Pro desbloquea más formatos.";
 "你的反馈帮助我们持续改进" = "Tu comentario nos ayuda a mejorar continuamente";
 "你可以在「文件」App 中找到「" = "Puedes encontrar \"";
 "年订阅" = "Anual";
@@ -181,7 +181,7 @@
 "企业合规管理体系建设指南" = "Guía de construcción del sistema de gestión de cumplimiento corporativo";
 "前往「设置」→「Apple ID」→「订阅」，找到 " = "Ve a Ajustes → Apple ID → Suscripciones, busca ";
 "前往网络设置" = "Ir a configuración de red";
-"浅色主题" = "Modo claro";
+"浅色主题" = "Claro";
 "切换应用图标" = "Cambiar icono de app";
 "请检查网络连接后重试" = "Verifica tu conexión de red e inténtalo de nuevo";
 "请描述您遇到的问题或建议…" = "Describe tu problema o sugerencia…";
@@ -210,7 +210,7 @@
 "商业地产运营与招商策略" = "Operaciones de inmuebles comerciales y estrategia de arrendamiento";
 "商业计划书" = "Plan de negocios";
 "设置" = "Ajustes";
-"深色主题" = "Modo oscuro";
+"深色主题" = "Oscuro";
 "升级 Pro 会员" = "Actualizar a Pro";
 "生成失败" = "Error al generar";
 "使用此模板" = "Usar esta plantilla";
@@ -243,11 +243,11 @@
 "推荐你使用 " = "Te recomendamos usar ";
 "完成" = "Listo";
 "万能提取" = "Extracción universal";
-"网络连接失败，请检查网络后重试" = "Error de conexión, verifica la red e inténtalo de nuevo";
+"网络连接失败，请检查网络后重试" = "Sin conexión — verifica tu red";
 "未命名" = "Sin título";
 "未命名作品" = "Obra sin título";
 "未找到购买记录" = "No se encontró registro de compra";
-"未找到可恢复的购买记录。" = "No se encontraron registros de compra restaurables.";
+"未找到可恢复的购买记录。" = "Nada que restaurar.";
 "文化 IP 开发与商业化运营策略" = "Desarrollo de IP cultural y comercialización";
 "文件处理完成后即从服务器删除，不做任何形式的留存" = "Los archivos se eliminan del servidor inmediatamente tras el procesamiento; no se retienen";
 "文件格式转换由服务器处理，转换效果可能因文件复杂度、排版等因素有所差异" = "La conversión se procesa en el servidor; los resultados pueden variar según la complejidad y el diseño del archivo";
@@ -267,7 +267,7 @@
 "下载大纲" = "Descargar esquema";
 "下载失败" = "Error al descargar";
 "限时折扣" = "Oferta";
-"响应解析失败，请稍后重试" = "Error al analizar respuesta, inténtalo más tarde";
+"响应解析失败，请稍后重试" = "Algo salió mal — inténtalo de nuevo";
 "项目汇报" = "Informe de proyecto";
 "项目计划书" = "Plan de proyecto";
 "项目制学习在 K12 教育中的落地实践" = "Aprendizaje basado en proyectos en la educación K12";
@@ -303,7 +303,7 @@
 "员工" = "Empleado";
 "月订阅" = "Mensual";
 "再转一个" = "Convertir otro";
-"在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据" = "Antes de usar la conversión de archivos y la generación con IA, entiende cómo manejamos tus archivos y datos";
+"在使用文件转换和 AI 生成功能前，请了解我们如何处理您的文件和数据" = "Cómo manejamos tus archivos y datos";
 "在首页点击右上角「导入」按钮，支持从文件 App、iCloud Drive 导入 PDF 或 PPT 文件。" = "Toca el botón \"Importar\" en la esquina superior derecha de la pantalla de inicio para importar PDF o PPT desde Archivos o iCloud Drive.";
 "在线访客" = "Visitantes en línea";
 "在线教育平台用户增长与留存策略" = "Crecimiento y retención de usuarios en plataformas de educación en línea";
@@ -338,7 +338,7 @@
 "主题" = "Tema";
 "主题灵感" = "Inspiración de tema";
 "转换记录" = "Historial de conversiones";
-"转换结果已被清理，请重新转换" = "El resultado de la conversión fue eliminado, convierte de nuevo";
+"转换结果已被清理，请重新转换" = "Resultado expirado — convierte de nuevo";
 "转换完成！" = "¡Conversión completada!";
 "转换中..." = "Convirtiendo...";
 "转为 PDF/HTML/PNG" = "Convertir a PDF/HTML/PNG";
