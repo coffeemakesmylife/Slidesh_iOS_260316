@@ -5,6 +5,7 @@
 
 import UIKit
 import SafariServices
+import StoreKit
 
 class SettingsViewController: UIViewController {
 
@@ -18,6 +19,10 @@ class SettingsViewController: UIViewController {
     // 主题行的引用，用于切换后重建 menu state
     private weak var themeValueLabel: UILabel?
     private weak var themeButton: UIButton?
+
+    // 语言行的引用，用于选择后更新显示值
+    private weak var languageValueLabel: UILabel?
+    private weak var languageButton: UIButton?
 
     // 会员卡片的引用，用于付费后更新文案
     private weak var vipTitleLabel: UILabel?
@@ -86,12 +91,13 @@ class SettingsViewController: UIViewController {
         let cardTap = UITapGestureRecognizer(target: self, action: #selector(unlockPro))
         vipCard.addGestureRecognizer(cardTap)
 
-        // Section 2：主题（上下 chevron 选择）+ 切换应用图标
+        // Section 2：主题（上下 chevron 选择）+ 切换应用图标 + 语言
         let section2 = makeCard(rows: [
             makeThemeRow(),
             makeRow(sfSymbol: "square.grid.2x2", title: NSLocalizedString("切换应用图标", comment: "")) { [weak self] in
                 self?.changeAppIcon()
             },
+            makeLanguageRow(),
         ])
 
         // Section 3：反馈 + 分享 + 恢复购买
@@ -230,6 +236,123 @@ class SettingsViewController: UIViewController {
         ])
 
         return card
+    }
+
+    // MARK: - 语言行（UIMenu 弹出，显示当前语言）
+
+    private func makeLanguageRow() -> UIView {
+        let row = UIButton(type: .system)
+        row.showsMenuAsPrimaryAction = true
+        row.addTarget(self, action: #selector(rowHighlight(_:)), for: .touchDown)
+        row.addTarget(self, action: #selector(rowUnhighlight(_:)), for: [.menuActionTriggered, .touchUpOutside, .touchCancel])
+
+        let icon = UIImageView(image: UIImage(systemName: "globe"))
+        icon.tintColor = .appTextSecondary
+        icon.contentMode = .scaleAspectFit
+        icon.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 18, weight: .regular)
+        icon.isUserInteractionEnabled = false
+
+        let titleLabel = UILabel()
+        titleLabel.text = NSLocalizedString("语言", comment: "")
+        titleLabel.font = .systemFont(ofSize: 16)
+        titleLabel.textColor = .appTextPrimary
+        titleLabel.isUserInteractionEnabled = false
+
+        let valueLabel = UILabel()
+        valueLabel.text = currentLanguageDisplayName()
+        valueLabel.font = .systemFont(ofSize: 14)
+        valueLabel.textColor = .appTextSecondary
+        valueLabel.isUserInteractionEnabled = false
+        languageValueLabel = valueLabel
+        languageButton = row
+
+        let chevron = UIImageView(image: UIImage(systemName: "chevron.up.chevron.down"))
+        chevron.tintColor = .appTextTertiary
+        chevron.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 11, weight: .medium)
+        chevron.contentMode = .scaleAspectFit
+        chevron.isUserInteractionEnabled = false
+
+        [icon, titleLabel, valueLabel, chevron].forEach {
+            $0.translatesAutoresizingMaskIntoConstraints = false
+            row.addSubview($0)
+        }
+
+        NSLayoutConstraint.activate([
+            icon.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            icon.leadingAnchor.constraint(equalTo: row.leadingAnchor, constant: 16),
+            icon.widthAnchor.constraint(equalToConstant: 24),
+            icon.heightAnchor.constraint(equalToConstant: 24),
+
+            titleLabel.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            titleLabel.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 12),
+
+            chevron.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            chevron.trailingAnchor.constraint(equalTo: row.trailingAnchor, constant: -16),
+
+            valueLabel.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            valueLabel.trailingAnchor.constraint(equalTo: chevron.leadingAnchor, constant: -6),
+        ])
+
+        row.menu = makeLanguageMenu()
+        return row
+    }
+
+    private func makeLanguageMenu() -> UIMenu {
+        // 使用各语言的原生名称，方便用户在任何语言下都能识别
+        let languages: [(code: String, name: String)] = [
+            ("zh-Hans", "中文（简体）"),
+            ("en",      "English"),
+            ("ar",      "العربية"),
+            ("es",      "Español"),
+            ("ru",      "Русский"),
+            ("de",      "Deutsch"),
+        ]
+        let current = currentLanguageCode()
+        let actions = languages.map { code, name in
+            UIAction(
+                title: name,
+                state: current.hasPrefix(code) ? .on : .off
+            ) { [weak self] _ in
+                self?.applyLanguage(code: code, displayName: name)
+            }
+        }
+        return UIMenu(title: "", children: actions)
+    }
+
+    private func currentLanguageCode() -> String {
+        // 优先读取 app 内保存的语言偏好，否则使用系统语言
+        if let stored = UserDefaults.standard.array(forKey: "AppleLanguages")?.first as? String {
+            return stored
+        }
+        return Locale.current.languageCode ?? "en"
+    }
+
+    private func currentLanguageDisplayName() -> String {
+        let code = currentLanguageCode()
+        switch code {
+        case let c where c.hasPrefix("zh"): return "中文（简体）"
+        case "en":                          return "English"
+        case "ar":                          return "العربية"
+        case "es":                          return "Español"
+        case "ru":                          return "Русский"
+        case "de":                          return "Deutsch"
+        default:                            return code
+        }
+    }
+
+    private func applyLanguage(code: String, displayName: String) {
+        UserDefaults.standard.set([code], forKey: "AppleLanguages")
+        UserDefaults.standard.synchronize()
+        languageValueLabel?.text = displayName
+        languageButton?.menu = makeLanguageMenu()
+
+        let alert = UIAlertController(
+            title: NSLocalizedString("语言", comment: ""),
+            message: NSLocalizedString("语言设置将在重启应用后生效。", comment: ""),
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: NSLocalizedString("好", comment: ""), style: .default))
+        present(alert, animated: true)
     }
 
     // MARK: - 主题行（UIMenu 弹出，上下 chevron 指示）
@@ -458,12 +581,33 @@ class SettingsViewController: UIViewController {
     private func restorePurchase() {
         let alert = UIAlertController(title: NSLocalizedString("恢复购买", comment: ""), message: NSLocalizedString("正在恢复您的购买记录…", comment: ""), preferredStyle: .alert)
         present(alert, animated: true)
-        // 模拟异步恢复
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            alert.dismiss(animated: true) {
-                let result = UIAlertController(title: NSLocalizedString("恢复完成", comment: ""), message: NSLocalizedString("未找到可恢复的购买记录。", comment: ""), preferredStyle: .alert)
-                result.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
-                self?.present(result, animated: true)
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await AppStore.sync()
+                await QuotaManager.shared.refreshPremiumStatus()
+                await MainActor.run {
+                    alert.dismiss(animated: true) {
+                        self.updateVIPCard()
+                        let message = QuotaManager.shared.isPremium
+                            ? NSLocalizedString("购买记录已同步，如有有效订阅将自动激活。", comment: "")
+                            : NSLocalizedString("当前账号没有可恢复的订阅。", comment: "")
+                        let title = QuotaManager.shared.isPremium
+                            ? NSLocalizedString("恢复完成", comment: "")
+                            : NSLocalizedString("未找到购买记录", comment: "")
+                        let result = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                        result.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
+                        self.present(result, animated: true)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    alert.dismiss(animated: true) {
+                        let result = UIAlertController(title: NSLocalizedString("恢复失败", comment: ""), message: error.localizedDescription, preferredStyle: .alert)
+                        result.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
+                        self.present(result, animated: true)
+                    }
+                }
             }
         }
     }
