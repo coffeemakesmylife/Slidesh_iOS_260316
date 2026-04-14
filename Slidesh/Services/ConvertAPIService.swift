@@ -18,8 +18,7 @@ final class ConvertAPIService: NSObject {
 
     static let shared = ConvertAPIService()
 
-    // 运行时从 AppConfig 读取，拼接 /open_cat 前缀路径
-    private var convertBaseURL: String { AppConfig.convertBaseURL }
+    private var pptBaseURL: String { AppConfig.pptBaseURL }
 
     // 当前上传任务（用于 cancel）
     private var currentTask: URLSessionDataTask?
@@ -90,7 +89,7 @@ final class ConvertAPIService: NSObject {
         boundary: String
     ) -> Result<URLRequest, Error> {
         // 合并 PDF 使用独立服务器，其余使用 convert 服务器
-        let selectedBase = convertBaseURL
+        let selectedBase = pptBaseURL
         // 确定接口路径和表单字段
         let path: String
         var body = Data()

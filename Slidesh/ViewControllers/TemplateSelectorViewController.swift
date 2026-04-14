@@ -17,6 +17,7 @@ class TemplateSelectorViewController: UIViewController {
 
     /// 非空时进入"换模板"模式：选好后回调 templateId，不走 generatePptx 流程
     var onTemplateSelected: ((String) -> Void)?
+    var onPPTGenerated: ((PPTInfo) -> Void)?
 
     // MARK: - 数据状态
 
@@ -581,24 +582,37 @@ class TemplateSelectorViewController: UIViewController {
         }
 
         setComposeLoading(true)
-
-        PPTAPIService.shared.generatePptx(
-            taskId:     taskId,
-            templateId: template.id,
-            markdown:   markdown
-        ) { [weak self] result in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            switch result {
-            case .success(let pptId):
-                print("✅ generatePptx 成功，pptId=\(pptId)，正在加载详情...")
-                self.loadAndShowPPT(pptId: pptId)
-            case .failure(let error):
+            let canUse = await QuotaManager.shared.refreshAndConsumeIfAvailable(.pptGenerate)
+            guard canUse else {
                 self.setComposeLoading(false)
-                let alert = UIAlertController(title: NSLocalizedString("合成失败", comment: ""),
-                                              message: error.localizedDescription,
-                                              preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
-                self.present(alert, animated: true)
+                let premiumVC = PremiumViewController()
+                premiumVC.onPurchased = { [weak self] in self?.composeTapped() }
+                let nav = UINavigationController(rootViewController: premiumVC)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true)
+                return
+            }
+
+            PPTAPIService.shared.generatePptx(
+                taskId:     self.taskId,
+                templateId: template.id,
+                markdown:   self.markdown
+            ) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .success(let pptId):
+                    print("✅ generatePptx 成功，pptId=\(pptId)，正在加载详情...")
+                    self.loadAndShowPPT(pptId: pptId)
+                case .failure(let error):
+                    self.setComposeLoading(false)
+                    let alert = UIAlertController(title: NSLocalizedString("合成失败", comment: ""),
+                                                  message: error.localizedDescription,
+                                                  preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
+                    self.present(alert, animated: true)
+                }
             }
         }
     }
@@ -652,15 +666,27 @@ class TemplateSelectorViewController: UIViewController {
                     )
                     WorksStore.shared.savePPT(record)
                 }
-                let previewVC = PPTPreviewViewController(pptInfo: info, source: .templateFlow)
-                self.navigationController?.pushViewController(previewVC, animated: true)
+                if let onPPTGenerated = self.onPPTGenerated {
+                    self.dismiss(animated: true) {
+                        onPPTGenerated(info)
+                    }
+                } else {
+                    let previewVC = PPTPreviewViewController(pptInfo: info, source: .templateFlow)
+                    self.navigationController?.pushViewController(previewVC, animated: true)
+                }
             case .failure(let error):
                 print("❌ loadPPT 失败：\(error.localizedDescription)")
                 // loadPPT 失败时仍展示预览页（用空 fileUrl，提示用户）
                 let stub = PPTInfo(pptId: pptId, taskId: nil, subject: nil,
                                    fileUrl: nil, coverUrl: nil, status: nil, total: nil, createTime: nil)
-                let previewVC = PPTPreviewViewController(pptInfo: stub, source: .templateFlow)
-                self.navigationController?.pushViewController(previewVC, animated: true)
+                if let onPPTGenerated = self.onPPTGenerated {
+                    self.dismiss(animated: true) {
+                        onPPTGenerated(stub)
+                    }
+                } else {
+                    let previewVC = PPTPreviewViewController(pptInfo: stub, source: .templateFlow)
+                    self.navigationController?.pushViewController(previewVC, animated: true)
+                }
             }
         }
     }

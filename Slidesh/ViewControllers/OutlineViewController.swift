@@ -684,32 +684,35 @@ class OutlineViewController: UIViewController {
     }
 
     @objc private func regenerateTapped() {
-        // 重写大纲与生成大纲共享 aiOutline 配额
-        guard QuotaManager.shared.consumeIfAvailable(.aiOutline) else {
-            let premiumVC = PremiumViewController()
-            premiumVC.onPurchased = { [weak self] in self?.regenerateTapped() }
-            let nav = UINavigationController(rootViewController: premiumVC)
-            nav.modalPresentationStyle = .fullScreen
-            present(nav, animated: true)
-            return
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let canUse = await QuotaManager.shared.refreshAndConsumeIfAvailable(.aiOutline)
+            guard canUse else {
+                let premiumVC = PremiumViewController()
+                premiumVC.onPurchased = { [weak self] in self?.regenerateTapped() }
+                let nav = UINavigationController(rootViewController: premiumVC)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true)
+                return
+            }
+            // 取消当前请求，重置状态，重新启动流式生成
+            self.sseTask?.cancel()
+            self.accumulatedMarkdown = ""
+            self.sections = []
+
+            // 恢复流式阶段 UI
+            self.streamLabel.text          = nil
+            self.streamScrollView.isHidden = false
+            self.streamScrollView.alpha    = 1
+            self.spinnerStack.alpha        = 1
+            self.spinner.startAnimating()
+            self.spinnerLabel.isHidden     = false
+            self.tableView.isHidden        = true
+            self.tableView.alpha           = 0
+            self.bottomBar.isHidden        = true
+
+            self.startSSE()
         }
-        // 取消当前请求，重置状态，重新启动流式生成
-        sseTask?.cancel()
-        accumulatedMarkdown = ""
-        sections = []
-
-        // 恢复流式阶段 UI
-        streamLabel.text          = nil
-        streamScrollView.isHidden = false
-        streamScrollView.alpha    = 1
-        spinnerStack.alpha        = 1
-        spinner.startAnimating()
-        spinnerLabel.isHidden     = false
-        tableView.isHidden        = true
-        tableView.alpha           = 0
-        bottomBar.isHidden        = true
-
-        startSSE()
     }
 
     // MARK: - 从 sections 重建 markdown
@@ -812,52 +815,53 @@ class OutlineViewController: UIViewController {
     // MARK: - 挑选 PPT 模板
 
     @objc private func templateTapped() {
-        // 生成PPT配额检查（免费用户仅1次机会，上限最严格）
-        guard QuotaManager.shared.consumeIfAvailable(.pptGenerate) else {
-            let premiumVC = PremiumViewController()
-            premiumVC.onPurchased = { [weak self] in self?.templateTapped() }
-            let nav = UINavigationController(rootViewController: premiumVC)
-            nav.modalPresentationStyle = .fullScreen
-            present(nav, animated: true)
-            return
-        }
         guard !sections.isEmpty else { return }
-
-        let currentMarkdown = reconstructMarkdown()
-        let hasEdits        = currentMarkdown != accumulatedMarkdown
-        print("📋 templateTapped: hasEdits=\(hasEdits), markdownLen=\(currentMarkdown.count)")
-
         setTemplateBtnLoading(true)
-
-        if hasEdits {
-            print("🔄 调用 updateContent 同步大纲编辑，taskId=\(taskId)")
-            // 有编辑：先同步到服务端，再弹出选择器
-            updateTask = PPTAPIService.shared.updateContent(
-                taskId:   taskId,
-                markdown: currentMarkdown
-            ) { [weak self] updatedMarkdown in
-                guard let self else { return }
-                print("✅ updateContent 成功，返回 markdownLen=\(updatedMarkdown.count)")
-                // 服务端返回有效内容才覆盖，避免空结果导致 generatePptx 失败
-                if !updatedMarkdown.isEmpty {
-                    self.accumulatedMarkdown = updatedMarkdown
-                } else {
-                    self.accumulatedMarkdown = currentMarkdown
-                }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let canUse = await QuotaManager.shared.refreshAndHasAccess(.pptGenerate)
+            guard canUse else {
                 self.setTemplateBtnLoading(false)
-                self.presentTemplateSelector()
-            } onError: { [weak self] error in
-                // 同步失败不阻断流程，使用本地编辑版本
-                guard let self else { return }
-                print("❌ updateContent 失败：\(error.localizedDescription)，使用本地 markdown 继续")
-                self.accumulatedMarkdown = currentMarkdown
+                let premiumVC = PremiumViewController()
+                premiumVC.onPurchased = { [weak self] in self?.templateTapped() }
+                let nav = UINavigationController(rootViewController: premiumVC)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true)
+                return
+            }
+
+            let currentMarkdown = self.reconstructMarkdown()
+            let hasEdits        = currentMarkdown != self.accumulatedMarkdown
+            print("📋 templateTapped: hasEdits=\(hasEdits), markdownLen=\(currentMarkdown.count)")
+
+            if hasEdits {
+                print("🔄 调用 updateContent 同步大纲编辑，taskId=\(self.taskId)")
+                // 有编辑：先同步到服务端，再弹出选择器
+                self.updateTask = PPTAPIService.shared.updateContent(
+                    taskId:   self.taskId,
+                    markdown: currentMarkdown
+                ) { [weak self] updatedMarkdown in
+                    guard let self else { return }
+                    print("✅ updateContent 成功，返回 markdownLen=\(updatedMarkdown.count)")
+                    if !updatedMarkdown.isEmpty {
+                        self.accumulatedMarkdown = updatedMarkdown
+                    } else {
+                        self.accumulatedMarkdown = currentMarkdown
+                    }
+                    self.setTemplateBtnLoading(false)
+                    self.presentTemplateSelector()
+                } onError: { [weak self] error in
+                    guard let self else { return }
+                    print("❌ updateContent 失败：\(error.localizedDescription)，使用本地 markdown 继续")
+                    self.accumulatedMarkdown = currentMarkdown
+                    self.setTemplateBtnLoading(false)
+                    self.presentTemplateSelector()
+                }
+            } else {
+                print("⏭️ 跳过 updateContent（大纲未修改），直接弹出模板选择器")
                 self.setTemplateBtnLoading(false)
                 self.presentTemplateSelector()
             }
-        } else {
-            print("⏭️ 跳过 updateContent（大纲未修改），直接弹出模板选择器")
-            setTemplateBtnLoading(false)
-            presentTemplateSelector()
         }
     }
 
@@ -886,9 +890,23 @@ class OutlineViewController: UIViewController {
             taskId:   taskId,
             markdown: accumulatedMarkdown
         )
+        selector.onPPTGenerated = { [weak self] info in
+            self?.handleGeneratedPPTPreview(info)
+        }
         let nav = UINavigationController(rootViewController: selector)
         nav.modalPresentationStyle = .fullScreen
         present(nav, animated: true)
+    }
+
+    private func handleGeneratedPPTPreview(_ info: PPTInfo) {
+        guard let nav = navigationController else { return }
+        let previewVC = PPTPreviewViewController(pptInfo: info, source: .templateFlow)
+        if let newProjectIndex = nav.viewControllers.lastIndex(where: { $0 is NewProjectViewController }) {
+            let baseStack = Array(nav.viewControllers.prefix(newProjectIndex + 1))
+            nav.setViewControllers(baseStack + [previewVC], animated: true)
+        } else {
+            nav.pushViewController(previewVC, animated: true)
+        }
     }
 }
 

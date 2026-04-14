@@ -412,11 +412,19 @@ class PremiumViewController: UIViewController {
     private func handleRestore() {
         Task {
             do {
-                // 同步 App Store 购买记录
                 try await AppStore.sync()
-                showAlert(title: NSLocalizedString("恢复完成", comment: ""), message: NSLocalizedString("购买记录已同步，如有有效订阅将自动激活。", comment: ""))
+                await QuotaManager.shared.refreshPremiumStatus()
+                await MainActor.run {
+                    if QuotaManager.shared.isPremium {
+                        self.showAlert(title: NSLocalizedString("恢复完成", comment: ""), message: NSLocalizedString("购买记录已同步，如有有效订阅将自动激活。", comment: ""))
+                    } else {
+                        self.showAlert(title: NSLocalizedString("未找到购买记录", comment: ""), message: NSLocalizedString("当前账号没有可恢复的订阅。", comment: ""))
+                    }
+                }
             } catch {
-                showAlert(title: NSLocalizedString("恢复失败", comment: ""), message: error.localizedDescription)
+                await MainActor.run {
+                    self.showAlert(title: NSLocalizedString("恢复失败", comment: ""), message: error.localizedDescription)
+                }
             }
         }
     }

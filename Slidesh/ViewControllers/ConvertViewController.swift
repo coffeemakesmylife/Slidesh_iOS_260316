@@ -248,17 +248,19 @@ extension ConvertViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
         UISelectionFeedbackGenerator().selectionChanged()
-
-        // 检查格式转换配额
-        guard QuotaManager.shared.consumeIfAvailable(.convert) else {
-            let premiumVC = PremiumViewController()
-            premiumVC.onPurchased = { [weak self] in self?.startConvertFlow(for: item) }
-            let nav = UINavigationController(rootViewController: premiumVC)
-            nav.modalPresentationStyle = .fullScreen
-            present(nav, animated: true)
-            return
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let canUse = await QuotaManager.shared.refreshAndConsumeIfAvailable(.convert)
+            guard canUse else {
+                let premiumVC = PremiumViewController()
+                premiumVC.onPurchased = { [weak self] in self?.startConvertFlow(for: item) }
+                let nav = UINavigationController(rootViewController: premiumVC)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true)
+                return
+            }
+            self.startConvertFlow(for: item)
         }
-        startConvertFlow(for: item)
     }
 
     private func startConvertFlow(for item: ConvertToolItem) {

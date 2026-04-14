@@ -108,6 +108,27 @@ class QuotaManager {
         return true
     }
 
+    /// 仅检查是否仍可使用，不消耗配额。
+    func hasRemainingQuota(_ feature: QuotaFeature) -> Bool {
+        if isPremium { return true }
+        lock.lock()
+        defer { lock.unlock() }
+        let used = Int(KeychainHelper.load(key: feature.keychainKey) ?? "0") ?? 0
+        return used < feature.limit
+    }
+
+    /// 操作前先刷新会员状态，再做原子性扣费检查。
+    func refreshAndConsumeIfAvailable(_ feature: QuotaFeature) async -> Bool {
+        await refreshPremiumStatus()
+        return consumeIfAvailable(feature)
+    }
+
+    /// 操作前先刷新会员状态，再检查是否仍可使用。
+    func refreshAndHasAccess(_ feature: QuotaFeature) async -> Bool {
+        await refreshPremiumStatus()
+        return hasRemainingQuota(feature)
+    }
+
     /// 当前剩余次数（调试用）
     func remaining(_ feature: QuotaFeature) -> Int {
         lock.lock()

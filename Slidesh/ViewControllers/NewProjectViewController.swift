@@ -513,29 +513,34 @@ class NewProjectViewController: UIViewController {
     }
 
     private func startAIGeneration() {
-        // 检查 AI 大纲配额
-        guard QuotaManager.shared.consumeIfAvailable(.aiOutline) else {
-            let premiumVC = PremiumViewController()
-            premiumVC.onPurchased = { [weak self] in self?.startAIGeneration() }
-            let nav = UINavigationController(rootViewController: premiumVC)
-            nav.modalPresentationStyle = .fullScreen
-            present(nav, animated: true)
-            return
-        }
-        view.endEditing(true)
         setGenerating(true)
-
-        let theme = themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Step 1：创建任务，获取 taskId
-        PPTAPIService.shared.createTask(subject: theme) { [weak self] result in
+        Task { @MainActor [weak self] in
             guard let self else { return }
-            switch result {
-            case .failure(let error):
+            let canUse = await QuotaManager.shared.refreshAndConsumeIfAvailable(.aiOutline)
+            guard !self.generateButton.isEnabled else { return }
+            guard canUse else {
                 self.setGenerating(false)
-                self.showGenerateError(error.localizedDescription)
-            case .success(let taskId):
-                self.startGenerateContent(taskId: taskId)
+                let premiumVC = PremiumViewController()
+                premiumVC.onPurchased = { [weak self] in self?.startAIGeneration() }
+                let nav = UINavigationController(rootViewController: premiumVC)
+                nav.modalPresentationStyle = .fullScreen
+                self.present(nav, animated: true)
+                return
+            }
+
+            self.view.endEditing(true)
+            let theme = self.themeTextView.text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // Step 1：创建任务，获取 taskId
+            PPTAPIService.shared.createTask(subject: theme) { [weak self] result in
+                guard let self else { return }
+                switch result {
+                case .failure(let error):
+                    self.setGenerating(false)
+                    self.showGenerateError(error.localizedDescription)
+                case .success(let taskId):
+                    self.startGenerateContent(taskId: taskId)
+                }
             }
         }
     }
@@ -863,4 +868,3 @@ private class TopicSuggestionsView: UIView {
         stackView.arrangedSubviews.forEach { $0.layer.borderColor = borderColor }
     }
 }
-
