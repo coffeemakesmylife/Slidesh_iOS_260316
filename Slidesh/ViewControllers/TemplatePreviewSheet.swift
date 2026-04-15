@@ -38,7 +38,7 @@ class TemplatePreviewSheet: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .appBackgroundPrimary
+        view.backgroundColor = .clear
         setupViews()
     }
 
@@ -145,31 +145,63 @@ class TemplatePreviewSheet: UIViewController {
 
     // MARK: - 辅助
 
-    private func makePill(_ text: String) -> UIView {
-        let container = UIView()
-        container.backgroundColor = .appChipUnselectedBackground
-        container.layer.cornerRadius = 10
-        container.translatesAutoresizingMaskIntoConstraints = false
-
-        let label = UILabel()
-        label.text = text
-        label.font = .systemFont(ofSize: 12)
-        label.textColor = .appTextSecondary
-        label.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(label)
-
-        NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 4),
-            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -4),
-            label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 10),
-            label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -10),
-        ])
-        return container
+    private func makePill(_ text: String) -> TagPillView {
+        let pill = TagPillView(title: text)
+        return pill
     }
 
     // MARK: - Action
 
     @objc private func useTapped() {
         onUse?()
+    }
+}
+
+// MARK: - TagPillView（与 CategoryChipButton 未选中态风格一致）
+
+private class TagPillView: UIView {
+
+    private let label = UILabel()
+
+    init(title: String) {
+        super.init(frame: .zero)
+        label.text = title
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        layer.cornerRadius = 15
+        clipsToBounds = false
+        backgroundColor = .appCardBackground.withAlphaComponent(0.65)
+        layer.borderWidth = 1
+
+        label.font = .systemFont(ofSize: 14, weight: .medium)
+        label.textColor = .appTextSecondary
+        label.isUserInteractionEnabled = false
+        label.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: topAnchor, constant: 7),
+            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -7),
+            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+        ])
+
+        updateBorderColor()
+    }
+
+    private func updateBorderColor() {
+        layer.borderColor = UIColor.appCardBorder.resolvedColor(with: traitCollection).cgColor
+    }
+
+    override func traitCollectionDidChange(_ previous: UITraitCollection?) {
+        super.traitCollectionDidChange(previous)
+        updateBorderColor()
     }
 }
