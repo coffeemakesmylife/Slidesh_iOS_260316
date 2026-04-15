@@ -321,7 +321,7 @@ class NewProjectViewController: UIViewController {
         thumb.contentMode = .scaleAspectFill
         thumb.clipsToBounds = true
         thumb.layer.cornerRadius = 4
-        thumb.backgroundColor = .appChipUnselectedBackground
+        thumb.backgroundColor = .clear
         thumb.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(thumb)
         templateThumbView = thumb
