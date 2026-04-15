@@ -78,7 +78,7 @@ class CustomTabBarController: UITabBarController, UITabBarControllerDelegate {
         )
 
         // 每个 VC 包装进自定义导航控制器
-        viewControllers = [templatesVC, convertVC, placeholderVC, myWorksVC, settingsVC].map {
+        viewControllers = [templatesVC, myWorksVC, placeholderVC, convertVC, settingsVC].map {
             CustomNavigationController(rootViewController: $0)
         }
     }
