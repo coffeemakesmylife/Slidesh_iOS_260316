@@ -73,6 +73,7 @@ class NewProjectViewController: UIViewController {
         addMeshGradientBackground()
         setupNav()
         setupCard()      // 先将 cardView 加入视图层级
+        updateTemplateRow()  // 同步外部赋值的预选模板（赋值早于 viewDidLoad）
         setupSlogan()    // 再建立 subLabel → cardView 的底部约束
         setupTopicSuggestions()
         setupKeyboardDismiss()
