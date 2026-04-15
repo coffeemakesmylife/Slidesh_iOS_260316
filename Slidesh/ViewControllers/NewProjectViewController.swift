@@ -162,9 +162,9 @@ class NewProjectViewController: UIViewController {
         ])
 
         let inputContainer = buildThemeRow()
-        let sep1           = buildSeparator(below: inputContainer)
-        let templateRow    = buildTemplateRow(below: sep1)
-        let params         = buildParamsBar(below: templateRow)
+        let templateRow    = buildTemplateRow(below: inputContainer)
+        let sep1           = buildSeparator(below: templateRow)
+        let params         = buildParamsBar(below: sep1)
         // 参数栏底部 = 卡片底部（决定卡片高度）
         params.bottomAnchor.constraint(equalTo: cardView.bottomAnchor).isActive = true
 
