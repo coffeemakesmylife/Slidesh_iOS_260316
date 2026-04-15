@@ -95,6 +95,9 @@ class OutlineViewController: UIViewController {
     private let scene:    String
     private let audience: String
 
+    /// 从模板列表进入时预先指定的模板 ID，会在选择模板页自动选中并高亮
+    var preselectedTemplateId: String?
+
     // 状态
     private var accumulatedMarkdown = ""
     private var sseTask:    URLSessionDataTask?
@@ -893,6 +896,8 @@ class OutlineViewController: UIViewController {
         selector.onPPTGenerated = { [weak self] info in
             self?.handleGeneratedPPTPreview(info)
         }
+        // 将预选模板 ID 传入，选择页加载完成后自动定位并高亮
+        selector.preselectedTemplateId = preselectedTemplateId
         let nav = UINavigationController(rootViewController: selector)
         nav.modalPresentationStyle = .fullScreen
         present(nav, animated: true)

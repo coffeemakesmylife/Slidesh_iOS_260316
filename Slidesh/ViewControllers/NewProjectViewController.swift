@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import Kingfisher
 
 class NewProjectViewController: UIViewController {
 
@@ -13,6 +14,13 @@ class NewProjectViewController: UIViewController {
     private var selectedLanguage = "zh"       // 语言 API 值
     private var selectedScene    = "通用"
     private var selectedAudience = "大众"
+
+    // MARK: - 预选模板（从模板列表页进入时设置）
+
+    /// 外部设置后会自动在卡片内展示缩略图预览
+    var preselectedTemplate: PPTTemplate? {
+        didSet { updateTemplateRow() }
+    }
 
     // MARK: - 子视图
 
@@ -46,6 +54,11 @@ class NewProjectViewController: UIViewController {
 
     // 当前 SSE 任务（用于取消）
     private var generateTask: URLSessionDataTask?
+
+    // 模板行子视图（高度可折叠）
+    private weak var templateThumbView: UIImageView?
+    private weak var templateNameLabel: UILabel?
+    private var templateRowHeightConstraint: NSLayoutConstraint!
 
     // 主题灵感建议浮层（卡片外部，靠右对齐，参考 PromptSuggestionsView 设计）
     private var topicSuggestionsView: TopicSuggestionsView!
@@ -150,7 +163,8 @@ class NewProjectViewController: UIViewController {
 
         let inputContainer = buildThemeRow()
         let sep1           = buildSeparator(below: inputContainer)
-        let params         = buildParamsBar(below: sep1)
+        let templateRow    = buildTemplateRow(below: sep1)
+        let params         = buildParamsBar(below: templateRow)
         // 参数栏底部 = 卡片底部（决定卡片高度）
         params.bottomAnchor.constraint(equalTo: cardView.bottomAnchor).isActive = true
 
@@ -284,6 +298,96 @@ class NewProjectViewController: UIViewController {
             sep.heightAnchor.constraint(equalToConstant: 0.5),
         ])
         return sep
+    }
+
+    // MARK: - 预选模板行（高度 0 ↔ 54，含缩略图 + 名称 + 清除按钮）
+
+    @discardableResult
+    private func buildTemplateRow(below above: UIView) -> UIView {
+        let container = UIView()
+        container.clipsToBounds = true
+        container.translatesAutoresizingMaskIntoConstraints = false
+        cardView.addSubview(container)
+
+        // 底部分割线
+        let sep = UIView()
+        sep.backgroundColor = .appSeparator
+        sep.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(sep)
+
+        // 缩略图（48×30pt，比例约 16:10）
+        let thumb = UIImageView()
+        thumb.contentMode = .scaleAspectFill
+        thumb.clipsToBounds = true
+        thumb.layer.cornerRadius = 4
+        thumb.backgroundColor = .appChipUnselectedBackground
+        thumb.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(thumb)
+        templateThumbView = thumb
+
+        // 模板名称
+        let nameLabel = UILabel()
+        nameLabel.font = .systemFont(ofSize: 14)
+        nameLabel.textColor = .appTextPrimary
+        nameLabel.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(nameLabel)
+        templateNameLabel = nameLabel
+
+        // 清除按钮（xmark）
+        let clearBtn = UIButton(type: .system)
+        let cfg = UIImage.SymbolConfiguration(pointSize: 12, weight: .medium)
+        clearBtn.setImage(UIImage(systemName: "xmark", withConfiguration: cfg), for: .normal)
+        clearBtn.tintColor = .appTextSecondary
+        clearBtn.translatesAutoresizingMaskIntoConstraints = false
+        clearBtn.addTarget(self, action: #selector(clearTemplateTapped), for: .touchUpInside)
+        container.addSubview(clearBtn)
+
+        templateRowHeightConstraint = container.heightAnchor.constraint(equalToConstant: 0)
+
+        NSLayoutConstraint.activate([
+            container.topAnchor.constraint(equalTo: above.bottomAnchor),
+            container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            templateRowHeightConstraint,
+
+            sep.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+            sep.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            sep.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            sep.heightAnchor.constraint(equalToConstant: 0.5),
+
+            thumb.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            thumb.centerYAnchor.constraint(equalTo: container.centerYAnchor, constant: -1),
+            thumb.widthAnchor.constraint(equalToConstant: 48),
+            thumb.heightAnchor.constraint(equalToConstant: 30),
+
+            nameLabel.leadingAnchor.constraint(equalTo: thumb.trailingAnchor, constant: 10),
+            nameLabel.centerYAnchor.constraint(equalTo: thumb.centerYAnchor),
+            nameLabel.trailingAnchor.constraint(equalTo: clearBtn.leadingAnchor, constant: -8),
+
+            clearBtn.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
+            clearBtn.centerYAnchor.constraint(equalTo: thumb.centerYAnchor),
+            clearBtn.widthAnchor.constraint(equalToConstant: 32),
+            clearBtn.heightAnchor.constraint(equalToConstant: 32),
+        ])
+        return container
+    }
+
+    /// 根据 preselectedTemplate 更新模板行显示（动画展开/折叠）
+    private func updateTemplateRow() {
+        guard templateRowHeightConstraint != nil else { return }
+        let hasTemplate = preselectedTemplate != nil
+        templateRowHeightConstraint.constant = hasTemplate ? 54 : 0
+        templateNameLabel?.text = preselectedTemplate?.subject
+        if let url = preselectedTemplate?.coverImageURL {
+            templateThumbView?.kf.setImage(with: url, options: [.cacheOriginalImage])
+        } else {
+            templateThumbView?.image = nil
+        }
+        UIView.animate(withDuration: 0.25) { self.cardView.layoutIfNeeded() }
+    }
+
+    @objc private func clearTemplateTapped() {
+        preselectedTemplate = nil
     }
 
     // MARK: - 参数横向滚动栏
@@ -556,6 +660,8 @@ class NewProjectViewController: UIViewController {
             scene:    selectedScene,
             audience: selectedAudience
         )
+        // 将预选模板 ID 传递给大纲页，大纲页会在选模板时自动选中
+        vc.preselectedTemplateId = preselectedTemplate?.id
         setGenerating(false)
         navigationController?.pushViewController(vc, animated: true)
     }

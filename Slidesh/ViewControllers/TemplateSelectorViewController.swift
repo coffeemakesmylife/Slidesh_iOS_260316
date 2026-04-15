@@ -19,6 +19,9 @@ class TemplateSelectorViewController: UIViewController {
     var onTemplateSelected: ((String) -> Void)?
     var onPPTGenerated: ((PPTInfo) -> Void)?
 
+    /// 预选模板 ID：首次加载完成后自动选中并滚动到对应位置
+    var preselectedTemplateId: String?
+
     // MARK: - 数据状态
 
     private var selectedTemplate:  PPTTemplate?
@@ -512,6 +515,20 @@ class TemplateSelectorViewController: UIViewController {
         }
         filteredTemplates = result
         collectionView.reloadData()
+        // 首次加载后若有预选模板，自动选中并滚动
+        autoSelectIfNeeded()
+    }
+
+    /// 首次加载完成时，将 preselectedTemplateId 对应的模板自动选中并滚动至可见区域
+    private func autoSelectIfNeeded() {
+        guard let tid = preselectedTemplateId, selectedTemplate == nil else { return }
+        guard let idx = filteredTemplates.firstIndex(where: { $0.id == tid }) else { return }
+        selectedTemplate = filteredTemplates[idx]
+        let ip = IndexPath(item: idx, section: 0)
+        collectionView.reloadItems(at: [ip])
+        DispatchQueue.main.async {
+            self.collectionView.scrollToItem(at: ip, at: .centeredVertically, animated: true)
+        }
     }
 
     // MARK: - 骨架屏

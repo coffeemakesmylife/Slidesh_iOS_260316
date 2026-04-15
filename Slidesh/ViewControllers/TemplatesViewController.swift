@@ -477,8 +477,24 @@ extension TemplatesViewController: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView,
                         didSelectItemAt indexPath: IndexPath) {
         let template = templates[indexPath.item]
-        print("选中模板: \(template.subject) id=\(template.id)")
-        // TODO: 跳转模板详情页
+        // 弹出模板预览底部弹窗
+        let sheet = TemplatePreviewSheet(template: template)
+        sheet.modalPresentationStyle = .pageSheet
+        if let sheetCtrl = sheet.sheetPresentationController {
+            sheetCtrl.detents = [.medium()]
+            sheetCtrl.prefersGrabberVisible = true
+            sheetCtrl.prefersScrollingExpandsWhenScrolledToEdge = false
+        }
+        sheet.onUse = { [weak self, weak sheet] in
+            sheet?.dismiss(animated: true) {
+                let newVC = NewProjectViewController()
+                newVC.preselectedTemplate = template
+                let nav = UINavigationController(rootViewController: newVC)
+                nav.modalPresentationStyle = .fullScreen
+                self?.present(nav, animated: true)
+            }
+        }
+        present(sheet, animated: true)
     }
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
