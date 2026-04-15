@@ -655,6 +655,10 @@ class OutlineViewController: UIViewController {
         tableView.reloadData()
         tableView.isHidden = false
         bottomBar.isHidden = false
+        // 有预选模板时直接显示"合成PPT"，无需进入模板选择器
+        if preselectedTemplateId != nil {
+            templateBtn.setTitle(NSLocalizedString("合成PPT", comment: ""), for: .normal)
+        }
 
         UIView.animate(withDuration: 0.3) {
             self.streamScrollView.alpha = 0
@@ -837,33 +841,37 @@ class OutlineViewController: UIViewController {
             let hasEdits        = currentMarkdown != self.accumulatedMarkdown
             print("📋 templateTapped: hasEdits=\(hasEdits), markdownLen=\(currentMarkdown.count)")
 
+            // 同步完大纲后，决定跳转模板选择器还是直接合成
+            let proceedAfterSync: (String) -> Void = { [weak self] markdown in
+                guard let self else { return }
+                self.setTemplateBtnLoading(false)
+                if let templateId = self.preselectedTemplateId {
+                    self.directGeneratePPT(templateId: templateId, markdown: markdown)
+                } else {
+                    self.presentTemplateSelector()
+                }
+            }
+
             if hasEdits {
                 print("🔄 调用 updateContent 同步大纲编辑，taskId=\(self.taskId)")
-                // 有编辑：先同步到服务端，再弹出选择器
                 self.updateTask = PPTAPIService.shared.updateContent(
                     taskId:   self.taskId,
                     markdown: currentMarkdown
                 ) { [weak self] updatedMarkdown in
                     guard let self else { return }
                     print("✅ updateContent 成功，返回 markdownLen=\(updatedMarkdown.count)")
-                    if !updatedMarkdown.isEmpty {
-                        self.accumulatedMarkdown = updatedMarkdown
-                    } else {
-                        self.accumulatedMarkdown = currentMarkdown
-                    }
-                    self.setTemplateBtnLoading(false)
-                    self.presentTemplateSelector()
+                    let md = updatedMarkdown.isEmpty ? currentMarkdown : updatedMarkdown
+                    self.accumulatedMarkdown = md
+                    proceedAfterSync(md)
                 } onError: { [weak self] error in
                     guard let self else { return }
                     print("❌ updateContent 失败：\(error.localizedDescription)，使用本地 markdown 继续")
                     self.accumulatedMarkdown = currentMarkdown
-                    self.setTemplateBtnLoading(false)
-                    self.presentTemplateSelector()
+                    proceedAfterSync(currentMarkdown)
                 }
             } else {
-                print("⏭️ 跳过 updateContent（大纲未修改），直接弹出模板选择器")
-                self.setTemplateBtnLoading(false)
-                self.presentTemplateSelector()
+                print("⏭️ 跳过 updateContent（大纲未修改）")
+                proceedAfterSync(currentMarkdown)
             }
         }
     }
@@ -884,7 +892,10 @@ class OutlineViewController: UIViewController {
             ])
         } else {
             templateBtn.subviews.first(where: { $0.tag == 999 })?.removeFromSuperview()
-            templateBtn.setTitle(NSLocalizedString("挑选PPT模板  →", comment: ""), for: .normal)
+            let title = preselectedTemplateId != nil
+                ? NSLocalizedString("合成PPT", comment: "")
+                : NSLocalizedString("挑选PPT模板  →", comment: "")
+            templateBtn.setTitle(title, for: .normal)
         }
     }
 
@@ -901,6 +912,59 @@ class OutlineViewController: UIViewController {
         let nav = UINavigationController(rootViewController: selector)
         nav.modalPresentationStyle = .fullScreen
         present(nav, animated: true)
+    }
+
+    /// 有预选模板时直接合成 PPT，跳过 TemplateSelectorViewController
+    private func directGeneratePPT(templateId: String, markdown: String) {
+        setTemplateBtnLoading(true)
+        PPTAPIService.shared.generatePptx(
+            taskId:     taskId,
+            templateId: templateId,
+            markdown:   markdown
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .failure(let error):
+                DispatchQueue.main.async {
+                    self.setTemplateBtnLoading(false)
+                    let alert = UIAlertController(
+                        title:   NSLocalizedString("合成失败", comment: ""),
+                        message: error.localizedDescription,
+                        preferredStyle: .alert)
+                    alert.addAction(UIAlertAction(title: NSLocalizedString("确定", comment: ""), style: .default))
+                    self.present(alert, animated: true)
+                }
+            case .success(let pptId):
+                PPTAPIService.shared.loadPPT(pptId: pptId) { [weak self] result in
+                    guard let self else { return }
+                    DispatchQueue.main.async {
+                        self.setTemplateBtnLoading(false)
+                        let info: PPTInfo
+                        switch result {
+                        case .success(let loaded):
+                            // 自动保存记录
+                            if let fileUrl = loaded.fileUrl, !fileUrl.isEmpty {
+                                let record = PPTRecord(
+                                    id:       loaded.pptId,
+                                    taskId:   loaded.taskId ?? self.taskId,
+                                    subject:  loaded.subject ?? self.subject,
+                                    fileUrl:  fileUrl,
+                                    coverUrl: loaded.coverUrl,
+                                    savedAt:  Date()
+                                )
+                                WorksStore.shared.savePPT(record)
+                            }
+                            info = loaded
+                        case .failure:
+                            info = PPTInfo(pptId: pptId, taskId: nil, subject: nil,
+                                           fileUrl: nil, coverUrl: nil, status: nil,
+                                           total: nil, createTime: nil)
+                        }
+                        self.handleGeneratedPPTPreview(info)
+                    }
+                }
+            }
+        }
     }
 
     private func handleGeneratedPPTPreview(_ info: PPTInfo) {
