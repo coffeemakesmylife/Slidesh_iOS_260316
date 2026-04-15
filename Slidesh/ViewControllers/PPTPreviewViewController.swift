@@ -145,16 +145,19 @@ class PPTPreviewViewController: UIViewController {
             bottomBar.contentView.addSubview(changeTemplateBtn)
             leftView = changeTemplateBtn
         } else {
-            let shareContainer = makeGradientContainer(alpha: 0.8, grad: &shareBtnGrad)
-            shareBtnContainer = shareContainer
-            bottomBar.contentView.addSubview(shareContainer)
+            // 分享按钮使用与换模板按钮一致的无渐变风格，适配深浅色主题
             shareBtn.setTitle(NSLocalizedString("分享", comment: ""), for: .normal)
             shareBtn.titleLabel?.font = .systemFont(ofSize: 16, weight: .semibold)
-            shareBtn.setTitleColor(.white, for: .normal)
+            shareBtn.setTitleColor(.appPrimary, for: .normal)
+            shareBtn.backgroundColor = .appCardBackground
+            shareBtn.layer.cornerRadius = 26
+            shareBtn.layer.borderWidth = 1.5
+            shareBtn.layer.borderColor = UIColor.appPrimary.withAlphaComponent(0.3).cgColor
+            shareBtn.clipsToBounds = true
             shareBtn.translatesAutoresizingMaskIntoConstraints = false
             shareBtn.addTarget(self, action: #selector(shareTapped), for: .touchUpInside)
-            shareContainer.addSubview(shareBtn)
-            leftView = shareContainer
+            bottomBar.contentView.addSubview(shareBtn)
+            leftView = shareBtn
         }
 
         NSLayoutConstraint.activate([
@@ -169,21 +172,12 @@ class PPTPreviewViewController: UIViewController {
             saveBtn.heightAnchor.constraint(equalTo: leftView.heightAnchor),
             saveBtn.widthAnchor.constraint(equalTo: leftView.widthAnchor),
         ])
-        if let sc = shareBtnContainer {
-            NSLayoutConstraint.activate([
-                shareBtn.topAnchor.constraint(equalTo: sc.topAnchor),
-                shareBtn.bottomAnchor.constraint(equalTo: sc.bottomAnchor),
-                shareBtn.leadingAnchor.constraint(equalTo: sc.leadingAnchor),
-                shareBtn.trailingAnchor.constraint(equalTo: sc.trailingAnchor),
-            ])
-        }
-
-        // loading 指示器居中在各自容器上
-        let indicatorPairs: [(UIActivityIndicatorView, UIView)] = canChangeTemplate
-            ? [(saveIndicator, saveBtn)]
-            : [(saveIndicator, saveBtn), (shareIndicator, shareBtnContainer!)]
-        for (indicator, container) in indicatorPairs {
-            indicator.color = .white
+        // loading 指示器居中在各自按钮上（分享按钮浅背景用 appPrimary 色）
+        let indicatorPairs: [(UIActivityIndicatorView, UIView, UIColor)] = canChangeTemplate
+            ? [(saveIndicator, saveBtn, .white)]
+            : [(saveIndicator, saveBtn, .white), (shareIndicator, shareBtn, .appPrimary)]
+        for (indicator, container, color) in indicatorPairs {
+            indicator.color = color
             indicator.hidesWhenStopped = true
             indicator.translatesAutoresizingMaskIntoConstraints = false
             bottomBar.contentView.addSubview(indicator)
